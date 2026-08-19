@@ -179,12 +179,25 @@ ou en session distante, ce n'est pas le cas.
 **Les phrases se coupent trop tôt / trop tard** — ajustez `segment_silence_seconds`
 (découpage) et `silence_seconds` (fin de dictée) dans `[recording]`.
 
-**Rien n'est transcrit** — vérifiez le micro et son volume :
+**L'overlay s'ouvre mais rien ne s'écrit** — neuf fois sur dix, le micro par défaut n'est
+pas le bon (une prise jack vide reste souvent la source par défaut, et ne renvoie que du
+silence). `linux-whisper doctor` mesure le niveau réellement capté :
+
 ```sh
-arecord -d 3 -f S16_LE -r 16000 /tmp/test.wav && aplay /tmp/test.wav
+linux-whisper doctor          # « le micro capte du son » doit être coché
+wpctl status                  # liste les sources ; repérez le vrai micro
+wpctl set-default <id>        # bascule dessus
 ```
-Un micro trop faible n'atteint jamais le seuil de détection : fixez-le à la main avec
-`threshold = 400` (au lieu de `"auto"`) dans `[recording]`.
+
+Le daemon vous prévient désormais par une notification quand une dictée n'a capté aucun
+son, et journalise le pic mesuré :
+
+```sh
+journalctl --user -u linux-whisper | grep "pic"
+```
+
+**Ma voix n'est pas assez forte** — montez le gain de la source (`wpctl set-volume <id> 1.0`),
+ou fixez le seuil à la main avec `threshold = 400` (au lieu de `"auto"`) dans `[recording]`.
 
 **La transcription tourne sur le CPU alors que j'ai un GPU** — `linux-whisper status`
 indique le périphérique retenu, et `journalctl --user -u linux-whisper` la raison du repli

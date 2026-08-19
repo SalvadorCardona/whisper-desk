@@ -16,6 +16,7 @@ CHUNK_BYTES = CHUNK_SAMPLES * SAMPLE_WIDTH
 NOISE_CHUNKS = 4               # 400 ms de bruit de fond pour calibrer le seuil
 MIN_THRESHOLD = 180.0
 MIN_SEGMENT_CHUNKS = 4         # en deçà de 400 ms, ce n'est pas une phrase
+SILENT_INPUT_PEAK = 30.0       # sous ce pic, l'entrée est muette, pas discrète
 
 
 def _rms(chunk: bytes) -> float:
@@ -48,6 +49,9 @@ class Recorder:
         self._stop = threading.Event()
         self._process: subprocess.Popen[bytes] | None = None
         self.reason = "unknown"
+        # Niveau maximal rencontré : sert à distinguer « il n'a rien dit »
+        # de « le micro ne capte rien du tout ».
+        self.peak = 0.0
 
     def stop(self) -> None:
         self._stop.set()
@@ -95,6 +99,7 @@ class Recorder:
                 frames.append(chunk)
                 now = time.monotonic()
                 level = _rms(chunk)
+                self.peak = max(self.peak, level)
 
                 if threshold is None:
                     noise.append(level)

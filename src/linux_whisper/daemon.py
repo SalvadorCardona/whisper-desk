@@ -19,7 +19,7 @@ from typing import Any
 from . import config as config_module
 from . import output
 from .overlay_proc import OverlayProcess
-from .recorder import Recorder
+from .recorder import SILENT_INPUT_PEAK, Recorder
 from .transcriber import Transcriber
 
 logger = logging.getLogger("linux-whisper.daemon")
@@ -77,7 +77,7 @@ class Session:
             worker.join()
             self.text = " ".join(self.parts)
             if not self.parts:
-                logger.info("Aucune parole détectée (%s).", self.recorder.reason)
+                self._report_silence()
         except Exception as error:  # le daemon ne doit jamais mourir sur une dictée
             self.error = str(error)
             logger.exception("Dictée en échec")
@@ -89,6 +89,25 @@ class Session:
             self.service.state = "idle"
             self.service.session = None
             self.done.set()
+
+    def _report_silence(self) -> None:
+        """Une dictée vide : distinguer le silence de l'utilisateur du micro muet."""
+        peak = self.recorder.peak
+        device = self.service.config["recording"]["device"]
+        if peak < SILENT_INPUT_PEAK:
+            logger.warning(
+                "Aucun son capté sur le micro « %s » (pic %.0f) — périphérique muet "
+                "ou mauvaise source par défaut ; voir « linux-whisper doctor ».",
+                device, peak,
+            )
+            output.notify(
+                "linux-whisper : micro muet",
+                f"Aucun son n'arrive du périphérique « {device} ».",
+            )
+        else:
+            logger.info(
+                "Aucune parole détectée (%s, pic %.0f).", self.recorder.reason, peak
+            )
 
     def _transcribe_loop(self) -> None:
         """Transcrit les phrases dans l'ordre, au fur et à mesure de leur arrivée."""

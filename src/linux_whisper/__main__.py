@@ -108,6 +108,26 @@ def cmd_config(args: argparse.Namespace) -> int:
     return 0
 
 
+def _measure_microphone(device: str, seconds: float = 1.5) -> tuple[float, float]:
+    """Écoute brièvement le micro et retourne (niveau moyen, pic)."""
+    from .recorder import _rms
+
+    try:
+        raw = subprocess.run(
+            ["arecord", "-D", device, "-f", "S16_LE", "-r", "16000", "-c", "1",
+             "-t", "raw", "-d", str(int(seconds) or 1), "-q"],
+            capture_output=True,
+            timeout=seconds + 5,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return 0.0, 0.0
+    if not raw:
+        return 0.0, 0.0
+    chunks = [raw[i:i + 3200] for i in range(0, len(raw) - 3200, 3200)]
+    levels = [_rms(chunk) for chunk in chunks] or [0.0]
+    return sum(levels) / len(levels), max(levels)
+
+
 def cmd_doctor(_args: argparse.Namespace) -> int:
     from . import hotkey
     from .daemon import socket_path
@@ -120,6 +140,13 @@ def cmd_doctor(_args: argparse.Namespace) -> int:
     config = config_module.load()
     print("Système")
     check("arecord (capture micro)", bool(shutil.which("arecord")), "paquet alsa-utils")
+    level, peak = _measure_microphone(str(config["recording"]["device"]))
+    check(
+        f"le micro capte du son (« {config['recording']['device']} »)",
+        peak > 30,
+        f"niveau moyen {level:.0f}, pic {peak:.0f}"
+        + ("" if peak > 30 else " — vérifiez la source par défaut : wpctl status"),
+    )
     check(
         "presse-papiers",
         any(map(shutil.which, ("wl-copy", "xclip", "xsel"))),
