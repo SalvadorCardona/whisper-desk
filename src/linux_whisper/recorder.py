@@ -15,6 +15,7 @@ CHUNK_SAMPLES = 1600           # 100 ms
 CHUNK_BYTES = CHUNK_SAMPLES * SAMPLE_WIDTH
 NOISE_CHUNKS = 4               # 400 ms de bruit de fond pour calibrer le seuil
 MIN_THRESHOLD = 180.0
+MIN_SEGMENT_CHUNKS = 4         # en deçà de 400 ms, ce n'est pas une phrase
 
 
 def _rms(chunk: bytes) -> float:
@@ -34,9 +35,16 @@ def _rms(chunk: bytes) -> float:
 class Recorder:
     """Enregistre jusqu'au silence, à l'appel de stop(), ou jusqu'au maximum."""
 
-    def __init__(self, config: dict[str, Any], on_level: Callable[[float], None] | None = None):
+    def __init__(
+        self,
+        config: dict[str, Any],
+        on_level: Callable[[float], None] | None = None,
+        on_segment: Callable[[bytes], None] | None = None,
+    ):
         self.config = config["recording"]
         self.on_level = on_level
+        # Renseigné en mode « au fil de l'eau » : appelé à chaque phrase terminée.
+        self.on_segment = on_segment
         self._stop = threading.Event()
         self._process: subprocess.Popen[bytes] | None = None
         self.reason = "unknown"
@@ -69,10 +77,14 @@ class Recorder:
         silence_seconds = float(self.config["silence_seconds"])
         start_timeout = float(self.config["start_timeout_seconds"])
         max_seconds = float(self.config["max_seconds"])
+        streaming = bool(self.config["streaming"]) and self.on_segment is not None
+        segment_silence = float(self.config["segment_silence_seconds"])
 
         started = time.monotonic()
         speaking = False
+        spoke_once = False
         last_voice = started
+        segment_start = 0        # index de départ de la phrase en cours
 
         try:
             while not self._stop.is_set():
@@ -98,12 +110,22 @@ class Recorder:
 
                 if level >= threshold:
                     speaking = True
+                    spoke_once = True
                     last_voice = now
 
-                if not speaking and start_timeout and now - started > start_timeout:
+                # Une petite pause termine une phrase : on l'envoie sans cesser d'écouter.
+                if streaming and speaking and now - last_voice > segment_silence:
+                    segment = self._slice(frames, segment_start, segment_silence)
+                    segment_start = len(frames)
+                    speaking = False
+                    if segment:
+                        self.on_segment(segment)
+                    continue
+
+                if not spoke_once and start_timeout and now - started > start_timeout:
                     self.reason = "no-speech"
                     break
-                if speaking and silence_seconds and now - last_voice > silence_seconds:
+                if spoke_once and silence_seconds and now - last_voice > silence_seconds:
                     self.reason = "silence"
                     break
                 if max_seconds and now - started > max_seconds:
@@ -114,13 +136,24 @@ class Recorder:
         finally:
             self._terminate()
 
-        if not speaking:
+        if not spoke_once:
             return b""
-        # On coupe la queue de silence, en gardant 300 ms de marge.
-        if self.reason == "silence" and silence_seconds:
-            keep = max(len(frames) - int((silence_seconds - 0.3) * 10), 1)
-            frames = frames[:keep]
-        return b"".join(frames)
+        if streaming:
+            # Le reste éventuel après la dernière pause.
+            return self._slice(frames, segment_start, silence_seconds)
+        return self._slice(frames, 0, silence_seconds if self.reason == "silence" else 0.0)
+
+    @staticmethod
+    def _slice(frames: list[bytes], start: int, trailing_silence: float) -> bytes:
+        """Extrait les trames depuis `start`, sans la queue de silence."""
+        chunks = frames[start:]
+        if trailing_silence:
+            # 10 trames par seconde ; on garde 300 ms de marge après la voix.
+            keep = max(len(chunks) - int((trailing_silence - 0.3) * 10), 0)
+            chunks = chunks[:keep]
+        if len(chunks) < MIN_SEGMENT_CHUNKS:
+            return b""
+        return b"".join(chunks)
 
     def _terminate(self) -> None:
         process, self._process = self._process, None

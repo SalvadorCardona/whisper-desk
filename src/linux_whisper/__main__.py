@@ -125,18 +125,32 @@ def cmd_doctor(_args: argparse.Namespace) -> int:
         any(map(shutil.which, ("wl-copy", "xclip", "xsel"))),
         "paquet wl-clipboard",
     )
+    check(
+        "clavier virtuel (/dev/uinput)",
+        os.access("/dev/uinput", os.W_OK),
+        "sans lui, pas d'insertion au curseur",
+    )
+    check(
+        "overlay sans vol de focus (X11/Xwayland)",
+        bool(os.environ.get("DISPLAY")),
+        "sinon l'overlay capterait le collage",
+    )
     check("notify-send", bool(shutil.which("notify-send")), "paquet libnotify-bin")
     check("GPU NVIDIA", has_nvidia_gpu(), "sinon transcription sur CPU")
 
     overlay_ok = subprocess.run(
-        [system_python(), "-c", "import gi; gi.require_version('Gtk','4.0'); from gi.repository import Gtk"],
+        [system_python(), "-c", "import gi; gi.require_version('Gtk','3.0'); from gi.repository import Gtk"],
         capture_output=True,
     ).returncode == 0
-    check("overlay GTK4", overlay_ok, "paquets python3-gi + gir1.2-gtk-4.0")
+    check("overlay GTK3", overlay_ok, "paquets python3-gi + gir1.2-gtk-3.0")
 
     print("Configuration")
     check(f"fichier {config_module.CONFIG_PATH}", config_module.CONFIG_PATH.exists())
-    print(f"    modèle={config['model']['name']} langue={config['model']['language']} sortie={config['output']['mode']}")
+    print(
+        f"    modèle={config['model']['name']} langue={config['model']['language']}"
+        f" sortie={config['output']['mode']} raccourci-collage={config['output']['paste_shortcut']}"
+        f" flux={'oui' if config['recording']['streaming'] else 'non'}"
+    )
 
     print("Service")
     unit = subprocess.run(

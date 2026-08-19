@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import queue
 import socket
 import socketserver
 import threading
@@ -31,16 +32,26 @@ def socket_path() -> Path:
 
 
 class Session:
-    """Une dictée : enregistrement puis transcription."""
+    """Une dictée : écoute, transcription phrase par phrase, insertion.
+
+    L'écoute et la transcription tournent dans deux fils séparés : le modèle
+    travaille sur la phrase précédente pendant que le micro continue d'enregistrer.
+    """
 
     def __init__(self, service: "Service", capture: bool):
         self.service = service
         self.capture = capture          # True -> le texte est renvoyé au client
         self.done = threading.Event()
+        self.recording_over = threading.Event()
         self.text = ""
         self.error: str | None = None
-        self.recorder = Recorder(service.config, on_level=self._on_level)
+        self.parts: list[str] = []
+        self.queue: queue.Queue[bytes | None] = queue.Queue()
         self.overlay = OverlayProcess(service.config)
+        self.recorder = Recorder(
+            service.config, on_level=self._on_level, on_segment=self.queue.put
+        )
+        self.writer: output.CursorWriter | None = None
 
     def _on_level(self, level: float) -> None:
         self.overlay.set_level(level)
@@ -48,27 +59,65 @@ class Session:
     def run(self) -> None:
         try:
             self.overlay.start()
-            pcm = self.recorder.record()
-            if not pcm:
-                logger.info("Aucune parole détectée (%s).", self.recorder.reason)
-                return
+            if not self.capture and "cursor" in output.modes(self.service.config):
+                self.writer = output.CursorWriter(self.service.config, self.overlay)
+                # Pendant que l'utilisateur parle, on prépare le clavier virtuel.
+                threading.Thread(target=self.writer.prepare, daemon=True).start()
+            worker = threading.Thread(target=self._transcribe_loop, daemon=True)
+            worker.start()
+
+            tail = self.recorder.record()
+            self.recording_over.set()
+            if tail:
+                self.queue.put(tail)
+            self.queue.put(None)
+
             self.service.state = "working"
             self.overlay.set_state("working")
-            self.text = self.service.transcriber.transcribe(pcm)
-            if not self.text:
-                return
-            if not self.capture:
-                output.deliver(self.text, self.service.config, overlay=self.overlay)
+            worker.join()
+            self.text = " ".join(self.parts)
+            if not self.parts:
+                logger.info("Aucune parole détectée (%s).", self.recorder.reason)
         except Exception as error:  # le daemon ne doit jamais mourir sur une dictée
             self.error = str(error)
             logger.exception("Dictée en échec")
-            if self.service.config["output"]["notify"]:
-                output.notify("linux-whisper", f"Erreur : {error}")
+            output.notify("linux-whisper", f"Erreur : {error}")
         finally:
+            if self.writer:
+                self.writer.close()
             self.overlay.stop()
             self.service.state = "idle"
             self.service.session = None
             self.done.set()
+
+    def _transcribe_loop(self) -> None:
+        """Transcrit les phrases dans l'ordre, au fur et à mesure de leur arrivée."""
+        while True:
+            segment = self.queue.get()
+            if segment is None:
+                return
+            if not self.recording_over.is_set():
+                self.overlay.set_state("working")
+            try:
+                text = self.service.transcriber.transcribe(segment)
+            except Exception as error:
+                self.error = str(error)
+                logger.exception("Transcription en échec")
+                continue
+            finally:
+                if not self.recording_over.is_set():
+                    self.overlay.set_state("listening")
+            if not text:
+                continue
+            # Les phrases suivantes sont séparées par une espace de l'insertion précédente.
+            self.parts.append(text)
+            if not self.capture:
+                output.deliver(
+                    text if len(self.parts) == 1 else f" {text}",
+                    self.service.config,
+                    writer=self.writer,
+                    overlay=self.overlay,
+                )
 
     def stop(self) -> None:
         self.recorder.stop()

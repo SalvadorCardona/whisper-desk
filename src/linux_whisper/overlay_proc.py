@@ -36,6 +36,8 @@ class OverlayProcess:
             str(self.config["width"]),
             str(self.config["height"]),
             str(self.config["accent"]),
+            str(self.config["position"]),
+            str(self.config["margin"]),
         ]
         try:
             self._process = subprocess.Popen(
@@ -58,11 +60,23 @@ class OverlayProcess:
         return self._process is not None and self._process.poll() is None
 
     def copy(self, text: str) -> bool:
-        """Copie via la fenêtre de l'overlay (seule à avoir le focus Wayland)."""
+        """Copie via la fenêtre de l'overlay, qui possède une sélection X11."""
         if not self.alive:
             return False
         payload = base64.b64encode(text.encode("utf-8")).decode("ascii")
         self._send(f"copy {payload}")
+        return self.alive
+
+    def save_clipboard(self) -> bool:
+        if not self.alive:
+            return False
+        self._send("saveclip")
+        return self.alive
+
+    def restore_clipboard(self) -> bool:
+        if not self.alive:
+            return False
+        self._send("restoreclip")
         return self.alive
 
     def stop(self) -> None:

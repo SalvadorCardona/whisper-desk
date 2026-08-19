@@ -40,19 +40,26 @@ DEFAULTS: dict[str, Any] = {
     "recording": {
         "device": "default",       # périphérique ALSA
         "max_seconds": 120,
-        # Arrêt automatique après ce silence (secondes). 0 = désactivé.
-        "silence_seconds": 1.6,
+        # Dictée au fil de l'eau : chaque phrase est transcrite et insérée
+        # dès que vous marquez une petite pause, sans arrêter l'écoute.
+        "streaming": True,
+        "segment_silence_seconds": 0.6,
+        # Silence qui met fin à la dictée (secondes). 0 = désactivé.
+        "silence_seconds": 2.0,
         # Abandon si rien n'est dit dans ce délai après l'appui.
         "start_timeout_seconds": 8,
         # "auto" ou un entier (RMS 0-32767).
         "threshold": "auto",
     },
     "output": {
-        # clipboard | type | stdout | none  (combinables : "clipboard+type")
-        "mode": "clipboard",
-        # Colle automatiquement après la copie (nécessite wtype ou ydotool).
-        "paste": False,
-        "notify": True,
+        # cursor | clipboard | stdout | none  (combinables : "cursor+stdout")
+        "mode": "cursor",
+        # Raccourci de collage envoyé au clavier virtuel pour insérer le texte.
+        # « ctrl+v » partout, « shift+insert » si vous dictez surtout en terminal.
+        "paste_shortcut": "ctrl+v",
+        # Remet votre presse-papiers d'origine à la fin de la dictée.
+        "restore_clipboard": True,
+        "notify": False,
         # Journalise chaque transcription dans ~/.local/state/linux-whisper/history.log
         "history": True,
     },
@@ -62,6 +69,10 @@ DEFAULTS: dict[str, Any] = {
         # Taille de la pilule en pixels.
         "width": 168,
         "height": 64,
+        # bottom-center | top-center | center
+        "position": "bottom-center",
+        # Distance au bord de l'écran, en pixels.
+        "margin": 96,
     },
 }
 
