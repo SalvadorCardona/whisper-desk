@@ -1,0 +1,15 @@
+[Unit]
+Description=linux-whisper — daemon de dictée vocale
+Documentation=https://github.com/SalvadorCardona/linux-whisper
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=@BIN@ daemon
+Restart=on-failure
+RestartSec=3
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=graphical-session.target

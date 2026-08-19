@@ -1,0 +1,42 @@
+# Configuration de linux-whisper — ~/.config/linux-whisper/config.toml
+# Après modification : linux-whisper reload
+
+[hotkey]
+# Syntaxe GTK : <Super>, <Ctrl>, <Alt>, <Shift>. Ex. "<Super><Shift>d", "<Ctrl><Alt>space".
+binding = "<Super>j"
+name = "linux-whisper"
+# Appliquer un changement de raccourci : linux-whisper hotkey install
+action = "toggle"
+
+[model]
+# "auto" : large-v3-turbo si GPU NVIDIA, sinon small.
+# Autres valeurs : tiny, base, small, medium, large-v3, large-v3-turbo, distil-large-v3
+name = "auto"
+device = "auto"          # auto | cuda | cpu
+compute_type = "auto"    # auto | float16 | int8_float16 | int8
+language = "fr"          # code ISO 639-1, ou "auto" pour la détection automatique
+beam_size = 5
+# Vocabulaire à privilégier (noms propres, jargon) :
+initial_prompt = ""
+# Charge le modèle au démarrage du service : la première dictée est instantanée.
+preload = true
+
+[recording]
+device = "default"            # périphérique ALSA (voir : arecord -L)
+max_seconds = 120
+silence_seconds = 1.6         # arrêt automatique après ce silence ; 0 = désactivé
+start_timeout_seconds = 8     # abandon si rien n'est dit après l'appui
+threshold = "auto"            # "auto" ou un entier (RMS 0-32767)
+
+[output]
+# clipboard | type | stdout | none — combinables avec « + » (ex. "clipboard+type")
+mode = "clipboard"
+paste = false                 # colle automatiquement (nécessite wtype ou ydotool)
+notify = true
+history = true                # journal dans ~/.local/state/linux-whisper/history.log
+
+[overlay]
+enabled = true
+accent = "#e46212"
+width = 168
+height = 64
