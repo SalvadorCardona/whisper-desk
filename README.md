@@ -5,6 +5,10 @@ apparaît — un micro et trois points qui dansent au rythme de votre voix — e
 **s'écrit directement là où se trouve votre curseur**, phrase après phrase, pendant que
 vous parlez.
 
+Chaque point porte un instant différent de ce que capte le micro : l'onde traverse la
+pilule au rythme réel de la parole, sur une échelle en décibels — le silence laisse les
+points au repos, une voix ordinaire occupe le milieu de la course.
+
 <p align="center">
   <img src="docs/overlay-listening.png" alt="Overlay pendant l'écoute" width="336">
   &nbsp;&nbsp;
@@ -224,6 +228,19 @@ cd linux-whisper
 LW_SRC="$PWD" sh install.sh     # installe depuis le clone local, sans réseau
 ```
 
+### Tests
+
+La suite ne dépend que de la bibliothèque standard — ni environnement virtuel, ni modèle
+à télécharger :
+
+```sh
+python3 -m unittest discover -s tests -t .
+```
+
+Elle couvre ce qui se vérifie sans micro ni serveur graphique : mesure du niveau sonore,
+découpage des phrases, fin d'enregistrement, fusion de la configuration, modes de sortie
+et pilotage de la fenêtre d'écoute.
+
 | Fichier | Rôle |
 |---|---|
 | `src/linux_whisper/daemon.py` | service, socket Unix, écoute et transcription en parallèle |
@@ -233,6 +250,7 @@ LW_SRC="$PWD" sh install.sh     # installe depuis le clone local, sans réseau
 | `src/linux_whisper/output.py` | insertion au curseur, presse-papiers, notifications |
 | `src/linux_whisper/overlay.py` | overlay X11 (processus séparé) |
 | `src/linux_whisper/hotkey.py` | raccourci global via `gsettings` |
+| `tests/` | suite `unittest`, sans dépendance externe |
 | `install.sh` | installation et mise à jour |
 
 ## Licence

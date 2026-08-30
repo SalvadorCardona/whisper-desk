@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import array
 import math
 import subprocess
+import sys
 import threading
 import time
 from typing import Any, Callable
@@ -13,24 +15,39 @@ CHANNELS = 1
 SAMPLE_WIDTH = 2
 CHUNK_SAMPLES = 1600           # 100 ms
 CHUNK_BYTES = CHUNK_SAMPLES * SAMPLE_WIDTH
+CHUNKS_PER_SECOND = RATE / CHUNK_SAMPLES
 NOISE_CHUNKS = 4               # 400 ms de bruit de fond pour calibrer le seuil
 MIN_THRESHOLD = 180.0
 MIN_SEGMENT_CHUNKS = 4         # en deçà de 400 ms, ce n'est pas une phrase
 SILENT_INPUT_PEAK = 30.0       # sous ce pic, l'entrée est muette, pas discrète
+# Marge gardée après la dernière voix, pour ne pas couper une fin de mot.
+TRIM_MARGIN_SECONDS = 0.3
+# Dynamique affichée par l'overlay, du seuil de parole au cri.
+LEVEL_RANGE_DB = 36.0
 
 
 def _rms(chunk: bytes) -> float:
     """RMS d'un buffer PCM s16le, sans dépendre de numpy."""
-    count = len(chunk) // 2
-    if count == 0:
+    samples = array.array("h")
+    samples.frombytes(chunk[: len(chunk) - len(chunk) % SAMPLE_WIDTH])
+    if not samples:
         return 0.0
-    total = 0
-    for index in range(0, count * 2, 2):
-        value = chunk[index] | (chunk[index + 1] << 8)
-        if value >= 0x8000:
-            value -= 0x10000
-        total += value * value
-    return math.sqrt(total / count)
+    if sys.byteorder == "big":
+        samples.byteswap()
+    return math.sqrt(sum(sample * sample for sample in samples) / len(samples))
+
+
+def visual_level(level: float, threshold: float) -> float:
+    """RMS -> 0..1 pour l'overlay, en décibels au-dessus du seuil de parole.
+
+    L'œil suit l'oreille : une échelle linéaire écrase la parole ordinaire tout
+    en bas de la jauge et sature sur les pics. En décibels, le silence reste à
+    zéro et toute la course sert à ce qui s'entend vraiment.
+    """
+    if level <= 0.0 or threshold <= 0.0:
+        return 0.0
+    decibels = 20.0 * math.log10(level / threshold)
+    return max(0.0, min(decibels / LEVEL_RANGE_DB, 1.0))
 
 
 class Recorder:
@@ -111,7 +128,7 @@ class Recorder:
                     continue
 
                 if self.on_level:
-                    self.on_level(min(level / (threshold * 4.0), 1.0))
+                    self.on_level(visual_level(level, threshold))
 
                 if level >= threshold:
                     speaking = True
@@ -143,19 +160,22 @@ class Recorder:
 
         if not spoke_once:
             return b""
+        # On ne rogne la fin que si l'écoute s'est arrêtée sur un silence : à
+        # l'arrêt manuel, l'utilisateur vient de parler et couper ici lui
+        # mangerait sa dernière seconde et demie.
+        trailing = silence_seconds if self.reason == "silence" else 0.0
         if streaming:
             # Le reste éventuel après la dernière pause.
-            return self._slice(frames, segment_start, silence_seconds)
-        return self._slice(frames, 0, silence_seconds if self.reason == "silence" else 0.0)
+            return self._slice(frames, segment_start, trailing)
+        return self._slice(frames, 0, trailing)
 
     @staticmethod
     def _slice(frames: list[bytes], start: int, trailing_silence: float) -> bytes:
         """Extrait les trames depuis `start`, sans la queue de silence."""
         chunks = frames[start:]
-        if trailing_silence:
-            # 10 trames par seconde ; on garde 300 ms de marge après la voix.
-            keep = max(len(chunks) - int((trailing_silence - 0.3) * 10), 0)
-            chunks = chunks[:keep]
+        if trailing_silence > TRIM_MARGIN_SECONDS:
+            drop = int((trailing_silence - TRIM_MARGIN_SECONDS) * CHUNKS_PER_SECOND)
+            chunks = chunks[: max(len(chunks) - drop, 0)]
         if len(chunks) < MIN_SEGMENT_CHUNKS:
             return b""
         return b"".join(chunks)

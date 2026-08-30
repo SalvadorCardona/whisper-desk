@@ -158,11 +158,16 @@ def notify(summary: str, body: str = "") -> None:
 
 
 def log_history(text: str) -> None:
+    # Les phrases suivantes arrivent précédées d'une espace de liaison, qui n'a
+    # pas de sens une fois la ligne isolée dans le journal.
+    entry = text.strip()
+    if not entry:
+        return
     try:
         config_module.STATE_DIR.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now().isoformat(timespec="seconds")
         with (config_module.STATE_DIR / "history.log").open("a", encoding="utf-8") as handle:
-            handle.write(f"{stamp}\t{text}\n")
+            handle.write(f"{stamp}\t{entry}\n")
     except OSError as error:
         logger.warning("Historique non écrit : %s", error)
 
