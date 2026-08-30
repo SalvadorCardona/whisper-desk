@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import base64
+import codecs
 import logging
 import shutil
 import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from . import config as config_module
-from .inject import VirtualKeyboard, parse_shortcut
+from . import host
+from .inject import keyboard, resolve_shortcut
 from .overlay_proc import system_python
 
 logger = logging.getLogger("linux-whisper.output")
@@ -23,13 +26,13 @@ PASTE_SETTLE_SECONDS = 0.25
 CLIPBOARD_SETTLE_SECONDS = 0.12
 
 
-def _run(command: list[str], text_input: str | None = None) -> bool:
+def _run(command: list[str], data: bytes | None = None) -> bool:
     try:
         # Pas de capture_output : wl-copy se détache pour servir la sélection et
         # hériterait des tubes, ce qui bloquerait l'attente jusqu'au délai maximum.
         subprocess.run(
             command,
-            input=text_input.encode() if text_input is not None else None,
+            input=data,
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -49,12 +52,107 @@ def _capture(command: list[str]) -> str | None:
         return None
 
 
+# -- presse-papiers, un chemin par hôte --------------------------------------
+#
+# Chaque fonction retourne False si son outil n'est pas là, pour laisser la
+# suivante tenter sa chance ; les lecteurs retournent None de la même façon.
+
+
+def _set_wayland(text: str) -> bool:
+    return bool(shutil.which("wl-copy")) and _run(["wl-copy", "--", text])
+
+
+def _set_xclip(text: str) -> bool:
+    return bool(shutil.which("xclip")) and _run(
+        ["xclip", "-selection", "clipboard"], text.encode()
+    )
+
+
+def _set_xsel(text: str) -> bool:
+    return bool(shutil.which("xsel")) and _run(
+        ["xsel", "--clipboard", "--input"], text.encode()
+    )
+
+
+def _set_macos(text: str) -> bool:
+    return bool(shutil.which("pbcopy")) and _run(["pbcopy"], text.encode())
+
+
+def _set_windows(text: str) -> bool:
+    """clip.exe reconnaît l'UTF-16LE à sa marque d'ordre : sans elle, les accents tombent."""
+    clip = shutil.which("clip.exe")
+    if clip and _run([clip], codecs.BOM_UTF16_LE + text.encode("utf-16-le")):
+        return True
+    if not host.has_windows_interop():
+        return False
+    # Repli sans clip.exe : le texte voyage en base64, pur ASCII, donc à l'abri
+    # des pages de codes de la console Windows.
+    payload = base64.b64encode(text.encode("utf-8")).decode("ascii")
+    script = (
+        "Set-Clipboard -Value ([Text.Encoding]::UTF8.GetString("
+        f"[Convert]::FromBase64String('{payload}')))"
+    )
+    return host.run_powershell(script) is not None
+
+
+def _get_wayland() -> str | None:
+    return _capture(["wl-paste", "--no-newline"]) if shutil.which("wl-paste") else None
+
+
+def _get_xclip() -> str | None:
+    return _capture(["xclip", "-selection", "clipboard", "-o"]) if shutil.which("xclip") else None
+
+
+def _get_xsel() -> str | None:
+    return _capture(["xsel", "--clipboard", "--output"]) if shutil.which("xsel") else None
+
+
+def _get_macos() -> str | None:
+    return _capture(["pbpaste"]) if shutil.which("pbpaste") else None
+
+
+def _get_windows() -> str | None:
+    text = host.run_powershell("Get-Clipboard -Raw")
+    if text is None:
+        return None
+    # Get-Clipboard ajoute une fin de ligne, et Windows sépare en CRLF.
+    return text.replace("\r\n", "\n").rstrip("\n")
+
+
+SETTERS: dict[str, tuple[Callable[[str], bool], ...]] = {
+    host.LINUX: (_set_wayland, _set_xclip, _set_xsel),
+    host.WSL: (_set_windows, _set_wayland, _set_xclip, _set_xsel),
+    host.MACOS: (_set_macos,),
+}
+
+GETTERS: dict[str, tuple[Callable[[], str | None], ...]] = {
+    host.LINUX: (_get_wayland, _get_xclip, _get_xsel),
+    host.WSL: (_get_windows, _get_wayland, _get_xclip, _get_xsel),
+    host.MACOS: (_get_macos,),
+}
+
+# Outils à installer, cités par le diagnostic et l'installeur.
+CLIPBOARD_TOOLS: dict[str, tuple[str, ...]] = {
+    host.LINUX: ("wl-copy", "xclip", "xsel"),
+    host.WSL: ("clip.exe", "wl-copy", "xclip", "xsel"),
+    host.MACOS: ("pbcopy",),
+}
+
+
+def clipboard_tool() -> str | None:
+    """Le premier outil de presse-papiers présent, pour le diagnostic."""
+    for tool in CLIPBOARD_TOOLS[host.name()]:
+        if shutil.which(tool):
+            return tool
+    return None
+
+
 class Clipboard:
     """Presse-papiers, avec sauvegarde et restitution du contenu de l'utilisateur.
 
-    Trois chemins, du plus fiable au plus débrouillard : les outils dédiés
-    (wl-clipboard, xclip), puis la fenêtre de l'overlay — sous Wayland seul un
-    client à fenêtre peut poser une sélection, et l'overlay en a une.
+    Du plus fiable au plus débrouillard : les outils de l'hôte (wl-clipboard,
+    xclip, pbcopy, clip.exe), puis la fenêtre de l'overlay — sous Wayland seul
+    un client à fenêtre peut poser une sélection, et l'overlay en a une.
     """
 
     def __init__(self, overlay: Any = None):
@@ -66,25 +164,23 @@ class Clipboard:
         if self._has_saved:
             return
         self._has_saved = True
-        if shutil.which("wl-paste"):
-            self._saved = _capture(["wl-paste", "--no-newline"])
-        elif shutil.which("xclip"):
-            self._saved = _capture(["xclip", "-selection", "clipboard", "-o"])
-        elif self.overlay is not None and self.overlay.save_clipboard():
+        for getter in GETTERS[host.name()]:
+            saved = getter()
+            if saved is not None:
+                self._saved = saved
+                return
+        if self.overlay is not None and self.overlay.save_clipboard():
             self._saved = None  # mémorisé côté overlay
-        else:
-            logger.debug("Presse-papiers non sauvegardé : aucun lecteur disponible.")
+            return
+        logger.debug("Presse-papiers non sauvegardé : aucun lecteur disponible.")
 
     def set(self, text: str) -> bool:
-        if shutil.which("wl-copy"):
-            return _run(["wl-copy", "--", text])
-        if shutil.which("xclip"):
-            return _run(["xclip", "-selection", "clipboard"], text)
-        if shutil.which("xsel"):
-            return _run(["xsel", "--clipboard", "--input"], text)
+        for setter in SETTERS[host.name()]:
+            if setter(text):
+                return True
         if self.overlay is not None and self.overlay.copy(text):
             return True
-        return _run([system_python(), str(CLIPBOARD_HELPER)], text)
+        return _run([system_python(), str(CLIPBOARD_HELPER)], text.encode())
 
     def restore(self) -> None:
         if not self._has_saved:
@@ -108,8 +204,8 @@ class CursorWriter:
     def __init__(self, config: dict[str, Any], overlay: Any = None):
         self.settings = config["output"]
         self.clipboard = Clipboard(overlay)
-        self.keyboard = VirtualKeyboard()
-        self.shortcut = parse_shortcut(str(self.settings["paste_shortcut"])) or ["ctrl", "v"]
+        self.keyboard = keyboard(str(self.settings["keyboard"]))
+        self.shortcut = resolve_shortcut(str(self.settings["paste_shortcut"]))
 
     def prepare(self) -> None:
         """Crée le clavier virtuel à l'avance : le compositeur met ~0,6 s à le voir."""
@@ -144,17 +240,31 @@ def copy(text: str, overlay: Any = None) -> bool:
     return Clipboard(overlay).set(text)
 
 
+def _applescript_string(text: str) -> str:
+    """Chaîne AppleScript : seuls le backslash et le guillemet s'échappent."""
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 def notify(summary: str, body: str = "") -> None:
-    if not shutil.which("notify-send"):
+    """Notification de bureau, quand l'hôte sait en afficher une."""
+    if shutil.which("notify-send"):
+        _run([
+            "notify-send",
+            "--app-name=linux-whisper",
+            "--icon=audio-input-microphone-symbolic",
+            "--expire-time=3000",
+            summary,
+            body,
+        ])
         return
-    _run([
-        "notify-send",
-        "--app-name=linux-whisper",
-        "--icon=audio-input-microphone-symbolic",
-        "--expire-time=3000",
-        summary,
-        body,
-    ])
+    if host.is_macos() and shutil.which("osascript"):
+        script = (
+            f"display notification {_applescript_string(body)} "
+            f"with title {_applescript_string(summary)}"
+        )
+        _run(["osascript", "-e", script])
+        return
+    logger.debug("Notification ignorée : aucun afficheur disponible.")
 
 
 def log_history(text: str) -> None:

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 import socket
-import subprocess
 import time
 from typing import Any
 
+from . import service
 from .daemon import socket_path
 
 
@@ -25,7 +25,7 @@ def _connect(timeout: float) -> socket.socket:
 def send(command: str, timeout: float = 300.0, autostart: bool = True) -> dict[str, Any]:
     """Envoie une commande au daemon, en le démarrant au besoin."""
     unreachable = DaemonUnavailable(
-        "daemon injoignable — lancez « systemctl --user start linux-whisper »"
+        f"daemon injoignable — lancez « {service.hint()} »"
     )
     try:
         client = _connect(timeout)
@@ -51,15 +51,8 @@ def send(command: str, timeout: float = 300.0, autostart: bool = True) -> dict[s
 
 
 def _start_daemon() -> bool:
-    """Démarre le service systemd utilisateur puis attend la socket."""
-    try:
-        subprocess.run(
-            ["systemctl", "--user", "start", "linux-whisper.service"],
-            check=True,
-            capture_output=True,
-            timeout=15,
-        )
-    except (OSError, subprocess.SubprocessError):
+    """Démarre le daemon (systemd, launchd ou processus détaché) puis attend la socket."""
+    if not service.start():
         return False
     for _ in range(40):
         if socket_path().exists():

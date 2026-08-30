@@ -1,14 +1,21 @@
-"""Capture micro via arecord + détection de silence (VAD par énergie)."""
+"""Capture micro + détection de silence (VAD par énergie).
+
+L'outil de capture dépend de l'hôte (arecord, parec, rec/sox, ffmpeg) :
+le module `capture` s'en charge, on ne voit ici qu'un flux PCM s16le.
+"""
 
 from __future__ import annotations
 
 import array
 import math
+import os
 import subprocess
 import sys
 import threading
 import time
 from typing import Any, Callable
+
+from . import capture
 
 RATE = 16000
 CHANNELS = 1
@@ -66,6 +73,8 @@ class Recorder:
         self._stop = threading.Event()
         self._process: subprocess.Popen[bytes] | None = None
         self.reason = "unknown"
+        # Outil de capture réellement employé, renseigné au lancement.
+        self.backend = ""
         # Niveau maximal rencontré : sert à distinguer « il n'a rien dit »
         # de « le micro ne capte rien du tout ».
         self.peak = 0.0
@@ -75,18 +84,16 @@ class Recorder:
 
     def record(self) -> bytes:
         """Bloque jusqu'à la fin de la capture et retourne le PCM brut (s16le 16 kHz mono)."""
-        command = [
-            "arecord",
-            "-D", str(self.config["device"]),
-            "-f", "S16_LE",
-            "-r", str(RATE),
-            "-c", str(CHANNELS),
-            "-t", "raw",
-            "-q",
-            "-",
-        ]
+        source = capture.build(
+            str(self.config["device"]), RATE, CHANNELS, str(self.config["backend"])
+        )
+        self.backend = source.name
         self._process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0
+            source.command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            bufsize=0,
+            env={**os.environ, **source.env} if source.env else None,
         )
         assert self._process.stdout is not None
 
