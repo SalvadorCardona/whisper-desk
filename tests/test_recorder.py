@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import array
+import contextlib
 import math
 import unittest
+from unittest import mock
 
 from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
 
-from linux_whisper import recorder
+from linux_whisper import capture, recorder
 from linux_whisper.recorder import (
     CHUNK_BYTES,
     MIN_SEGMENT_CHUNKS,
@@ -134,6 +136,21 @@ class FakeProcess:
         self.terminated = True
 
 
+@contextlib.contextmanager
+def fake_capture(process: "FakeProcess"):
+    """Remplace l'outil de capture par un flux joué d'avance.
+
+    La commande construite n'est pas le sujet ici (test_capture s'en charge) :
+    la court-circuiter évite d'exiger arecord sur la machine de test.
+    """
+    with mock.patch.object(recorder.subprocess, "Popen", lambda *a, **k: process), \
+            mock.patch.object(
+                recorder.capture, "build",
+                lambda *a, **k: capture.Capture("faux", ["faux"]),
+            ):
+        yield
+
+
 class RecordTest(unittest.TestCase):
     """L'arrêt manuel ne doit pas manger la fin de la dictée."""
 
@@ -146,6 +163,7 @@ class RecordTest(unittest.TestCase):
             "silence_seconds": 2.0,
             "start_timeout_seconds": 0,
             "threshold": 300,
+            "backend": "auto",
         }
         settings.update(overrides)
         return {"recording": settings}
@@ -157,12 +175,8 @@ class RecordTest(unittest.TestCase):
         )
         stdout = FakeStdout(chunks, on_exhausted=instance.stop if stop_at_end else None)
         process = FakeProcess(stdout)
-        original = recorder.subprocess.Popen
-        recorder.subprocess.Popen = lambda *a, **k: process
-        try:
+        with fake_capture(process):
             tail = instance.record()
-        finally:
-            recorder.subprocess.Popen = original
         return instance, tail, segments
 
     def test_arret_manuel_garde_toute_la_parole(self):
@@ -190,12 +204,8 @@ class RecordTest(unittest.TestCase):
         levels: list[float] = []
         instance = Recorder(self.config(), on_level=levels.append, on_segment=lambda _s: None)
         stdout = FakeStdout([tone(9000)] * 12, on_exhausted=instance.stop)
-        original = recorder.subprocess.Popen
-        recorder.subprocess.Popen = lambda *a, **k: FakeProcess(stdout)
-        try:
+        with fake_capture(FakeProcess(stdout)):
             instance.record()
-        finally:
-            recorder.subprocess.Popen = original
         self.assertTrue(levels)
         self.assertTrue(all(0.0 <= level <= 1.0 for level in levels))
         self.assertGreater(max(levels), 0.0)

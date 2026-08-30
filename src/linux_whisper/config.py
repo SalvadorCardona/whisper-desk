@@ -13,15 +13,27 @@ def _xdg(var: str, fallback: str) -> Path:
     return Path(value) if value else Path.home() / fallback
 
 
+def _runtime_dir() -> Path:
+    """Dossier des sockets : XDG sous Linux, TMPDIR privé sous macOS, /tmp sinon."""
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime:
+        return Path(runtime)
+    tmp = os.environ.get("TMPDIR")
+    return Path(tmp) if tmp else Path("/tmp")
+
+
 CONFIG_DIR = _xdg("XDG_CONFIG_HOME", ".config") / "linux-whisper"
 CONFIG_PATH = CONFIG_DIR / "config.toml"
 STATE_DIR = _xdg("XDG_STATE_HOME", ".local/state") / "linux-whisper"
 DATA_DIR = Path.home() / ".local/share/linux-whisper"
+RUNTIME_DIR = _runtime_dir()
 
 DEFAULTS: dict[str, Any] = {
     "hotkey": {
-        # Raccourci global enregistré dans GNOME. Syntaxe GTK : <Super>, <Ctrl>, <Alt>, <Shift>.
-        "binding": "<Super>j",
+        # Raccourci global. Syntaxe GTK : <Super>, <Ctrl>, <Alt>, <Shift>.
+        # "auto" -> <Super>j, sauf sous WSL où Windows réserve la touche Windows
+        # aux raccourcis système : <Ctrl><Alt>j.
+        "binding": "auto",
         "name": "linux-whisper",
         # "toggle" : 1er appui = écoute, 2e appui = transcription.
         "action": "toggle",
@@ -38,7 +50,9 @@ DEFAULTS: dict[str, Any] = {
         "preload": True,
     },
     "recording": {
-        "device": "default",       # périphérique ALSA
+        "device": "default",       # périphérique du backend de capture
+        # auto | arecord | parec | rec | sox | ffmpeg
+        "backend": "auto",
         "max_seconds": 120,
         # Dictée au fil de l'eau : chaque phrase est transcrite et insérée
         # dès que vous marquez une petite pause, sans arrêter l'écoute.
@@ -55,8 +69,12 @@ DEFAULTS: dict[str, Any] = {
         # cursor | clipboard | stdout | none  (combinables : "cursor+stdout")
         "mode": "cursor",
         # Raccourci de collage envoyé au clavier virtuel pour insérer le texte.
-        # « ctrl+v » partout, « shift+insert » si vous dictez surtout en terminal.
-        "paste_shortcut": "ctrl+v",
+        # "auto" -> cmd+v sur macOS, ctrl+v ailleurs ; « shift+insert » si vous
+        # dictez surtout dans un terminal.
+        "paste_shortcut": "auto",
+        # Comment la frappe du raccourci de collage est envoyée.
+        # auto | uinput (Linux) | windows (WSL) | applescript (macOS) | none
+        "keyboard": "auto",
         # Remet votre presse-papiers d'origine à la fin de la dictée.
         "restore_clipboard": True,
         "notify": False,

@@ -7,11 +7,16 @@ on:
 
 jobs:
   unittest:
-    runs-on: ubuntu-latest
+    # macOS fait partie des hôtes gérés : la suite doit y passer aussi.
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         python-version: ["3.11", "3.12", "3.13"]
+        include:
+          - os: macos-latest
+            python-version: "3.12"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,3 +27,5 @@ jobs:
         run: python -m unittest discover -s tests -t . -v
       - name: Compilation de tous les modules
         run: python -m compileall -q src
+      - name: Syntaxe des scripts d'installation
+        run: sh -n install.sh && sh -n uninstall.sh

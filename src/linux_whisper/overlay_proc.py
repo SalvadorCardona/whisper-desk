@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import functools
 import logging
 import os
 import shutil
@@ -21,6 +22,24 @@ def system_python() -> str:
     return os.environ.get("LW_SYSTEM_PYTHON") or shutil.which("python3") or "/usr/bin/python3"
 
 
+@functools.cache
+def gtk_available() -> bool:
+    """Le Python système a-t-il PyGObject + GTK3 ?
+
+    Sur macOS, et sur un Linux sans python3-gi, la réponse est non : mieux vaut
+    le savoir une fois que lancer un processus condamné à chaque dictée.
+    """
+    try:
+        return subprocess.run(
+            [system_python(), "-c",
+             "import gi; gi.require_version('Gtk','3.0'); from gi.repository import Gtk"],
+            capture_output=True,
+            timeout=20,
+        ).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 class OverlayProcess:
     """Fenêtre d'écoute lancée à la demande, pilotée par des lignes sur stdin."""
 
@@ -34,6 +53,9 @@ class OverlayProcess:
 
     def start(self) -> None:
         if not self.config["enabled"] or self._process is not None:
+            return
+        if not gtk_available():
+            logger.debug("Overlay ignoré : GTK3 absent du Python système.")
             return
         command = [
             system_python(),

@@ -58,11 +58,13 @@ class LoadTest(unittest.TestCase):
         config = config_module.load(Path("/inexistant"))
         attendues = {
             "recording": {
-                "device", "max_seconds", "streaming", "segment_silence_seconds",
-                "silence_seconds", "start_timeout_seconds", "threshold",
+                "device", "backend", "max_seconds", "streaming",
+                "segment_silence_seconds", "silence_seconds",
+                "start_timeout_seconds", "threshold",
             },
             "output": {
-                "mode", "paste_shortcut", "restore_clipboard", "notify", "history",
+                "mode", "paste_shortcut", "keyboard", "restore_clipboard",
+                "notify", "history",
             },
             "overlay": {"enabled", "accent", "width", "height", "position", "margin"},
             "model": {

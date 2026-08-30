@@ -17,7 +17,9 @@ from pathlib import Path
 from typing import Any
 
 from . import config as config_module
+from . import host
 from . import output
+from .capture import CaptureUnavailable
 from .overlay_proc import OverlayProcess
 from .recorder import SILENT_INPUT_PEAK, Recorder
 from .transcriber import Transcriber
@@ -26,8 +28,14 @@ logger = logging.getLogger("linux-whisper.daemon")
 
 
 def socket_path() -> Path:
-    runtime = os.environ.get("XDG_RUNTIME_DIR")
-    base = Path(runtime) if runtime else Path("/tmp")
+    """La socket du daemon, dans le dossier d'exécution de l'hôte.
+
+    XDG_RUNTIME_DIR sous Linux, TMPDIR (privé) sous macOS ; à défaut /tmp, qui
+    est partagé — on y ajoute donc l'identifiant de l'utilisateur.
+    """
+    base = config_module.RUNTIME_DIR
+    if base == Path("/tmp"):
+        return base / f"linux-whisper-{os.getuid()}.sock"
     return base / "linux-whisper.sock"
 
 
@@ -78,6 +86,11 @@ class Session:
             self.text = " ".join(self.parts)
             if not self.parts:
                 self._report_silence()
+        except CaptureUnavailable as error:
+            # Un outil à installer, pas un bogue : inutile d'étaler une trace.
+            self.error = str(error)
+            logger.error("Capture impossible : %s", error)
+            output.notify("linux-whisper : micro inutilisable", str(error))
         except Exception as error:  # le daemon ne doit jamais mourir sur une dictée
             self.error = str(error)
             logger.exception("Dictée en échec")
@@ -95,9 +108,9 @@ class Session:
         device = self.service.config["recording"]["device"]
         if peak < SILENT_INPUT_PEAK:
             logger.warning(
-                "Aucun son capté sur le micro « %s » (pic %.0f) — périphérique muet "
-                "ou mauvaise source par défaut ; voir « linux-whisper doctor ».",
-                device, peak,
+                "Aucun son capté sur le micro « %s » via %s (pic %.0f) — périphérique "
+                "muet ou mauvaise source par défaut ; voir « linux-whisper doctor ».",
+                device, self.recorder.backend or "?", peak,
             )
             output.notify(
                 "linux-whisper : micro muet",
@@ -180,6 +193,7 @@ class Service:
     def status(self) -> dict[str, Any]:
         return {
             "state": self.state,
+            "host": host.name(),
             "model": self.transcriber.model_name,
             "device": self.transcriber.device,
             "compute_type": self.transcriber.compute_type,
@@ -292,7 +306,7 @@ def serve() -> int:
     if config["model"]["preload"]:
         threading.Thread(target=service._preload, daemon=True).start()
 
-    logger.info("À l'écoute sur %s", path)
+    logger.info("À l'écoute sur %s (%s)", path, host.label())
     try:
         server.serve_forever()
     except KeyboardInterrupt:

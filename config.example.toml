@@ -3,7 +3,9 @@
 
 [hotkey]
 # Syntaxe GTK : <Super>, <Ctrl>, <Alt>, <Shift>. Ex. "<Super><Shift>d", "<Ctrl><Alt>space".
-binding = "<Super>j"
+# "auto" : <Super>j — mais <Ctrl><Alt>j sous WSL, Windows se réservant la
+# touche Windows et n'acceptant de raccourci global qu'en Ctrl+Alt.
+binding = "auto"
 name = "linux-whisper"
 # Appliquer un changement de raccourci : linux-whisper hotkey install
 action = "toggle"
@@ -22,7 +24,10 @@ initial_prompt = ""
 preload = true
 
 [recording]
-device = "default"              # périphérique ALSA (voir : arecord -L)
+device = "default"              # périphérique de capture (arecord -L, pactl list sources)
+# Outil de capture. "auto" prend le premier disponible sur l'hôte :
+# arecord (Linux), parec (WSLg), rec/sox puis ffmpeg (macOS).
+backend = "auto"
 max_seconds = 120
 # Dictée au fil de l'eau : chaque phrase est transcrite et insérée dès que vous
 # marquez une petite pause, sans interrompre l'écoute.
@@ -39,14 +44,19 @@ threshold = "auto"              # "auto" ou un entier (RMS 0-32767)
 # Combinables avec « + », ex. "cursor+stdout".
 mode = "cursor"
 # Raccourci envoyé au clavier virtuel pour insérer le texte.
+# "auto" : cmd+v sur macOS, ctrl+v ailleurs.
 # "shift+insert" si vous dictez surtout dans un terminal (Ctrl+V y est autre chose).
-paste_shortcut = "ctrl+v"
+paste_shortcut = "auto"
+# Comment cette frappe est envoyée. "auto" suit l'hôte :
+# uinput (Linux), windows/SendKeys (WSL), applescript (macOS). "none" désactive.
+keyboard = "auto"
 # Rend votre presse-papiers d'origine à la fin de la dictée.
 restore_clipboard = true
 notify = false                  # notification à chaque transcription
 history = true                  # journal dans ~/.local/state/linux-whisper/history.log
 
 [overlay]
+# Ignoré si le Python système n'a pas PyGObject + GTK3 (cas courant sur macOS).
 enabled = true
 accent = "#e46212"
 width = 168
