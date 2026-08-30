@@ -16,6 +16,7 @@ import fcntl
 import logging
 import os
 import struct
+import threading
 import time
 from typing import Iterable
 
@@ -62,42 +63,51 @@ class VirtualKeyboard:
     def __init__(self, name: str = "linux-whisper virtual keyboard"):
         self.name = name
         self._fd: int | None = None
+        # prepare() ouvre le clavier dans un fil pendant que l'utilisateur parle,
+        # write() s'en sert depuis un autre : le verrou fait attendre le second
+        # jusqu'au bout du délai de prise en compte, sinon le premier collage
+        # part vers un périphérique que le compositeur n'a pas encore vu.
+        self._lock = threading.RLock()
 
     @property
     def available(self) -> bool:
         return os.access(UINPUT_DEVICE, os.W_OK)
 
     def open(self) -> bool:
-        if self._fd is not None:
+        with self._lock:
+            if self._fd is not None:
+                return True
+            if not self.available:
+                logger.warning("%s inaccessible en écriture : insertion impossible.", UINPUT_DEVICE)
+                return False
+            try:
+                fd = os.open(UINPUT_DEVICE, os.O_WRONLY | os.O_NONBLOCK)
+                fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
+                for code in DECLARED_KEYS:
+                    fcntl.ioctl(fd, UI_SET_KEYBIT, code)
+                # struct uinput_setup : input_id (bustype, vendor, product, version), name[80], ff_effects_max
+                setup = struct.pack(
+                    "<4H80sI", 0x03, 0x1D6B, 0x0001, 0x0001, self.name.encode()[:79], 0
+                )
+                fcntl.ioctl(fd, UI_DEV_SETUP, setup)
+                fcntl.ioctl(fd, UI_DEV_CREATE)
+            except OSError as error:
+                logger.warning("Clavier virtuel indisponible : %s", error)
+                return False
+            time.sleep(DEVICE_SETTLE_SECONDS)
+            self._fd = fd
             return True
-        if not self.available:
-            logger.warning("%s inaccessible en écriture : insertion impossible.", UINPUT_DEVICE)
-            return False
-        try:
-            fd = os.open(UINPUT_DEVICE, os.O_WRONLY | os.O_NONBLOCK)
-            fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
-            for code in DECLARED_KEYS:
-                fcntl.ioctl(fd, UI_SET_KEYBIT, code)
-            # struct uinput_setup : input_id (bustype, vendor, product, version), name[80], ff_effects_max
-            setup = struct.pack("<4H80sI", 0x03, 0x1D6B, 0x0001, 0x0001, self.name.encode()[:79], 0)
-            fcntl.ioctl(fd, UI_DEV_SETUP, setup)
-            fcntl.ioctl(fd, UI_DEV_CREATE)
-        except OSError as error:
-            logger.warning("Clavier virtuel indisponible : %s", error)
-            return False
-        self._fd = fd
-        time.sleep(DEVICE_SETTLE_SECONDS)
-        return True
 
     def close(self) -> None:
-        fd, self._fd = self._fd, None
-        if fd is None:
-            return
-        try:
-            fcntl.ioctl(fd, UI_DEV_DESTROY)
-        except OSError:
-            pass
-        os.close(fd)
+        with self._lock:
+            fd, self._fd = self._fd, None
+            if fd is None:
+                return
+            try:
+                fcntl.ioctl(fd, UI_DEV_DESTROY)
+            except OSError:
+                pass
+            os.close(fd)
 
     def _emit(self, event_type: int, code: int, value: int) -> None:
         assert self._fd is not None
@@ -110,23 +120,24 @@ class VirtualKeyboard:
 
     def press(self, keys: Iterable[str], hold: float = 0.02) -> bool:
         """Enfonce puis relâche une combinaison, ex. ("ctrl", "v")."""
-        if not self.open():
-            return False
         codes = [KEY_CODES[key] for key in keys if key in KEY_CODES]
         if not codes:
             return False
-        try:
-            for code in codes:
-                self._emit(EV_KEY, code, 1)
-            self._sync()
-            time.sleep(hold)
-            for code in reversed(codes):
-                self._emit(EV_KEY, code, 0)
-            self._sync()
-        except OSError as error:
-            logger.warning("Envoi de touches impossible : %s", error)
-            self.close()
-            return False
+        with self._lock:
+            if not self.open():
+                return False
+            try:
+                for code in codes:
+                    self._emit(EV_KEY, code, 1)
+                self._sync()
+                time.sleep(hold)
+                for code in reversed(codes):
+                    self._emit(EV_KEY, code, 0)
+                self._sync()
+            except OSError as error:
+                logger.warning("Envoi de touches impossible : %s", error)
+                self.close()
+                return False
         return True
 
 

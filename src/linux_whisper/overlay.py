@@ -5,7 +5,7 @@ Processus autonome lancé par le daemon avec le Python système (le seul qui a
 PyGObject). Il lit ses ordres sur stdin, une commande par ligne :
 
     state listening | state working    changement d'état
-    level 0.42                         niveau audio courant (0..1)
+    level 0.42                         niveau de voix courant (0..1, échelle dB)
     copy <base64>                      pose le texte dans le presse-papiers
     saveclip | restoreclip             mémorise / rend le presse-papiers d'origine
     quit                               fermeture
@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import collections
 import math
 import os
 import sys
@@ -46,6 +47,13 @@ MARGIN = 96
 DOT_COUNT = 3
 DOT_SIZE = 9
 MIC_SIZE = 24
+
+# Chaque point porte une mesure de voix différente : la plus fraîche près du
+# micro, les plus anciennes vers la droite. L'onde traverse donc la pilule au
+# rythme réel de la parole, au lieu d'osciller toute d'un bloc.
+DOT_TRAVEL_BASE = 2.5      # respiration au repos, en pixels
+DOT_TRAVEL_VOICE = 10.0    # course ajoutée à pleine voix, en pixels
+LEVEL_SMOOTHING = 0.25     # lissage exponentiel, par image
 
 CSS_TEMPLATE = """
 #overlay-root {{
@@ -75,6 +83,11 @@ class Overlay(Gtk.Window):
         self._saved_clipboard: str | None = None
         self.level = 0.0
         self.smoothed = 0.0
+        # Une case par point : le niveau y est décalé d'un cran à chaque mesure.
+        self.history: collections.deque[float] = collections.deque(
+            [0.0] * DOT_COUNT, maxlen=DOT_COUNT
+        )
+        self.dot_levels = [0.0] * DOT_COUNT
         self.elapsed = 0.0
         self._last_frame: int | None = None
 
@@ -163,12 +176,20 @@ class Overlay(Gtk.Window):
         working = state == "working"
         for widget in (*self.dots, self.mic):
             context = widget.get_style_context()
-            context.add_class("working") if working else context.remove_class("working")
+            if working:
+                context.add_class("working")
+            else:
+                context.remove_class("working")
         if working:
             self.halo.set_opacity(0.0)
+            # Plus personne n'alimente les niveaux : on repart de zéro, sinon le
+            # retour à l'écoute rejouerait la dernière syllabe entendue.
+            self.level = 0.0
+            self.history.extend([0.0] * DOT_COUNT)
 
     def set_level(self, level: float) -> None:
         self.level = max(0.0, min(level, 1.0))
+        self.history.appendleft(self.level)
 
     def copy(self, text: str) -> None:
         """Pose le texte dans le presse-papiers (X11 : pas besoin du focus)."""
@@ -195,7 +216,9 @@ class Overlay(Gtk.Window):
             self.elapsed += (now - self._last_frame) / 1_000_000
         self._last_frame = now
         # Lissage exponentiel : la voix module l'animation sans à-coups.
-        self.smoothed += (self.level - self.smoothed) * 0.25
+        self.smoothed += (self.level - self.smoothed) * LEVEL_SMOOTHING
+        for index, target in enumerate(self.history):
+            self.dot_levels[index] += (target - self.dot_levels[index]) * LEVEL_SMOOTHING
 
         listening = self.state == "listening"
         if listening:
@@ -206,12 +229,13 @@ class Overlay(Gtk.Window):
             self.mic.set_opacity(0.7)
 
         speed = 5.0 if listening else 3.2
-        amplitude = 3.5 + 9.0 * self.smoothed if listening else 0.0
         for index, dot in enumerate(self.dots):
             wave = math.sin(self.elapsed * speed - index * 0.7)
             if listening:
-                self.canvas.move(dot, self.dot_x[index], int(self.center_y - wave * amplitude))
-                dot.set_opacity(0.65 + 0.35 * ((wave + 1) / 2))
+                voice = self.dot_levels[index]
+                travel = DOT_TRAVEL_BASE + DOT_TRAVEL_VOICE * voice
+                self.canvas.move(dot, self.dot_x[index], int(self.center_y - wave * travel))
+                dot.set_opacity(0.45 + 0.25 * ((wave + 1) / 2) + 0.30 * voice)
             else:
                 self.canvas.move(dot, self.dot_x[index], self.center_y)
                 dot.set_opacity(0.30 + 0.60 * max(wave, 0.0))

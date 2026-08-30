@@ -86,8 +86,7 @@ class Session:
             if self.writer:
                 self.writer.close()
             self.overlay.stop()
-            self.service.state = "idle"
-            self.service.session = None
+            self.service.finish(self)
             self.done.set()
 
     def _report_silence(self) -> None:
@@ -204,6 +203,13 @@ class Service:
         self.state = "recording"
         threading.Thread(target=session.run, daemon=True).start()
         return session
+
+    def finish(self, session: Session) -> None:
+        """Rend le service disponible, sous le même verrou que les commandes."""
+        with self.lock:
+            if self.session is session:
+                self.session = None
+            self.state = "idle"
 
     def _preload(self) -> None:
         try:

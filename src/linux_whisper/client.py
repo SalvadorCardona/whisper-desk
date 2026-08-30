@@ -24,14 +24,19 @@ def _connect(timeout: float) -> socket.socket:
 
 def send(command: str, timeout: float = 300.0, autostart: bool = True) -> dict[str, Any]:
     """Envoie une commande au daemon, en le démarrant au besoin."""
+    unreachable = DaemonUnavailable(
+        "daemon injoignable — lancez « systemctl --user start linux-whisper »"
+    )
     try:
         client = _connect(timeout)
     except OSError:
         if not autostart or not _start_daemon():
-            raise DaemonUnavailable(
-                "daemon injoignable — lancez « systemctl --user start linux-whisper »"
-            ) from None
-        client = _connect(timeout)
+            raise unreachable from None
+        try:
+            # La socket existe, mais le daemon peut avoir échoué juste après.
+            client = _connect(timeout)
+        except OSError:
+            raise unreachable from None
 
     try:
         client.sendall((json.dumps({"cmd": command}) + "\n").encode("utf-8"))
