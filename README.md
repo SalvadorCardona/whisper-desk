@@ -321,3 +321,8 @@ les trois depuis n'importe lequel.
 ## Licence
 
 MIT
+
+## Auteur
+
+Écrit et maintenu par [Salvador Cardona, développeur](https://cardona.digital) — treize ans
+de développement web, et les autres projets à la même adresse.
