@@ -18,8 +18,14 @@ device = "auto"          # auto | cuda | cpu
 compute_type = "auto"    # auto | float16 | int8_float16 | int8
 language = "fr"          # code ISO 639-1, ou "auto" pour la détection automatique
 beam_size = 5
-# Vocabulaire à privilégier (noms propres, jargon) :
+# Phrase d'amorce donnée au modèle (style, contexte général) :
 initial_prompt = ""
+# Termes que le modèle écorche — noms propres, outils, jargon — séparés par des
+# virgules. Ils sont poussés dans le décodeur à chaque phrase.
+vocabulary = ""
+# Repasse au modèle la fin de ce qui vient d'être dicté : une phrase isolée par
+# le découpage au fil de l'eau retrouve son contexte.
+context = true
 # Charge le modèle au démarrage du service : la première dictée est instantanée.
 preload = true
 

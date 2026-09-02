@@ -133,7 +133,7 @@ class Session:
             if not self.recording_over.is_set():
                 self.overlay.set_state("working")
             try:
-                text = self.service.transcriber.transcribe(segment)
+                text = self.service.transcriber.transcribe(segment, " ".join(self.parts))
             except Exception as error:
                 self.error = str(error)
                 logger.exception("Transcription en échec")

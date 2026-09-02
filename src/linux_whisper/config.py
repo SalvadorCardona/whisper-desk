@@ -46,6 +46,12 @@ DEFAULTS: dict[str, Any] = {
         "language": "fr",          # code ISO, ou "auto" pour détection
         "beam_size": 5,
         "initial_prompt": "",
+        # Termes que le modèle écorche : noms propres, outils, jargon métier.
+        # Une simple liste séparée par des virgules, poussée dans le décodeur.
+        "vocabulary": "",
+        # Repasse au modèle la fin de ce qui vient d'être dicté : une phrase
+        # isolée par le découpage au fil de l'eau retrouve son contexte.
+        "context": True,
         # Chargé au démarrage du daemon : la première dictée est instantanée.
         "preload": True,
     },

@@ -11,6 +11,45 @@ logger = logging.getLogger("linux-whisper.transcriber")
 
 GPU_MODEL = "large-v3-turbo"
 CPU_MODEL = "small"
+# Contexte repassé au modèle d'une phrase à la suivante : assez pour tenir le fil
+# d'une dictée découpée au fil de l'eau, trop court pour qu'il se mette à broder.
+CONTEXT_CHARS = 220
+# Au-delà, le modèle juge lui-même qu'il n'a rien entendu de parlé.
+NO_SPEECH_LIMIT = 0.6
+# Whisper a appris sur des sous-titres : quand il n'entend rien, il en recrache
+# les génériques. La phrase seule ne condamne pas — « merci » se dicte — mais
+# accompagnée d'un no_speech_prob élevé, c'est du remplissage.
+FILLERS = frozenset({
+    "sous-titres réalisés par la communauté d'amara.org",
+    "sous-titres réalisés par l'amara.org",
+    "sous-titrage société radio-canada",
+    "sous-titrage st' 501",
+    "merci d'avoir regardé cette vidéo",
+    "merci d'avoir regardé la vidéo",
+    "abonnez-vous",
+    "n'oubliez pas de vous abonner",
+    "à la prochaine",
+    "merci",
+    "merci beaucoup",
+    "au revoir",
+    "thank you",
+    "thanks for watching",
+    "you",
+})
+
+
+def _normalise(text: str) -> str:
+    """Le texte réduit à ce qui permet de le comparer : sans casse ni ponctuation."""
+    return text.strip().strip(""" .!?…«»"'-–—""").lower()
+
+
+def is_filler(text: str, no_speech_prob: float) -> bool:
+    """Cette phrase est-elle un générique halluciné plutôt qu'une dictée ?"""
+    normalised = _normalise(text)
+    if "amara.org" in normalised or "sous-titrage" in normalised:
+        # Personne ne dicte ça : inutile d'attendre l'avis du modèle.
+        return True
+    return no_speech_prob >= NO_SPEECH_LIMIT and normalised in FILLERS
 
 
 def has_nvidia_gpu() -> bool:
@@ -70,7 +109,19 @@ class Transcriber:
         self.model_name, self.device, self.compute_type = name, device, compute_type
         logger.info("Modèle %s chargé sur %s (%s).", name, device, compute_type)
 
-    def transcribe(self, pcm: bytes) -> str:
+    def prompt(self, context: str = "") -> str | None:
+        """Vocabulaire de l'utilisateur, prolongé par ce qu'il vient de dicter.
+
+        Une phrase isolée n'a aucun contexte : « des images de blocs » après
+        « il faudrait rajouter » se transcrit bien mieux quand le modèle sait
+        ce qui précède.
+        """
+        parts = [str(self.config["initial_prompt"]).strip()]
+        if self.config["context"]:
+            parts.append(context.strip()[-CONTEXT_CHARS:])
+        return " ".join(part for part in parts if part) or None
+
+    def transcribe(self, pcm: bytes, context: str = "") -> str:
         """PCM s16le 16 kHz mono -> texte."""
         if not pcm:
             return ""
@@ -84,8 +135,22 @@ class Transcriber:
             audio,
             language=None if language in ("", "auto") else language,
             beam_size=int(self.config["beam_size"]),
-            initial_prompt=self.config["initial_prompt"] or None,
+            initial_prompt=self.prompt(context),
+            # Les termes du métier, poussés dans le prompt du décodeur : sans eux,
+            # « repos GitHub » revient en « ripos » et « in Chrome » en « Inchrom ».
+            hotwords=str(self.config["vocabulary"]).strip() or None,
             vad_filter=True,
             condition_on_previous_text=False,
         )
-        return " ".join(segment.text.strip() for segment in segments).strip()
+
+        kept = []
+        for segment in segments:
+            text = segment.text.strip()
+            if not text:
+                continue
+            if is_filler(text, segment.no_speech_prob):
+                logger.debug("Hallucination écartée : %r (no_speech=%.2f)",
+                             text, segment.no_speech_prob)
+                continue
+            kept.append(text)
+        return " ".join(kept).strip()
