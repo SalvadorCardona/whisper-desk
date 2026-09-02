@@ -57,12 +57,15 @@ class Session:
         self.queue: queue.Queue[bytes | None] = queue.Queue()
         self.overlay = OverlayProcess(service.config)
         self.recorder = Recorder(
-            service.config, on_level=self._on_level, on_segment=self.queue.put
+            service.config,
+            on_level=self._on_level,
+            on_segment=self.queue.put,
+            bands=self.overlay.bars,
         )
         self.writer: output.CursorWriter | None = None
 
-    def _on_level(self, level: float) -> None:
-        self.overlay.set_level(level)
+    def _on_level(self, level: float, bands: list[float]) -> None:
+        self.overlay.set_level(level, bands)
 
     def run(self) -> None:
         try:

@@ -200,15 +200,34 @@ class RecordTest(unittest.TestCase):
         instance, _, _ = self.run_recorder([constant(400)] * 20, stop_at_end=True)
         self.assertGreater(instance.peak, recorder.SILENT_INPUT_PEAK)
 
-    def test_les_niveaux_remontent_a_l_overlay(self):
-        levels: list[float] = []
-        instance = Recorder(self.config(), on_level=levels.append, on_segment=lambda _s: None)
+    def listen(self, bands: int):
+        """Enregistre douze trames de voix et retourne ce qu'a vu l'overlay."""
+        measures: list[tuple[float, list[float]]] = []
+        instance = Recorder(
+            self.config(),
+            on_level=lambda level, spectrum: measures.append((level, spectrum)),
+            on_segment=lambda _s: None,
+            bands=bands,
+        )
         stdout = FakeStdout([tone(9000)] * 12, on_exhausted=instance.stop)
         with fake_capture(FakeProcess(stdout)):
             instance.record()
+        return measures
+
+    def test_les_niveaux_remontent_a_l_overlay(self):
+        levels = [level for level, _bands in self.listen(bands=0)]
         self.assertTrue(levels)
         self.assertTrue(all(0.0 <= level <= 1.0 for level in levels))
         self.assertGreater(max(levels), 0.0)
+
+    def test_sans_equalizer_aucune_bande_n_est_calculee(self):
+        self.assertTrue(all(not bands for _level, bands in self.listen(bands=0)))
+
+    def test_l_equalizer_recoit_une_valeur_par_barre(self):
+        spectra = [bands for _level, bands in self.listen(bands=12) if bands]
+        self.assertTrue(spectra)
+        self.assertTrue(all(len(bands) == 12 for bands in spectra))
+        self.assertTrue(all(0.0 <= value <= 1.0 for bands in spectra for value in bands))
 
 
 if __name__ == "__main__":

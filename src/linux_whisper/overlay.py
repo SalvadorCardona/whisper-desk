@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Overlay d'écoute : un micro et trois points animés au rythme de la voix.
+"""Overlay d'écoute : un micro et un equalizer animé au rythme de la voix.
 
 Processus autonome lancé par le daemon avec le Python système (le seul qui a
 PyGObject). Il lit ses ordres sur stdin, une commande par ligne :
 
     state listening | state working    changement d'état
-    level 0.42                         niveau de voix courant (0..1, échelle dB)
+    level 0.42 [0.10 0.31 ...]         volume global, puis l'énergie par bande
     copy <base64>                      pose le texte dans le presse-papiers
     saveclip | restoreclip             mémorise / rend le presse-papiers d'origine
     quit                               fermeture
@@ -15,14 +15,14 @@ Wayland un client ne peut ni refuser le focus ni se positionner. Une fenêtre
 de type NOTIFICATION sous X11 fait les deux — indispensable ici, car voler le
 focus enverrait le collage dans l'overlay au lieu de l'application visée.
 
-N'importe que gi + la stdlib : ni venv, ni pycairo.
+N'importe que gi + la stdlib : ni venv, ni pycairo. D'où des barres en widgets
+plutôt qu'un dessin cairo — quinze boîtes redimensionnées à chaque image.
 """
 
 from __future__ import annotations
 
 import base64
 import binascii
-import collections
 import math
 import os
 import sys
@@ -39,21 +39,27 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
-WIDTH = 168
+WIDTH = 232
 HEIGHT = 64
 ACCENT = "#e46212"
 POSITION = "bottom-center"
 MARGIN = 96
-DOT_COUNT = 3
-DOT_SIZE = 9
+BAR_COUNT = 15
 MIC_SIZE = 24
+# Marges de la zone d'equalizer dans la pilule : après le micro, avant le bord.
+BARS_LEFT = 66
+BARS_RIGHT = 18
+BAR_MIN_HEIGHT = 4         # au silence, la barre se réduit à une pastille
+BAR_HEIGHT_MARGIN = 20     # air laissé au-dessus et en dessous, en pixels
 
-# Chaque point porte une mesure de voix différente : la plus fraîche près du
-# micro, les plus anciennes vers la droite. L'onde traverse donc la pilule au
-# rythme réel de la parole, au lieu d'osciller toute d'un bloc.
-DOT_TRAVEL_BASE = 2.5      # respiration au repos, en pixels
-DOT_TRAVEL_VOICE = 10.0    # course ajoutée à pleine voix, en pixels
-LEVEL_SMOOTHING = 0.25     # lissage exponentiel, par image
+# Un equalizer se lit à la montée : la barre bondit sur l'attaque de la syllabe
+# et redescend doucement, comme l'aiguille d'un VU-mètre. Deux vitesses, donc.
+ATTACK = 0.55
+RELEASE = 0.14
+# Sans voix, l'equalizer respire au lieu de se figer : une onde qui traverse.
+IDLE_WAVE = 0.10
+IDLE_SPEED = 3.2
+WORKING_SPEED = 4.5
 
 CSS_TEMPLATE = """
 #overlay-root {{
@@ -61,11 +67,11 @@ CSS_TEMPLATE = """
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: {radius}px;
 }}
-.dot {{
+.bar {{
     background-color: {accent};
-    border-radius: {dot_radius}px;
+    border-radius: {bar_radius}px;
 }}
-.dot.working {{ background-color: #ffffff; }}
+.bar.working {{ background-color: #ffffff; }}
 .mic {{ color: {accent}; }}
 .mic.working {{ color: rgba(255, 255, 255, 0.65); }}
 .halo {{
@@ -76,18 +82,26 @@ CSS_TEMPLATE = """
 
 
 class Overlay(Gtk.Window):
-    def __init__(self, width: int, height: int, accent: str, position: str, margin: int):
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        accent: str,
+        position: str,
+        margin: int,
+        bars: int,
+    ):
         super().__init__(type=Gtk.WindowType.POPUP)
         self.width, self.height = width, height
         self.state = "listening"
         self._saved_clipboard: str | None = None
         self.level = 0.0
         self.smoothed = 0.0
-        # Une case par point : le niveau y est décalé d'un cran à chaque mesure.
-        self.history: collections.deque[float] = collections.deque(
-            [0.0] * DOT_COUNT, maxlen=DOT_COUNT
-        )
-        self.dot_levels = [0.0] * DOT_COUNT
+        self.bar_count = max(bars, 1)
+        # Cibles envoyées par le daemon, et hauteurs réellement affichées : c'est
+        # l'écart entre les deux qui donne l'inertie du VU-mètre.
+        self.targets = [0.0] * self.bar_count
+        self.values = [0.0] * self.bar_count
         self.elapsed = 0.0
         self._last_frame: int | None = None
 
@@ -109,10 +123,17 @@ class Overlay(Gtk.Window):
         if visual is not None:
             self.set_visual(visual)
 
+        # Les barres se partagent la place disponible : plus elles sont
+        # nombreuses, plus elles sont fines, sans jamais descendre sous 2 px.
+        span = max(width - BARS_LEFT - BARS_RIGHT, self.bar_count * 3)
+        self.pitch = span / self.bar_count
+        self.bar_width = max(int(self.pitch * 0.58), 2)
+        self.max_height = max(height - BAR_HEIGHT_MARGIN, BAR_MIN_HEIGHT + 2)
+
         provider = Gtk.CssProvider()
         provider.load_from_data(
             CSS_TEMPLATE.format(
-                radius=height // 2, accent=accent, dot_radius=DOT_SIZE // 2 + 1
+                radius=height // 2, accent=accent, bar_radius=self.bar_width // 2 + 1
             ).encode()
         )
         Gtk.StyleContext.add_provider_for_screen(
@@ -136,19 +157,22 @@ class Overlay(Gtk.Window):
         self.mic.get_style_context().add_class("mic")
         canvas.put(self.mic, 34 - MIC_SIZE // 2, height // 2 - MIC_SIZE // 2)
 
-        span = width - 78 - 24
-        self.dots: list[Gtk.Box] = []
-        self.dot_x: list[int] = []
-        for index in range(DOT_COUNT):
-            dot = Gtk.Box()
-            dot.get_style_context().add_class("dot")
-            dot.set_size_request(DOT_SIZE, DOT_SIZE)
-            x = int(78 + index * (span / max(DOT_COUNT - 1, 1)) - DOT_SIZE / 2)
-            canvas.put(dot, x, height // 2 - DOT_SIZE // 2)
-            self.dots.append(dot)
-            self.dot_x.append(x)
+        self.center_y = height // 2
+        self.bars: list[Gtk.Box] = []
+        self.bar_x: list[int] = []
+        # Hauteur posée sur chaque barre : la retenir évite un redimensionnement
+        # — et donc un recalcul de la fenêtre — quand rien n'a bougé d'un pixel.
+        self.bar_heights = [0] * self.bar_count
+        for index in range(self.bar_count):
+            bar = Gtk.Box()
+            bar.get_style_context().add_class("bar")
+            bar.set_size_request(self.bar_width, BAR_MIN_HEIGHT)
+            x = int(BARS_LEFT + index * self.pitch + (self.pitch - self.bar_width) / 2)
+            canvas.put(bar, x, self.center_y - BAR_MIN_HEIGHT // 2)
+            self.bars.append(bar)
+            self.bar_x.append(x)
+            self.bar_heights[index] = BAR_MIN_HEIGHT
 
-        self.center_y = height // 2 - DOT_SIZE // 2
         self.connect("realize", lambda _widget: self._place(position, margin))
         self.add_tick_callback(self._tick)
 
@@ -174,7 +198,7 @@ class Overlay(Gtk.Window):
     def set_state(self, state: str) -> None:
         self.state = state
         working = state == "working"
-        for widget in (*self.dots, self.mic):
+        for widget in (*self.bars, self.mic):
             context = widget.get_style_context()
             if working:
                 context.add_class("working")
@@ -185,11 +209,27 @@ class Overlay(Gtk.Window):
             # Plus personne n'alimente les niveaux : on repart de zéro, sinon le
             # retour à l'écoute rejouerait la dernière syllabe entendue.
             self.level = 0.0
-            self.history.extend([0.0] * DOT_COUNT)
+            self.targets = [0.0] * self.bar_count
 
-    def set_level(self, level: float) -> None:
+    def set_level(self, level: float, bands: list[float]) -> None:
         self.level = max(0.0, min(level, 1.0))
-        self.history.appendleft(self.level)
+        if bands:
+            self.targets = [max(0.0, min(band, 1.0)) for band in self._fit(bands)]
+        else:
+            # Spectre indisponible : le volume global anime toutes les barres, en
+            # cloche, pour garder une silhouette d'equalizer plutôt qu'un bloc.
+            middle = (self.bar_count - 1) / 2
+            self.targets = [
+                self.level * (1.0 - 0.55 * abs(index - middle) / max(middle, 1.0))
+                for index in range(self.bar_count)
+            ]
+
+    def _fit(self, bands: list[float]) -> list[float]:
+        """Ramène les bandes reçues au nombre de barres, si le daemon en diffère."""
+        if len(bands) == self.bar_count:
+            return bands
+        ratio = len(bands) / self.bar_count
+        return [bands[min(int(index * ratio), len(bands) - 1)] for index in range(self.bar_count)]
 
     def copy(self, text: str) -> None:
         """Pose le texte dans le presse-papiers (X11 : pas besoin du focus)."""
@@ -215,10 +255,7 @@ class Overlay(Gtk.Window):
         if self._last_frame is not None:
             self.elapsed += (now - self._last_frame) / 1_000_000
         self._last_frame = now
-        # Lissage exponentiel : la voix module l'animation sans à-coups.
-        self.smoothed += (self.level - self.smoothed) * LEVEL_SMOOTHING
-        for index, target in enumerate(self.history):
-            self.dot_levels[index] += (target - self.dot_levels[index]) * LEVEL_SMOOTHING
+        self.smoothed += (self.level - self.smoothed) * ATTACK
 
         listening = self.state == "listening"
         if listening:
@@ -228,18 +265,33 @@ class Overlay(Gtk.Window):
         else:
             self.mic.set_opacity(0.7)
 
-        speed = 5.0 if listening else 3.2
-        for index, dot in enumerate(self.dots):
-            wave = math.sin(self.elapsed * speed - index * 0.7)
-            if listening:
-                voice = self.dot_levels[index]
-                travel = DOT_TRAVEL_BASE + DOT_TRAVEL_VOICE * voice
-                self.canvas.move(dot, self.dot_x[index], int(self.center_y - wave * travel))
-                dot.set_opacity(0.45 + 0.25 * ((wave + 1) / 2) + 0.30 * voice)
-            else:
-                self.canvas.move(dot, self.dot_x[index], self.center_y)
-                dot.set_opacity(0.30 + 0.60 * max(wave, 0.0))
+        for index in range(self.bar_count):
+            target = self._target(index, listening)
+            # Montée franche sur l'attaque, redescente lente : c'est cette
+            # asymétrie qui fait lire un equalizer plutôt qu'un scintillement.
+            rate = ATTACK if target > self.values[index] else RELEASE
+            self.values[index] += (target - self.values[index]) * rate
+            self._draw_bar(index, self.values[index], listening)
         return GLib.SOURCE_CONTINUE
+
+    def _target(self, index: int, listening: bool) -> float:
+        """Hauteur visée par une barre, en 0..1."""
+        if not listening:
+            # Transcription en cours : une onde traverse l'equalizer de gauche
+            # à droite, pour dire que ça travaille sans prétendre écouter.
+            phase = self.elapsed * WORKING_SPEED - index * 0.55
+            return 0.10 + 0.32 * max(math.sin(phase), 0.0) ** 2
+        wave = 0.5 + 0.5 * math.sin(self.elapsed * IDLE_SPEED - index * 0.45)
+        return max(self.targets[index], IDLE_WAVE * wave)
+
+    def _draw_bar(self, index: int, value: float, listening: bool) -> None:
+        height = BAR_MIN_HEIGHT + int((self.max_height - BAR_MIN_HEIGHT) * value)
+        bar = self.bars[index]
+        if height != self.bar_heights[index]:
+            self.bar_heights[index] = height
+            bar.set_size_request(self.bar_width, height)
+            self.canvas.move(bar, self.bar_x[index], self.center_y - height // 2)
+        bar.set_opacity(0.45 + 0.55 * value if listening else 0.30 + 0.60 * value)
 
 
 def read_commands(window: Overlay) -> None:
@@ -262,9 +314,10 @@ def read_commands(window: Overlay) -> None:
             GLib.idle_add(window.set_state, rest[0])
         elif command == "level":
             try:
-                GLib.idle_add(window.set_level, float(rest[0]))
+                values = [float(part) for part in rest]
             except ValueError:
-                pass
+                continue
+            GLib.idle_add(window.set_level, values[0], values[1:])
         elif command == "copy":
             try:
                 text = base64.b64decode(rest[0]).decode("utf-8")
@@ -280,8 +333,9 @@ def main(argv: list[str]) -> int:
     accent = argv[3] if len(argv) > 3 else ACCENT
     position = argv[4] if len(argv) > 4 else POSITION
     margin = int(argv[5]) if len(argv) > 5 else MARGIN
+    bars = int(argv[6]) if len(argv) > 6 else BAR_COUNT
 
-    window = Overlay(width, height, accent, position, margin)
+    window = Overlay(width, height, accent, position, margin, bars)
     window.connect("destroy", Gtk.main_quit)
     window.show_all()
     threading.Thread(target=read_commands, args=(window,), daemon=True).start()

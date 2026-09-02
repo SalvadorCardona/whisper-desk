@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import threading
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +66,7 @@ class OverlayProcess:
             str(self.config["accent"]),
             str(self.config["position"]),
             str(self.config["margin"]),
+            str(self.config["bars"]),
         ]
         try:
             self._process = subprocess.Popen(
@@ -79,8 +81,14 @@ class OverlayProcess:
     def set_state(self, state: str) -> None:
         self._send(f"state {state}")
 
-    def set_level(self, level: float) -> None:
-        self._send(f"level {level:.3f}")
+    def set_level(self, level: float, bands: Sequence[float] = ()) -> None:
+        """Volume global, suivi de l'énergie par bande quand elle est connue."""
+        spectrum = "".join(f" {band:.3f}" for band in bands)
+        self._send(f"level {level:.3f}{spectrum}")
+
+    @property
+    def bars(self) -> int:
+        return int(self.config["bars"]) if self.config["enabled"] else 0
 
     @property
     def alive(self) -> bool:

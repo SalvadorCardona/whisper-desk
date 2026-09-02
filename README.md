@@ -1,13 +1,14 @@
 # linux-whisper
 
 **Dictée vocale hors-ligne pour Linux, WSL et macOS.** Vous appuyez sur `Super + J`, un petit overlay
-apparaît — un micro et trois points qui dansent au rythme de votre voix — et le texte
+apparaît — un micro et un equalizer qui danse au rythme de votre voix — et le texte
 **s'écrit directement là où se trouve votre curseur**, phrase après phrase, pendant que
 vous parlez.
 
-Chaque point porte un instant différent de ce que capte le micro : l'onde traverse la
-pilule au rythme réel de la parole, sur une échelle en décibels — le silence laisse les
-points au repos, une voix ordinaire occupe le milieu de la course.
+Chaque barre suit une bande de fréquence, des graves à gauche aux aiguës à droite : on
+voit la voix, pas seulement son volume. L'échelle est en décibels et la retombée plus
+lente que la montée, comme un VU-mètre — le silence laisse les barres au repos, une voix
+ordinaire occupe le milieu de la course.
 
 <p align="center">
   <img src="docs/overlay-listening.png" alt="Overlay pendant l'écoute" width="336">

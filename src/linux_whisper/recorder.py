@@ -15,7 +15,8 @@ import threading
 import time
 from typing import Any, Callable
 
-from . import capture
+from . import capture, spectrum
+from .spectrum import visual_level
 
 RATE = 16000
 CHANNELS = 1
@@ -29,8 +30,6 @@ MIN_SEGMENT_CHUNKS = 4         # en deçà de 400 ms, ce n'est pas une phrase
 SILENT_INPUT_PEAK = 30.0       # sous ce pic, l'entrée est muette, pas discrète
 # Marge gardée après la dernière voix, pour ne pas couper une fin de mot.
 TRIM_MARGIN_SECONDS = 0.3
-# Dynamique affichée par l'overlay, du seuil de parole au cri.
-LEVEL_RANGE_DB = 36.0
 
 
 def _rms(chunk: bytes) -> float:
@@ -44,30 +43,20 @@ def _rms(chunk: bytes) -> float:
     return math.sqrt(sum(sample * sample for sample in samples) / len(samples))
 
 
-def visual_level(level: float, threshold: float) -> float:
-    """RMS -> 0..1 pour l'overlay, en décibels au-dessus du seuil de parole.
-
-    L'œil suit l'oreille : une échelle linéaire écrase la parole ordinaire tout
-    en bas de la jauge et sature sur les pics. En décibels, le silence reste à
-    zéro et toute la course sert à ce qui s'entend vraiment.
-    """
-    if level <= 0.0 or threshold <= 0.0:
-        return 0.0
-    decibels = 20.0 * math.log10(level / threshold)
-    return max(0.0, min(decibels / LEVEL_RANGE_DB, 1.0))
-
-
 class Recorder:
     """Enregistre jusqu'au silence, à l'appel de stop(), ou jusqu'au maximum."""
 
     def __init__(
         self,
         config: dict[str, Any],
-        on_level: Callable[[float], None] | None = None,
+        on_level: Callable[[float, list[float]], None] | None = None,
         on_segment: Callable[[bytes], None] | None = None,
+        bands: int = 0,
     ):
         self.config = config["recording"]
         self.on_level = on_level
+        # Nombre de bandes réclamées par l'overlay ; 0 : personne ne regarde.
+        self.bands = bands
         # Renseigné en mode « au fil de l'eau » : appelé à chaque phrase terminée.
         self.on_segment = on_segment
         self._stop = threading.Event()
@@ -131,11 +120,14 @@ class Recorder:
                         floor = sum(noise) / len(noise)
                         threshold = max(floor * 3.5, MIN_THRESHOLD)
                     if self.on_level:
-                        self.on_level(0.0)
+                        self.on_level(0.0, [])
                     continue
 
                 if self.on_level:
-                    self.on_level(visual_level(level, threshold))
+                    self.on_level(
+                        visual_level(level, threshold),
+                        spectrum.bands(chunk, self.bands, RATE, level, threshold),
+                    )
 
                 if level >= threshold:
                     speaking = True

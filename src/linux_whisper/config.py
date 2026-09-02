@@ -85,8 +85,10 @@ DEFAULTS: dict[str, Any] = {
         "enabled": True,
         "accent": "#e46212",
         # Taille de la pilule en pixels.
-        "width": 168,
+        "width": 232,
         "height": 64,
+        # Nombre de barres de l'equalizer.
+        "bars": 15,
         # bottom-center | top-center | center
         "position": "bottom-center",
         # Distance au bord de l'écran, en pixels.

@@ -59,7 +59,8 @@ history = true                  # journal dans ~/.local/state/linux-whisper/hist
 # Ignoré si le Python système n'a pas PyGObject + GTK3 (cas courant sur macOS).
 enabled = true
 accent = "#e46212"
-width = 168
+width = 232
 height = 64
+bars = 15                       # nombre de barres de l'equalizer
 position = "bottom-center"      # bottom-center | top-center | center
 margin = 96                     # distance au bord de l'écran, en pixels
