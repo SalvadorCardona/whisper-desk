@@ -19,6 +19,8 @@ ordinaire occupe le milieu de la course.
 Aucune donnée ne quitte la machine : la transcription tourne sur votre GPU (ou votre CPU)
 avec [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
 
+📖 **[La documentation, en ligne](https://salvadorcardona.github.io/whisper-desk/)**
+
 ---
 
 ## Installation
