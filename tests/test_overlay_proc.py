@@ -13,8 +13,9 @@ CONFIG = {
     "overlay": {
         "enabled": True,
         "accent": "#e46212",
-        "width": 168,
+        "width": 232,
         "height": 64,
+        "bars": 15,
         "position": "bottom-center",
         "margin": 96,
     }
@@ -76,6 +77,20 @@ class SendTest(unittest.TestCase):
         overlay.set_state("working")
         overlay.set_level(0.5)
         self.assertEqual(stdin.lines, [b"state working\n", b"level 0.500\n"])
+
+    def test_l_equalizer_voyage_sur_la_meme_ligne_que_le_niveau(self):
+        """Une écriture par mesure : deux lignes s'entrelaceraient sur le tube."""
+        stdin = FakeStdin()
+        overlay, _ = attached(stdin)
+        overlay.set_level(0.5, [0.25, 0.75])
+        self.assertEqual(stdin.lines, [b"level 0.500 0.250 0.750\n"])
+
+    def test_le_nombre_de_barres_vient_de_la_configuration(self):
+        self.assertEqual(OverlayProcess(CONFIG).bars, 15)
+
+    def test_overlay_desactive_personne_ne_regarde_les_bandes(self):
+        config = {"overlay": {**CONFIG["overlay"], "enabled": False}}
+        self.assertEqual(OverlayProcess(config).bars, 0)
 
     def test_le_niveau_est_borne_a_trois_decimales(self):
         stdin = FakeStdin()
