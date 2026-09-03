@@ -1,4 +1,4 @@
-"""Chargement de la configuration utilisateur (~/.config/linux-whisper/config.toml)."""
+"""Chargement de la configuration utilisateur (~/.config/whisper-desk/config.toml)."""
 
 from __future__ import annotations
 
@@ -22,10 +22,10 @@ def _runtime_dir() -> Path:
     return Path(tmp) if tmp else Path("/tmp")
 
 
-CONFIG_DIR = _xdg("XDG_CONFIG_HOME", ".config") / "linux-whisper"
+CONFIG_DIR = _xdg("XDG_CONFIG_HOME", ".config") / "whisper-desk"
 CONFIG_PATH = CONFIG_DIR / "config.toml"
-STATE_DIR = _xdg("XDG_STATE_HOME", ".local/state") / "linux-whisper"
-DATA_DIR = Path.home() / ".local/share/linux-whisper"
+STATE_DIR = _xdg("XDG_STATE_HOME", ".local/state") / "whisper-desk"
+DATA_DIR = Path.home() / ".local/share/whisper-desk"
 RUNTIME_DIR = _runtime_dir()
 
 DEFAULTS: dict[str, Any] = {
@@ -34,7 +34,7 @@ DEFAULTS: dict[str, Any] = {
         # "auto" -> <Super>j, sauf sous WSL où Windows réserve la touche Windows
         # aux raccourcis système : <Ctrl><Alt>j.
         "binding": "auto",
-        "name": "linux-whisper",
+        "name": "whisper-desk",
         # "toggle" : 1er appui = écoute, 2e appui = transcription.
         "action": "toggle",
     },
@@ -84,7 +84,7 @@ DEFAULTS: dict[str, Any] = {
         # Remet votre presse-papiers d'origine à la fin de la dictée.
         "restore_clipboard": True,
         "notify": False,
-        # Journalise chaque transcription dans ~/.local/state/linux-whisper/history.log
+        # Journalise chaque transcription dans ~/.local/state/whisper-desk/history.log
         "history": True,
     },
     "overlay": {

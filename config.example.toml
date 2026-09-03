@@ -1,13 +1,13 @@
-# Configuration de linux-whisper — ~/.config/linux-whisper/config.toml
-# Après modification : linux-whisper reload
+# Configuration de whisper-desk — ~/.config/whisper-desk/config.toml
+# Après modification : whisper-desk reload
 
 [hotkey]
 # Syntaxe GTK : <Super>, <Ctrl>, <Alt>, <Shift>. Ex. "<Super><Shift>d", "<Ctrl><Alt>space".
 # "auto" : <Super>j — mais <Ctrl><Alt>j sous WSL, Windows se réservant la
 # touche Windows et n'acceptant de raccourci global qu'en Ctrl+Alt.
 binding = "auto"
-name = "linux-whisper"
-# Appliquer un changement de raccourci : linux-whisper hotkey install
+name = "whisper-desk"
+# Appliquer un changement de raccourci : whisper-desk hotkey install
 action = "toggle"
 
 [model]
@@ -59,7 +59,7 @@ keyboard = "auto"
 # Rend votre presse-papiers d'origine à la fin de la dictée.
 restore_clipboard = true
 notify = false                  # notification à chaque transcription
-history = true                  # journal dans ~/.local/state/linux-whisper/history.log
+history = true                  # journal dans ~/.local/state/whisper-desk/history.log
 
 [overlay]
 # Ignoré si le Python système n'a pas PyGObject + GTK3 (cas courant sur macOS).

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Généré par install.sh — lance linux-whisper dans son environnement isolé.
+# Généré par install.sh — lance whisper-desk dans son environnement isolé.
 set -euo pipefail
 
 APP_DIR="@APP_DIR@"
@@ -7,7 +7,7 @@ VENV="@VENV@"
 
 export PYTHONPATH="$APP_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 # L'overlay GTK4 tourne avec le Python système : c'est lui qui a PyGObject.
-export LW_SYSTEM_PYTHON="${LW_SYSTEM_PYTHON:-@SYSTEM_PYTHON@}"
+export WD_SYSTEM_PYTHON="${WD_SYSTEM_PYTHON:-@SYSTEM_PYTHON@}"
 
 # Bibliothèques CUDA embarquées dans le venv (cuBLAS/cuDNN pour CTranslate2).
 for dir in "$VENV"/lib/python*/site-packages/nvidia/*/lib; do
@@ -15,4 +15,4 @@ for dir in "$VENV"/lib/python*/site-packages/nvidia/*/lib; do
 done
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
 
-exec "$VENV/bin/python" -m linux_whisper "$@"
+exec "$VENV/bin/python" -m whisper_desk "$@"

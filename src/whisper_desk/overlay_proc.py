@@ -13,14 +13,14 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger("linux-whisper.overlay")
+logger = logging.getLogger("whisper-desk.overlay")
 
 OVERLAY_SCRIPT = Path(__file__).with_name("overlay.py")
 
 
 def system_python() -> str:
     """Le Python système : c'est lui qui a PyGObject, pas celui du venv."""
-    return os.environ.get("LW_SYSTEM_PYTHON") or shutil.which("python3") or "/usr/bin/python3"
+    return os.environ.get("WD_SYSTEM_PYTHON") or shutil.which("python3") or "/usr/bin/python3"
 
 
 @functools.cache

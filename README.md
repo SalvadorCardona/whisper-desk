@@ -1,4 +1,4 @@
-# linux-whisper
+# whisper-desk
 
 **Dictée vocale hors-ligne pour Linux, WSL et macOS.** Vous appuyez sur `Super + J`, un petit overlay
 apparaît — un micro et un equalizer qui danse au rythme de votre voix — et le texte
@@ -24,7 +24,7 @@ avec [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
 ## Installation
 
 ```sh
-curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/linux-whisper/main/install.sh | sh
+curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh | sh
 ```
 
 C'est tout. Le script reconnaît l'hôte — Linux, WSL ou macOS — et adapte chaque étape :
@@ -33,7 +33,7 @@ C'est tout. Le script reconnaît l'hôte — Linux, WSL ou macOS — et adapte c
    de les installer, avec `apt` ou `brew` selon le cas ;
 2. crée un environnement Python isolé et y installe faster-whisper — plus les bibliothèques
    CUDA si une carte NVIDIA est détectée ;
-3. installe la commande `linux-whisper` dans `~/.local/bin` ;
+3. installe la commande `whisper-desk` dans `~/.local/bin` ;
 4. active le service utilisateur — **systemd** sous Linux et WSL, **launchd** sur macOS —
    démarré automatiquement à l'ouverture de session ;
 5. enregistre le raccourci global auprès du gestionnaire de l'hôte.
@@ -72,7 +72,7 @@ la configuration.
 ### Vérifier que tout est en place
 
 ```sh
-linux-whisper doctor
+whisper-desk doctor
 ```
 
 ---
@@ -95,20 +95,20 @@ champ de recherche. Votre presse-papiers est rendu intact à la fin de la dicté
 ### En ligne de commande
 
 ```sh
-linux-whisper record     # dicte et écrit le texte sur la sortie standard
-linux-whisper toggle     # équivalent du raccourci clavier
-linux-whisper status     # état du daemon, modèle chargé, GPU ou CPU
-linux-whisper doctor     # diagnostic complet
-linux-whisper config     # ouvre la configuration dans $EDITOR
-linux-whisper reload     # recharge la configuration sans redémarrer
-linux-whisper quit       # arrête le daemon
+whisper-desk record     # dicte et écrit le texte sur la sortie standard
+whisper-desk toggle     # équivalent du raccourci clavier
+whisper-desk status     # état du daemon, modèle chargé, GPU ou CPU
+whisper-desk doctor     # diagnostic complet
+whisper-desk config     # ouvre la configuration dans $EDITOR
+whisper-desk reload     # recharge la configuration sans redémarrer
+whisper-desk quit       # arrête le daemon
 ```
 
 ---
 
 ## Configuration
 
-Tout est paramétrable dans **`~/.config/linux-whisper/config.toml`** :
+Tout est paramétrable dans **`~/.config/whisper-desk/config.toml`** :
 
 ```toml
 [hotkey]
@@ -133,7 +133,7 @@ paste_shortcut = "auto"       # "shift+insert" si vous dictez surtout en termina
 keyboard = "auto"             # auto | uinput | windows | applescript | none
 restore_clipboard = true      # rend votre presse-papiers d'origine à la fin
 notify = false
-history = true                # journal dans ~/.local/state/linux-whisper/history.log
+history = true                # journal dans ~/.local/state/whisper-desk/history.log
 
 [overlay]
 enabled = true
@@ -145,8 +145,8 @@ margin = 96
 Après modification :
 
 ```sh
-linux-whisper reload            # pour tout sauf le raccourci
-linux-whisper hotkey install    # pour appliquer un nouveau raccourci
+whisper-desk reload            # pour tout sauf le raccourci
+whisper-desk hotkey install    # pour appliquer un nouveau raccourci
 ```
 
 ### Choisir son modèle
@@ -166,7 +166,7 @@ Pour raccourcir encore le délai entre la fin d'une phrase et son insertion, bai
 ## Comment ça marche
 
 ```
-Super + J  ─→  linux-whisper toggle  ─→  socket Unix  ─→  daemon (modèle en mémoire)
+Super + J  ─→  whisper-desk toggle  ─→  socket Unix  ─→  daemon (modèle en mémoire)
                                                               │
                               overlay X11 ←── niveau audio ────┤
                                                               │
@@ -202,39 +202,39 @@ demande d'autorisation d'accessibilité.
 
 ## Dépannage
 
-`linux-whisper doctor` commence par nommer l'hôte détecté, puis vérifie une à une les
+`whisper-desk doctor` commence par nommer l'hôte détecté, puis vérifie une à une les
 briques qu'il utilise : c'est le premier réflexe pour tout ce qui suit.
 
 **Le raccourci ne fait rien**
 ```sh
-linux-whisper status                      # le daemon répond-il ?
-linux-whisper hotkey show                 # le raccourci est-il enregistré ?
-journalctl --user -u linux-whisper -f     # les logs (systemd)
-tail -f ~/.local/state/linux-whisper/daemon.log   # les logs (launchd, ou daemon direct)
+whisper-desk status                      # le daemon répond-il ?
+whisper-desk hotkey show                 # le raccourci est-il enregistré ?
+journalctl --user -u whisper-desk -f     # les logs (systemd)
+tail -f ~/.local/state/whisper-desk/daemon.log   # les logs (launchd, ou daemon direct)
 ```
 
 **Le texte n'est pas inséré mais reste dans le presse-papiers** — la frappe simulée n'a pas
-abouti. `linux-whisper doctor` dit laquelle est en cause :
+abouti. `whisper-desk doctor` dit laquelle est en cause :
 
 - **Linux** — `/dev/uinput` doit être accessible en écriture. Sur une session locale,
   systemd vous en donne l'accès automatiquement ; en SSH ou en session distante, non.
-- **macOS** — autorisez l'accessibilité pour le terminal (ou pour `linux-whisper`) dans
+- **macOS** — autorisez l'accessibilité pour le terminal (ou pour `whisper-desk`) dans
   Réglages Système → Confidentialité et sécurité → Accessibilité, puis relancez le daemon.
 - **WSL** — `powershell.exe` doit être joignable depuis WSL (interopérabilité active), et
   la fenêtre visée doit être une fenêtre Windows au premier plan.
 
 **Je dicte dans un terminal et j'obtiens `^V`** — `Ctrl+V` n'y est pas le collage. Mettez
-`paste_shortcut = "shift+insert"` dans `[output]`, puis `linux-whisper reload`.
+`paste_shortcut = "shift+insert"` dans `[output]`, puis `whisper-desk reload`.
 
 **Les phrases se coupent trop tôt / trop tard** — ajustez `segment_silence_seconds`
 (découpage) et `silence_seconds` (fin de dictée) dans `[recording]`.
 
 **L'overlay s'ouvre mais rien ne s'écrit** — neuf fois sur dix, le micro par défaut n'est
 pas le bon (une prise jack vide reste souvent la source par défaut, et ne renvoie que du
-silence). `linux-whisper doctor` mesure le niveau réellement capté :
+silence). `whisper-desk doctor` mesure le niveau réellement capté :
 
 ```sh
-linux-whisper doctor          # « le micro capte du son » doit être coché
+whisper-desk doctor          # « le micro capte du son » doit être coché
 wpctl status                  # liste les sources ; repérez le vrai micro
 wpctl set-default <id>        # bascule dessus
 ```
@@ -243,7 +243,7 @@ Le daemon vous prévient désormais par une notification quand une dictée n'a c
 son, et journalise le pic mesuré :
 
 ```sh
-journalctl --user -u linux-whisper | grep "pic"
+journalctl --user -u whisper-desk | grep "pic"
 ```
 
 **Ma voix n'est pas assez forte** — montez le gain de la source (`wpctl set-volume <id> 1.0`),
@@ -261,11 +261,11 @@ Réglages Système → Son. Pour choisir une autre entrée avec `ffmpeg`, listez
 `device` avec `backend = "ffmpeg"`.
 
 **macOS : je ne veux pas de skhd pour le raccourci** — créez une opération rapide
-(Automator → Exécuter un script shell, `~/.local/bin/linux-whisper toggle`) et attribuez-lui
+(Automator → Exécuter un script shell, `~/.local/bin/whisper-desk toggle`) et attribuez-lui
 un raccourci dans Réglages Système → Clavier → Raccourcis clavier → Services.
 
-**La transcription tourne sur le CPU alors que j'ai un GPU** — `linux-whisper status`
-indique le périphérique retenu, et `journalctl --user -u linux-whisper` la raison du repli
+**La transcription tourne sur le CPU alors que j'ai un GPU** — `whisper-desk status`
+indique le périphérique retenu, et `journalctl --user -u whisper-desk` la raison du repli
 (souvent des bibliothèques CUDA absentes ou une VRAM insuffisante).
 
 ---
@@ -273,10 +273,10 @@ indique le périphérique retenu, et `journalctl --user -u linux-whisper` la rai
 ## Désinstallation
 
 ```sh
-curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/linux-whisper/main/uninstall.sh | sh
+curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/uninstall.sh | sh
 ```
 
-Ajoutez `LW_PURGE=1` pour supprimer aussi la configuration et l'historique. Les modèles
+Ajoutez `WD_PURGE=1` pour supprimer aussi la configuration et l'historique. Les modèles
 téléchargés restent dans `~/.cache/huggingface`.
 
 ---
@@ -284,9 +284,9 @@ téléchargés restent dans `~/.cache/huggingface`.
 ## Développement
 
 ```sh
-git clone https://github.com/SalvadorCardona/linux-whisper
-cd linux-whisper
-LW_SRC="$PWD" sh install.sh     # installe depuis le clone local, sans réseau
+git clone https://github.com/SalvadorCardona/whisper-desk
+cd whisper-desk
+WD_SRC="$PWD" sh install.sh     # installe depuis le clone local, sans réseau
 ```
 
 ### Tests
@@ -301,21 +301,21 @@ python3 -m unittest discover -s tests -t .
 Elle couvre ce qui se vérifie sans micro ni serveur graphique : mesure du niveau sonore,
 découpage des phrases, fin d'enregistrement, fusion de la configuration, modes de sortie,
 pilotage de la fenêtre d'écoute, et le choix des outils propres à chaque hôte — la
-variable `LW_HOST` (`linux`, `wsl`, `macos`) force la détection, ce qui permet de tester
+variable `WD_HOST` (`linux`, `wsl`, `macos`) force la détection, ce qui permet de tester
 les trois depuis n'importe lequel.
 
 | Fichier | Rôle |
 |---|---|
-| `src/linux_whisper/daemon.py` | service, socket Unix, écoute et transcription en parallèle |
-| `src/linux_whisper/host.py` | détection de l'hôte, passerelle PowerShell sous WSL |
-| `src/linux_whisper/capture.py` | choix de l'outil de capture (`arecord`, `parec`, `rec`, `ffmpeg`) |
-| `src/linux_whisper/recorder.py` | détection de silence, découpage en phrases |
-| `src/linux_whisper/transcriber.py` | faster-whisper, choix GPU/CPU |
-| `src/linux_whisper/inject.py` | frappe simulée : `uinput`, SendKeys, System Events |
-| `src/linux_whisper/output.py` | insertion au curseur, presse-papiers, notifications |
-| `src/linux_whisper/overlay.py` | overlay X11 (processus séparé) |
-| `src/linux_whisper/hotkey.py` | raccourci global : GNOME, menu Démarrer, `skhd` |
-| `src/linux_whisper/service.py` | démarrage du daemon : systemd, launchd ou direct |
+| `src/whisper_desk/daemon.py` | service, socket Unix, écoute et transcription en parallèle |
+| `src/whisper_desk/host.py` | détection de l'hôte, passerelle PowerShell sous WSL |
+| `src/whisper_desk/capture.py` | choix de l'outil de capture (`arecord`, `parec`, `rec`, `ffmpeg`) |
+| `src/whisper_desk/recorder.py` | détection de silence, découpage en phrases |
+| `src/whisper_desk/transcriber.py` | faster-whisper, choix GPU/CPU |
+| `src/whisper_desk/inject.py` | frappe simulée : `uinput`, SendKeys, System Events |
+| `src/whisper_desk/output.py` | insertion au curseur, presse-papiers, notifications |
+| `src/whisper_desk/overlay.py` | overlay X11 (processus séparé) |
+| `src/whisper_desk/hotkey.py` | raccourci global : GNOME, menu Démarrer, `skhd` |
+| `src/whisper_desk/service.py` | démarrage du daemon : systemd, launchd ou direct |
 | `tests/` | suite `unittest`, sans dépendance externe |
 | `install.sh` | installation et mise à jour |
 

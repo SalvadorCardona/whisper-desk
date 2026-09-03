@@ -10,8 +10,8 @@ from unittest import mock
 
 from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
 
-from linux_whisper import capture, recorder, spectrum
-from linux_whisper.recorder import (
+from whisper_desk import capture, recorder, spectrum
+from whisper_desk.recorder import (
     CHUNK_BYTES,
     MIN_SEGMENT_CHUNKS,
     Recorder,

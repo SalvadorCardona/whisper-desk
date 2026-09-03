@@ -7,7 +7,7 @@ import unittest
 
 from . import context  # noqa: F401
 
-from linux_whisper.overlay_proc import OverlayProcess
+from whisper_desk.overlay_proc import OverlayProcess
 
 CONFIG = {
     "overlay": {

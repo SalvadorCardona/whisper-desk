@@ -14,11 +14,11 @@ from . import __version__
 from . import config as config_module
 from . import host
 
-BIN = str(Path.home() / ".local/bin/linux-whisper")
+BIN = str(Path.home() / ".local/bin/whisper-desk")
 
 
 def _print_error(message: str) -> int:
-    print(f"linux-whisper: {message}", file=sys.stderr)
+    print(f"whisper-desk: {message}", file=sys.stderr)
     return 1
 
 
@@ -106,7 +106,7 @@ def cmd_config(args: argparse.Namespace) -> int:
         return _print_error(f"{path} est absent — relancez l'installation.")
     editor = os.environ.get("EDITOR") or shutil.which("nano") or "vi"
     subprocess.run([editor, str(path)], check=False)
-    print("Pensez à « linux-whisper reload » pour appliquer.")
+    print("Pensez à « whisper-desk reload » pour appliquer.")
     return 0
 
 
@@ -284,10 +284,10 @@ def _overlay_hint() -> str:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="linux-whisper",
+        prog="whisper-desk",
         description="Dictée vocale hors-ligne : un raccourci, vous parlez, le texte est copié.",
     )
-    parser.add_argument("--version", action="version", version=f"linux-whisper {__version__}")
+    parser.add_argument("--version", action="version", version=f"whisper-desk {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("daemon", help="lance le service (géré par systemd)").set_defaults(func=cmd_daemon)

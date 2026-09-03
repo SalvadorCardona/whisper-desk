@@ -9,8 +9,8 @@ from unittest import mock
 
 from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
 
-from linux_whisper import spectrum
-from linux_whisper.spectrum import band_edges, bands, visual_level
+from whisper_desk import spectrum
+from whisper_desk.spectrum import band_edges, bands, visual_level
 
 # La suite doit tourner sur la seule bibliothèque standard, comme en CI : sans
 # numpy, `bands` rend une liste vide et il n'y a plus de spectre à mesurer.

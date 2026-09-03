@@ -31,7 +31,7 @@ from typing import Iterable
 
 from . import host
 
-logger = logging.getLogger("linux-whisper.inject")
+logger = logging.getLogger("whisper-desk.inject")
 
 UINPUT_DEVICE = "/dev/uinput"
 
@@ -143,7 +143,7 @@ class UinputKeyboard(Keyboard):
     name = "uinput"
     hint = f"{UINPUT_DEVICE} doit être accessible en écriture (groupe input)"
 
-    def __init__(self, name: str = "linux-whisper virtual keyboard"):
+    def __init__(self, name: str = "whisper-desk virtual keyboard"):
         self.device_name = name
         self._fd: int | None = None
         # prepare() ouvre le clavier dans un fil pendant que l'utilisateur parle,
@@ -299,7 +299,7 @@ class AppleScriptKeyboard(Keyboard):
     name = "applescript"
     hint = (
         "Réglages Système → Confidentialité et sécurité → Accessibilité : "
-        "autorisez le terminal (ou linux-whisper) à contrôler l'ordinateur"
+        "autorisez le terminal (ou whisper-desk) à contrôler l'ordinateur"
     )
 
     @property

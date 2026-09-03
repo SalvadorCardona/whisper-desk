@@ -19,18 +19,18 @@ def forced_host(name: str):
     """Fait croire au programme qu'il tourne sur cet hôte, le temps du bloc.
 
     Les tests des trois hôtes doivent passer depuis n'importe lequel : la
-    détection s'appuie sur LW_HOST, et son résultat est mis en cache.
+    détection s'appuie sur WD_HOST, et son résultat est mis en cache.
     """
-    from linux_whisper import host
+    from whisper_desk import host
 
-    previous = os.environ.get("LW_HOST")
-    os.environ["LW_HOST"] = name
+    previous = os.environ.get("WD_HOST")
+    os.environ["WD_HOST"] = name
     host.reset()
     try:
         yield
     finally:
         if previous is None:
-            os.environ.pop("LW_HOST", None)
+            os.environ.pop("WD_HOST", None)
         else:
-            os.environ["LW_HOST"] = previous
+            os.environ["WD_HOST"] = previous
         host.reset()

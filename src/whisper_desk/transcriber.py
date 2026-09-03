@@ -7,7 +7,7 @@ import shutil
 import subprocess
 from typing import Any
 
-logger = logging.getLogger("linux-whisper.transcriber")
+logger = logging.getLogger("whisper-desk.transcriber")
 
 GPU_MODEL = "large-v3-turbo"
 CPU_MODEL = "small"

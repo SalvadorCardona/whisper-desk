@@ -1,6 +1,6 @@
 [Unit]
-Description=linux-whisper — daemon de dictée vocale
-Documentation=https://github.com/SalvadorCardona/linux-whisper
+Description=whisper-desk — daemon de dictée vocale
+Documentation=https://github.com/SalvadorCardona/whisper-desk
 After=graphical-session.target
 PartOf=graphical-session.target
 

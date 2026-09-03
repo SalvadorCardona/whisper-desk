@@ -9,7 +9,7 @@ from unittest import mock
 from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
 from .context import forced_host
 
-from linux_whisper import host
+from whisper_desk import host
 
 
 class DetectionTest(unittest.TestCase):
@@ -30,7 +30,7 @@ class DetectionTest(unittest.TestCase):
 
     def test_darwin_est_macos(self):
         with mock.patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("LW_HOST", None)
+            os.environ.pop("WD_HOST", None)
             host.reset()
             with mock.patch.object(host.platform, "system", return_value="Darwin"):
                 self.assertEqual(host.name(), host.MACOS)
@@ -38,7 +38,7 @@ class DetectionTest(unittest.TestCase):
 
     def test_un_noyau_microsoft_est_wsl(self):
         with mock.patch.dict(os.environ, {"WSL_DISTRO_NAME": "Ubuntu"}, clear=False):
-            os.environ.pop("LW_HOST", None)
+            os.environ.pop("WD_HOST", None)
             host.reset()
             with mock.patch.object(host.platform, "system", return_value="Linux"):
                 self.assertEqual(host.name(), host.WSL)

@@ -1,29 +1,29 @@
 #!/bin/sh
-# Installation de linux-whisper (Linux, WSL et macOS).
+# Installation de whisper-desk (Linux, WSL et macOS).
 #
-#   curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/linux-whisper/main/install.sh | sh
+#   curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh | sh
 #
 # Variables d'environnement acceptées :
-#   LW_REPO   dépôt source           (défaut : SalvadorCardona/linux-whisper)
-#   LW_REF    branche ou tag         (défaut : main)
-#   LW_SRC    dossier local à copier  (installation depuis un clone, sans réseau)
-#   LW_NO_SERVICE=1   n'installe pas le service (systemd ou launchd)
-#   LW_NO_HOTKEY=1    n'installe pas le raccourci clavier
+#   WD_REPO   dépôt source           (défaut : SalvadorCardona/whisper-desk)
+#   WD_REF    branche ou tag         (défaut : main)
+#   WD_SRC    dossier local à copier  (installation depuis un clone, sans réseau)
+#   WD_NO_SERVICE=1   n'installe pas le service (systemd ou launchd)
+#   WD_NO_HOTKEY=1    n'installe pas le raccourci clavier
 set -eu
 
-LW_REPO="${LW_REPO:-SalvadorCardona/linux-whisper}"
-LW_REF="${LW_REF:-main}"
+WD_REPO="${WD_REPO:-SalvadorCardona/whisper-desk}"
+WD_REF="${WD_REF:-main}"
 
-APP_DIR="$HOME/.local/share/linux-whisper/app"
-VENV_DIR="$HOME/.local/share/linux-whisper/venv"
+APP_DIR="$HOME/.local/share/whisper-desk/app"
+VENV_DIR="$HOME/.local/share/whisper-desk/venv"
 BIN_DIR="$HOME/.local/bin"
-BIN="$BIN_DIR/linux-whisper"
-CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/linux-whisper"
+BIN="$BIN_DIR/whisper-desk"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/whisper-desk"
 CONFIG="$CONFIG_DIR/config.toml"
-STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/linux-whisper"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/whisper-desk"
 UNIT_DIR="$HOME/.config/systemd/user"
 AGENT_DIR="$HOME/Library/LaunchAgents"
-AGENT_LABEL="fr.linuxwhisper.daemon"
+AGENT_LABEL="fr.whisperdesk.daemon"
 
 BOLD=""; DIM=""; GREEN=""; YELLOW=""; RESET=""
 if [ -t 1 ]; then
@@ -132,19 +132,19 @@ fi
 
 # --- 2. récupération des sources -------------------------------------------
 mkdir -p "$APP_DIR" "$BIN_DIR" "$CONFIG_DIR"
-if [ -n "${LW_SRC:-}" ]; then
-    say "Copie des sources depuis $LW_SRC"
-    [ -d "$LW_SRC/src/linux_whisper" ] || die "$LW_SRC ne contient pas src/linux_whisper"
+if [ -n "${WD_SRC:-}" ]; then
+    say "Copie des sources depuis $WD_SRC"
+    [ -d "$WD_SRC/src/whisper_desk" ] || die "$WD_SRC ne contient pas src/whisper_desk"
     rm -rf "$APP_DIR"
     mkdir -p "$APP_DIR"
-    tar -C "$LW_SRC" --exclude='.git' --exclude='__pycache__' -cf - . | tar -C "$APP_DIR" -xf -
+    tar -C "$WD_SRC" --exclude='.git' --exclude='__pycache__' -cf - . | tar -C "$APP_DIR" -xf -
 else
-    say "Téléchargement de $LW_REPO ($LW_REF)"
+    say "Téléchargement de $WD_REPO ($WD_REF)"
     have curl || die "curl est requis"
     have tar  || die "tar est requis"
     TMP=$(mktemp -d)
     trap 'rm -rf "$TMP"' EXIT INT TERM
-    curl -fsSL "https://codeload.github.com/$LW_REPO/tar.gz/refs/heads/$LW_REF" -o "$TMP/src.tar.gz" \
+    curl -fsSL "https://codeload.github.com/$WD_REPO/tar.gz/refs/heads/$WD_REF" -o "$TMP/src.tar.gz" \
         || die "téléchargement impossible (dépôt privé ou branche inexistante ?)"
     rm -rf "$APP_DIR"
     mkdir -p "$APP_DIR"
@@ -189,7 +189,7 @@ SYSTEM_PYTHON="$(command -v python3 || echo /usr/bin/python3)"
 sed -e "s|@APP_DIR@|$APP_DIR|g" \
     -e "s|@VENV@|$VENV_DIR|g" \
     -e "s|@SYSTEM_PYTHON@|$SYSTEM_PYTHON|g" \
-    "$APP_DIR/bin/linux-whisper.in" > "$BIN"
+    "$APP_DIR/bin/whisper-desk.in" > "$BIN"
 chmod +x "$BIN"
 ok "commande installée : $BIN"
 
@@ -203,7 +203,7 @@ fi
 
 # --- 6. service utilisateur (démarrage automatique) -------------------------
 SERVICE_INSTALLED=0
-if [ "${LW_NO_SERVICE:-0}" != "1" ]; then
+if [ "${WD_NO_SERVICE:-0}" != "1" ]; then
     if [ "$HOST" = macos ] && have launchctl; then
         say "Installation de l'agent launchd (démarrage à l'ouverture de session)"
         mkdir -p "$AGENT_DIR" "$STATE_DIR"
@@ -221,12 +221,12 @@ if [ "${LW_NO_SERVICE:-0}" != "1" ]; then
     elif have systemctl && [ -d /run/systemd/system ]; then
         say "Installation du service (démarrage à l'ouverture de session)"
         mkdir -p "$UNIT_DIR"
-        sed -e "s|@BIN@|$BIN|g" "$APP_DIR/systemd/linux-whisper.service.in" \
-            > "$UNIT_DIR/linux-whisper.service"
+        sed -e "s|@BIN@|$BIN|g" "$APP_DIR/systemd/whisper-desk.service.in" \
+            > "$UNIT_DIR/whisper-desk.service"
         systemctl --user daemon-reload
-        systemctl --user enable linux-whisper.service >/dev/null 2>&1 || warn "enable a échoué"
-        systemctl --user restart linux-whisper.service >/dev/null 2>&1 || warn "démarrage différé à la prochaine session"
-        ok "service linux-whisper.service activé"
+        systemctl --user enable whisper-desk.service >/dev/null 2>&1 || warn "enable a échoué"
+        systemctl --user restart whisper-desk.service >/dev/null 2>&1 || warn "démarrage différé à la prochaine session"
+        ok "service whisper-desk.service activé"
         SERVICE_INSTALLED=1
     else
         warn "ni systemd ni launchd — le daemon sera lancé à la demande, au premier raccourci"
@@ -234,7 +234,7 @@ if [ "${LW_NO_SERVICE:-0}" != "1" ]; then
 fi
 
 # --- 7. raccourci clavier ---------------------------------------------------
-if [ "${LW_NO_HOTKEY:-0}" != "1" ]; then
+if [ "${WD_NO_HOTKEY:-0}" != "1" ]; then
     say "Installation du raccourci clavier"
     "$BIN" hotkey install || warn "raccourci à créer à la main sur « $BIN toggle »"
 fi
@@ -252,9 +252,9 @@ printf '\n%sinstallation terminée.%s\n\n' "$BOLD" "$RESET"
 printf '  Appuyez sur %s%s%s, parlez, puis marquez un silence :\n' "$BOLD" "$BINDING" "$RESET"
 printf '  le texte est transcrit hors-ligne et inséré au curseur.\n\n'
 printf '  %sconfiguration%s  %s\n' "$DIM" "$RESET" "$CONFIG"
-printf '  %sdiagnostic%s     linux-whisper doctor\n' "$DIM" "$RESET"
-printf '  %sdictée CLI%s     linux-whisper record\n\n' "$DIM" "$RESET"
-if [ "$SERVICE_INSTALLED" = 0 ] && [ "${LW_NO_SERVICE:-0}" != "1" ]; then
+printf '  %sdiagnostic%s     whisper-desk doctor\n' "$DIM" "$RESET"
+printf '  %sdictée CLI%s     whisper-desk record\n\n' "$DIM" "$RESET"
+if [ "$SERVICE_INSTALLED" = 0 ] && [ "${WD_NO_SERVICE:-0}" != "1" ]; then
     printf '  %s!%s aucun gestionnaire de service : le daemon démarre au premier appel\n\n' "$YELLOW" "$RESET"
 fi
 if [ "$HOST" = macos ]; then

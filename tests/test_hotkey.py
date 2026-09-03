@@ -7,7 +7,7 @@ import unittest
 from . import context  # noqa: F401
 from .context import forced_host
 
-from linux_whisper import host, hotkey
+from whisper_desk import host, hotkey
 
 
 class ParseTest(unittest.TestCase):

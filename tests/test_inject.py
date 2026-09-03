@@ -8,7 +8,7 @@ from unittest import mock
 from . import context  # noqa: F401
 from .context import forced_host
 
-from linux_whisper import host, inject
+from whisper_desk import host, inject
 
 
 class DefaultShortcutTest(unittest.TestCase):

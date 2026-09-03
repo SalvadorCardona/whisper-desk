@@ -25,7 +25,7 @@ def main() -> int:
     if not text:
         return 0
 
-    app = Gtk.Application(application_id="fr.linuxwhisper.clipboard")
+    app = Gtk.Application(application_id="fr.whisperdesk.clipboard")
 
     def on_activate(application: Gtk.Application) -> None:
         window = Gtk.ApplicationWindow(application=application)

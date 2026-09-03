@@ -11,10 +11,10 @@ from unittest import mock
 from . import context  # noqa: F401
 from .context import forced_host
 
-from linux_whisper import config as config_module
-from linux_whisper import host
-from linux_whisper import output
-from linux_whisper.inject import parse_shortcut
+from whisper_desk import config as config_module
+from whisper_desk import host
+from whisper_desk import output
+from whisper_desk.inject import parse_shortcut
 
 
 def with_mode(mode: str) -> dict:

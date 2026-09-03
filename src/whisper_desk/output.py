@@ -17,7 +17,7 @@ from . import host
 from .inject import keyboard, resolve_shortcut
 from .overlay_proc import system_python
 
-logger = logging.getLogger("linux-whisper.output")
+logger = logging.getLogger("whisper-desk.output")
 
 CLIPBOARD_HELPER = Path(__file__).with_name("clipboard_gtk.py")
 # Laisse l'application cible réclamer les données de la sélection avant qu'on
@@ -250,7 +250,7 @@ def notify(summary: str, body: str = "") -> None:
     if shutil.which("notify-send"):
         _run([
             "notify-send",
-            "--app-name=linux-whisper",
+            "--app-name=whisper-desk",
             "--icon=audio-input-microphone-symbolic",
             "--expire-time=3000",
             summary,

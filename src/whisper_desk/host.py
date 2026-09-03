@@ -20,7 +20,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-logger = logging.getLogger("linux-whisper.host")
+logger = logging.getLogger("whisper-desk.host")
 
 LINUX = "linux"
 MACOS = "macos"
@@ -33,8 +33,8 @@ WSL_EXE_FALLBACK = "/mnt/c/Windows/System32/wsl.exe"
 
 @functools.cache
 def name() -> str:
-    """« linux », « wsl » ou « macos ». LW_HOST force la valeur (tests, cas tordus)."""
-    forced = os.environ.get("LW_HOST", "").strip().lower()
+    """« linux », « wsl » ou « macos ». WD_HOST force la valeur (tests, cas tordus)."""
+    forced = os.environ.get("WD_HOST", "").strip().lower()
     if forced in (LINUX, MACOS, WSL):
         return forced
     if platform.system() == "Darwin":

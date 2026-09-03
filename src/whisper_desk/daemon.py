@@ -24,7 +24,7 @@ from .overlay_proc import OverlayProcess
 from .recorder import SILENT_INPUT_PEAK, Recorder
 from .transcriber import Transcriber
 
-logger = logging.getLogger("linux-whisper.daemon")
+logger = logging.getLogger("whisper-desk.daemon")
 
 
 def socket_path() -> Path:
@@ -35,8 +35,8 @@ def socket_path() -> Path:
     """
     base = config_module.RUNTIME_DIR
     if base == Path("/tmp"):
-        return base / f"linux-whisper-{os.getuid()}.sock"
-    return base / "linux-whisper.sock"
+        return base / f"whisper-desk-{os.getuid()}.sock"
+    return base / "whisper-desk.sock"
 
 
 class Session:
@@ -93,11 +93,11 @@ class Session:
             # Un outil à installer, pas un bogue : inutile d'étaler une trace.
             self.error = str(error)
             logger.error("Capture impossible : %s", error)
-            output.notify("linux-whisper : micro inutilisable", str(error))
+            output.notify("whisper-desk : micro inutilisable", str(error))
         except Exception as error:  # le daemon ne doit jamais mourir sur une dictée
             self.error = str(error)
             logger.exception("Dictée en échec")
-            output.notify("linux-whisper", f"Erreur : {error}")
+            output.notify("whisper-desk", f"Erreur : {error}")
         finally:
             if self.writer:
                 self.writer.close()
@@ -112,11 +112,11 @@ class Session:
         if peak < SILENT_INPUT_PEAK:
             logger.warning(
                 "Aucun son capté sur le micro « %s » via %s (pic %.0f) — périphérique "
-                "muet ou mauvaise source par défaut ; voir « linux-whisper doctor ».",
+                "muet ou mauvaise source par défaut ; voir « whisper-desk doctor ».",
                 device, self.recorder.backend or "?", peak,
             )
             output.notify(
-                "linux-whisper : micro muet",
+                "whisper-desk : micro muet",
                 f"Aucun son n'arrive du périphérique « {device} ».",
             )
         else:

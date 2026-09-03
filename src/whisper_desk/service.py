@@ -18,14 +18,14 @@ from pathlib import Path
 from . import config as config_module
 from . import host
 
-logger = logging.getLogger("linux-whisper.service")
+logger = logging.getLogger("whisper-desk.service")
 
 SYSTEMD = "systemd"
 LAUNCHD = "launchd"
 DIRECT = "direct"
 
-UNIT = "linux-whisper.service"
-LAUNCH_LABEL = "fr.linuxwhisper.daemon"
+UNIT = "whisper-desk.service"
+LAUNCH_LABEL = "fr.whisperdesk.daemon"
 
 UNIT_PATH = Path.home() / ".config/systemd/user" / UNIT
 AGENT_PATH = Path.home() / "Library/LaunchAgents" / f"{LAUNCH_LABEL}.plist"
@@ -78,7 +78,7 @@ def start() -> bool:
 
 
 def start_directly() -> bool:
-    """Lance « linux-whisper daemon » en processus détaché, sans gestionnaire.
+    """Lance « whisper-desk daemon » en processus détaché, sans gestionnaire.
 
     Le même interpréteur et le même environnement que le client : c'est le
     lanceur installé qui a posé PYTHONPATH et les bibliothèques CUDA.
@@ -90,7 +90,7 @@ def start_directly() -> bool:
         log = None
     try:
         subprocess.Popen(
-            [sys.executable, "-m", "linux_whisper", "daemon"],
+            [sys.executable, "-m", "whisper_desk", "daemon"],
             stdin=subprocess.DEVNULL,
             stdout=log or subprocess.DEVNULL,
             stderr=subprocess.STDOUT if log else subprocess.DEVNULL,
@@ -130,5 +130,5 @@ def hint() -> str:
     return {
         SYSTEMD: f"systemctl --user start {UNIT}",
         LAUNCHD: f"launchctl start {LAUNCH_LABEL}",
-        DIRECT: "linux-whisper daemon &",
+        DIRECT: "whisper-desk daemon &",
     }[manager()]

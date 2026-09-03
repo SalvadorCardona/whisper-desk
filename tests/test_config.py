@@ -8,7 +8,7 @@ from pathlib import Path
 
 from . import context  # noqa: F401
 
-from linux_whisper import config as config_module
+from whisper_desk import config as config_module
 
 
 class MergeTest(unittest.TestCase):

@@ -7,7 +7,7 @@ from unittest import mock
 
 from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
 
-from linux_whisper.transcriber import CONTEXT_CHARS, Transcriber, is_filler
+from whisper_desk.transcriber import CONTEXT_CHARS, Transcriber, is_filler
 
 try:
     import numpy

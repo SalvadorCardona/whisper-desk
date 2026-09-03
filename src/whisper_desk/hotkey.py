@@ -18,12 +18,12 @@ from . import host
 SCHEMA = "org.gnome.settings-daemon.plugins.media-keys"
 CUSTOM_SCHEMA = f"{SCHEMA}.custom-keybinding"
 BASE_PATH = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
-SLOT = "linux-whisper"
+SLOT = "whisper-desk"
 KEY_PATH = f"{BASE_PATH}/{SLOT}/"
 
-SHORTCUT_NAME = "linux-whisper"
+SHORTCUT_NAME = "whisper-desk"
 SKHD_CONFIG = os.path.expanduser("~/.config/skhd/skhdrc")
-SKHD_MARK = "# linux-whisper"
+SKHD_MARK = "# whisper-desk"
 
 
 class UnsupportedDesktop(RuntimeError):
@@ -156,7 +156,7 @@ class GnomeHotkey:
 # Windows n'accepte de raccourci global que sur un .lnk du menu Démarrer ou du
 # bureau, et seulement en Ctrl+Alt (éventuellement complété par Maj).
 WINDOWS_KEYS = {"space": "SPACE", "enter": "ENTER", "insert": "INS"}
-LINK_NAME = "linux-whisper.lnk"
+LINK_NAME = "whisper-desk.lnk"
 START_MENU = "$env:APPDATA + '\\Microsoft\\Windows\\Start Menu\\Programs\\" + LINK_NAME + "'"
 
 
@@ -284,7 +284,7 @@ class SkhdHotkey:
                 continue
             if skip_next:
                 skip_next = False
-                if "linux-whisper" in line:
+                if "whisper-desk" in line:
                     continue
             kept.append(line)
         return kept
