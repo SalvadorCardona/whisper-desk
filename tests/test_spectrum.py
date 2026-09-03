@@ -12,6 +12,10 @@ from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
 from linux_whisper import spectrum
 from linux_whisper.spectrum import band_edges, bands, visual_level
 
+# La suite doit tourner sur la seule bibliothèque standard, comme en CI : sans
+# numpy, `bands` rend une liste vide et il n'y a plus de spectre à mesurer.
+requires_numpy = unittest.skipUnless(spectrum.numpy is not None, "numpy absent")
+
 RATE = 16000
 SAMPLES = 1600
 
@@ -44,15 +48,19 @@ class BandEdgesTest(unittest.TestCase):
 
 
 class BandsTest(unittest.TestCase):
+    @requires_numpy
     def test_un_son_grave_allume_la_gauche(self):
         self.assertLess(peak_band(sine(160)), 4)
 
+    @requires_numpy
     def test_un_son_aigu_allume_la_droite(self):
         self.assertGreater(peak_band(sine(4000)), 7)
 
+    @requires_numpy
     def test_le_grave_et_l_aigu_ne_tombent_pas_dans_la_meme_bande(self):
         self.assertLess(peak_band(sine(160)), peak_band(sine(4000)))
 
+    @requires_numpy
     def test_toutes_les_valeurs_restent_dans_la_jauge(self):
         values = bands(sine(300, amplitude=32000), 15, RATE, 22000.0, 200.0)
         self.assertEqual(len(values), 15)

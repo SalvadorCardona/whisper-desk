@@ -10,7 +10,7 @@ from unittest import mock
 
 from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
 
-from linux_whisper import capture, recorder
+from linux_whisper import capture, recorder, spectrum
 from linux_whisper.recorder import (
     CHUNK_BYTES,
     MIN_SEGMENT_CHUNKS,
@@ -223,6 +223,7 @@ class RecordTest(unittest.TestCase):
     def test_sans_equalizer_aucune_bande_n_est_calculee(self):
         self.assertTrue(all(not bands for _level, bands in self.listen(bands=0)))
 
+    @unittest.skipUnless(spectrum.numpy is not None, "numpy absent")
     def test_l_equalizer_recoit_une_valeur_par_barre(self):
         spectra = [bands for _level, bands in self.listen(bands=12) if bands]
         self.assertTrue(spectra)

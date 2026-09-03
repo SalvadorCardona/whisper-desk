@@ -9,6 +9,15 @@ from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
 
 from linux_whisper.transcriber import CONTEXT_CHARS, Transcriber, is_filler
 
+try:
+    import numpy
+except ImportError:  # la CI n'installe que la bibliothèque standard
+    numpy = None
+
+# transcribe() convertit le PCM en flottants avec numpy avant d'appeler le
+# modèle : sans lui, seules les fonctions pures restent testables.
+requires_numpy = unittest.skipUnless(numpy is not None, "numpy absent")
+
 
 def settings(**overrides):
     model = {
@@ -88,10 +97,12 @@ class TranscribeTest(unittest.TestCase):
         text = transcriber.transcribe(pcm, context)
         return text, model.transcribe.call_args.kwargs
 
+    @requires_numpy
     def test_les_phrases_sont_recollees(self):
         text, _ = self.transcribe([Segment("Première phrase."), Segment("Et la suite.")])
         self.assertEqual(text, "Première phrase. Et la suite.")
 
+    @requires_numpy
     def test_l_hallucination_est_ecartee_du_texte_rendu(self):
         text, _ = self.transcribe([
             Segment("il faudrait rajouter"),
@@ -99,14 +110,17 @@ class TranscribeTest(unittest.TestCase):
         ])
         self.assertEqual(text, "il faudrait rajouter")
 
+    @requires_numpy
     def test_le_vocabulaire_part_en_hotwords(self):
         _, kwargs = self.transcribe([Segment("texte")], vocabulary="OpenRouter, repos GitHub")
         self.assertEqual(kwargs["hotwords"], "OpenRouter, repos GitHub")
 
+    @requires_numpy
     def test_sans_vocabulaire_aucun_hotword_n_est_impose(self):
         _, kwargs = self.transcribe([Segment("texte")])
         self.assertIsNone(kwargs["hotwords"])
 
+    @requires_numpy
     def test_le_contexte_atteint_bien_le_modele(self):
         _, kwargs = self.transcribe([Segment("des images")], context="il faudrait rajouter")
         self.assertEqual(kwargs["initial_prompt"], "il faudrait rajouter")
