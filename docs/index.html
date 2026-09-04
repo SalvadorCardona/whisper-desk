@@ -1,16 +1,18 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>whisper-desk — la dictée vocale hors-ligne pour Linux, WSL et macOS</title>
-<meta name="description" content="Appuyez sur Super + J, parlez : le texte s'écrit là où se trouve votre curseur. Transcription locale par faster-whisper — aucune donnée ne quitte la machine.">
+<title>whisper-desk — offline voice dictation for Linux, WSL and macOS</title>
+<meta name="description" content="Press Super + J and speak: the text is typed straight where your cursor is. Local transcription with faster-whisper — no data leaves the machine.">
 <meta name="theme-color" content="#0d0c0b">
+<link rel="canonical" href="https://cardona.digital/whisper-desk/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23e46212'%20stroke-width='2.2'%20stroke-linecap='round'%3E%3Crect%20x='9'%20y='2'%20width='6'%20height='11'%20rx='3'%20fill='%23e46212'%20stroke='none'/%3E%3Cpath%20d='M5%2011a7%207%200%200%200%2014%200M12%2018v4'/%3E%3C/svg%3E">
 <meta property="og:type" content="website">
-<meta property="og:title" content="whisper-desk — dictée vocale hors-ligne">
-<meta property="og:description" content="Super + J, vous parlez, le texte s'écrit au curseur. Rien ne quitte votre machine.">
-<meta property="og:image" content="https://salvadorcardona.github.io/whisper-desk/overlay-listening.png">
+<meta property="og:title" content="whisper-desk — offline voice dictation">
+<meta property="og:description" content="Super + J, you speak, the text is typed at the cursor. Nothing leaves your machine.">
+<meta property="og:url" content="https://cardona.digital/whisper-desk/">
+<meta property="og:image" content="https://cardona.digital/whisper-desk/overlay-listening.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -360,10 +362,10 @@
     </a>
     <div class="nav-links">
       <a href="#installation">Installation</a>
-      <a href="#utilisation">Utilisation</a>
+      <a href="#usage">Usage</a>
       <a href="#configuration">Configuration</a>
-      <a href="#fonctionnement">Fonctionnement</a>
-      <a href="#depannage">Dépannage</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#troubleshooting">Troubleshooting</a>
       <a class="nav-gh" href="https://github.com/SalvadorCardona/whisper-desk">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
         GitHub
@@ -378,21 +380,21 @@
   <span class="eyebrow"><b>100&nbsp;% local</b> · Linux · WSL · macOS</span>
   <h1>whisper&#8209;desk<span class="dot">.</span></h1>
   <p class="lede">
-    Vous appuyez sur <kbd>Super</kbd> + <kbd>J</kbd>, vous parlez, et le texte
-    <strong>s’écrit là où se trouve votre curseur</strong> — phrase après phrase, pendant
-    que vous parlez. Aucune donnée ne quitte la machine.
+    You press <kbd>Super</kbd> + <kbd>J</kbd>, you speak, and the text
+    <strong>is typed straight where your cursor is</strong> — sentence after sentence,
+    while you speak. No data leaves the machine.
   </p>
-  <p class="byline">Écrit et maintenu par <a href="https://cardona.digital" target="_blank" rel="noopener">Salvador&nbsp;Cardona · cardona.digital</a></p>
+  <p class="byline">Written and maintained by <a href="https://cardona.digital" target="_blank" rel="noopener">Salvador&nbsp;Cardona · cardona.digital</a></p>
 
   <div class="cta">
     <div class="install">
       <span class="prompt">$</span>
       <span class="cmd" id="install-cmd">curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh | sh</span>
-      <button class="copy" id="copy-install" type="button" aria-label="Copier la commande d’installation">Copier</button>
+      <button class="copy" id="copy-install" type="button" aria-label="Copy the install command">Copy</button>
     </div>
     <a class="btn" href="https://github.com/SalvadorCardona/whisper-desk">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-      Le code source
+      The source code
     </a>
   </div>
 
@@ -400,7 +402,7 @@
     <div class="window">
       <div class="titlebar">
         <div class="lights"><i></i><i></i><i></i></div>
-        <span>votre éditeur, votre navigateur, votre messagerie…</span>
+        <span>your editor, your browser, your chat client…</span>
       </div>
       <div class="editor"><span class="typed" id="typed"></span><span class="caret"></span></div>
       <div class="overlay-strip">
@@ -416,55 +418,55 @@
       </div>
     </div>
     <p class="demo-note">
-      L’overlay réel : un micro, et un equalizer où <b>chaque barre suit une bande de fréquence</b>,
-      des graves à gauche aux aiguës à droite.
+      The real overlay: a microphone, and an equalizer where <b>each bar tracks a frequency band</b>,
+      from lows on the left to highs on the right.
     </p>
   </div>
 </div>
 
-<section id="pourquoi">
+<section id="what-it-is">
   <div class="wrap">
     <div class="sec-head">
-      <span class="sec-num">01 — Ce que c’est</span>
-      <h2>Une dictée qui ne sort jamais de votre machine.</h2>
+      <span class="sec-num">01 — What it is</span>
+      <h2>Dictation that never leaves your machine.</h2>
       <p>
-        La transcription tourne sur votre GPU (ou votre CPU) avec
+        Transcription runs on your GPU (or your CPU) with
         <a href="https://github.com/SYSTRAN/faster-whisper" target="_blank" rel="noopener">faster-whisper</a>.
-        Pas de compte, pas d’API, pas de réseau — le modèle est chargé une fois, et il reste en mémoire.
+        No account, no API, no network — the model is loaded once, and it stays in memory.
       </p>
     </div>
 
     <div class="cards">
       <div class="card">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
-        <h4>Hors-ligne, vraiment</h4>
-        <p>Aucun octet d’audio ne quitte l’ordinateur. Coupez le réseau : ça marche toujours.</p>
+        <h4>Offline, really</h4>
+        <p>Not a byte of audio leaves the computer. Cut the network: it still works.</p>
       </div>
       <div class="card">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 5h6M7 5v14M4 19h6"/><path d="M14 8h6v8h-6"/></svg></div>
-        <h4>Insertion au curseur</h4>
-        <p>Le texte arrive dans l’application qui a le focus. Votre presse-papiers vous est rendu intact.</p>
+        <h4>Inserted at the cursor</h4>
+        <p>The text lands in the focused application. Your clipboard is handed back untouched.</p>
       </div>
       <div class="card">
         <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 12h3l2-6 3 12 3-9 2 3h3"/></svg></div>
-        <h4>Au fil de l’eau</h4>
-        <p>Une petite pause suffit : la phrase est transcrite et insérée pendant que vous dictez la suivante.</p>
+        <h4>As you go</h4>
+        <p>A short pause is enough: the sentence is transcribed and inserted while you dictate the next one.</p>
       </div>
       <div class="card">
         <div class="ico"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-        <h4>Trois hôtes, un seul outil</h4>
-        <p>Linux, WSL et macOS. Le script d’installation reconnaît l’hôte et adapte chaque étape.</p>
+        <h4>Three hosts, one tool</h4>
+        <p>Linux, WSL and macOS. The install script recognises the host and adapts every step.</p>
       </div>
     </div>
 
     <div class="shots">
       <div class="shot">
-        <img src="overlay-listening.png" alt="L’overlay de whisper-desk pendant l’écoute" width="336" height="120" loading="lazy">
-        <span>Pendant l’écoute</span>
+        <img src="overlay-listening.png" alt="The whisper-desk overlay while listening" width="336" height="120" loading="lazy">
+        <span>While listening</span>
       </div>
       <div class="shot">
-        <img src="overlay-working.png" alt="L’overlay de whisper-desk pendant la transcription" width="336" height="120" loading="lazy">
-        <span>Pendant la transcription</span>
+        <img src="overlay-working.png" alt="The whisper-desk overlay while transcribing" width="336" height="120" loading="lazy">
+        <span>While transcribing</span>
       </div>
     </div>
   </div>
@@ -474,94 +476,94 @@
   <div class="wrap">
     <div class="sec-head">
       <span class="sec-num">02 — Installation</span>
-      <h2>Une commande, et c’est tout.</h2>
+      <h2>One command, and that’s all.</h2>
     </div>
 
     <pre data-copy><span class="p">$ </span>curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh | sh</pre>
 
-    <p>Le script reconnaît l’hôte — Linux, WSL ou macOS — et adapte chaque étape&nbsp;:</p>
+    <p>The script recognises the host — Linux, WSL or macOS — and adapts every step:</p>
 
     <ol class="steps">
-      <li>il vérifie les <b>dépendances système</b> (micro, presse-papiers, notifications, GTK) et propose de les installer, avec <code>apt</code> ou <code>brew</code> selon le cas&nbsp;;</li>
-      <li>il crée un <b>environnement Python isolé</b> et y installe faster-whisper — plus les bibliothèques CUDA si une carte NVIDIA est détectée&nbsp;;</li>
-      <li>il installe la commande <code>whisper-desk</code> dans <code>~/.local/bin</code>&nbsp;;</li>
-      <li>il active le <b>service utilisateur</b> — systemd sous Linux et WSL, launchd sur macOS — démarré à l’ouverture de session&nbsp;;</li>
-      <li>il enregistre le <b>raccourci global</b> auprès du gestionnaire de l’hôte.</li>
+      <li>it checks the <b>system dependencies</b> (microphone, clipboard, notifications, GTK) and offers to install them, with <code>apt</code> or <code>brew</code> as appropriate;</li>
+      <li>it creates an <b>isolated Python environment</b> and installs faster-whisper in it — plus the CUDA libraries if an NVIDIA card is detected;</li>
+      <li>it installs the <code>whisper-desk</code> command in <code>~/.local/bin</code>;</li>
+      <li>it enables the <b>user service</b> — systemd on Linux and WSL, launchd on macOS — started at login;</li>
+      <li>it registers the <b>global shortcut</b> with the host’s shortcut manager.</li>
     </ol>
 
     <div class="note">
-      <p><b>Le modèle Whisper</b> (quelques centaines de Mo) se télécharge au premier démarrage du service.</p>
-      <p>Relancer la même commande <b>met à jour</b> l’installation&nbsp;: le code est remplacé, le service redémarré, et votre configuration comme vos modèles sont conservés.</p>
+      <p><b>The Whisper model</b> (a few hundred MB) is downloaded the first time the service starts.</p>
+      <p>Running the same command again <b>updates</b> the installation: the code is replaced, the service restarted, and your configuration and models are kept.</p>
     </div>
 
-    <h3>Vérifier que tout est en place</h3>
+    <h3>Check that everything is in place</h3>
     <pre data-copy><span class="p">$ </span>whisper-desk doctor</pre>
 
-    <h3>Ce que chaque hôte utilise</h3>
+    <h3>What each host uses</h3>
     <div class="tbl">
       <table>
         <thead><tr><th></th><th>Linux</th><th>WSL</th><th>macOS</th></tr></thead>
         <tbody>
-          <tr><td>Capture micro</td><td><code>arecord</code> (ALSA)</td><td><code>parec</code> (WSLg)</td><td><code>rec</code> (sox) ou <code>ffmpeg</code></td></tr>
-          <tr><td>Presse-papiers</td><td><code>wl-copy</code> / <code>xclip</code></td><td><code>clip.exe</code></td><td><code>pbcopy</code></td></tr>
-          <tr><td>Frappe du collage</td><td><code>/dev/uinput</code></td><td>SendKeys (PowerShell)</td><td>System Events</td></tr>
-          <tr><td>Raccourci global</td><td>GNOME (<code>gsettings</code>)</td><td>menu Démarrer</td><td><code>skhd</code>, ou à la main</td></tr>
-          <tr><td>Service</td><td>systemd</td><td>systemd, sinon à la demande</td><td>launchd</td></tr>
+          <tr><td>Microphone capture</td><td><code>arecord</code> (ALSA)</td><td><code>parec</code> (WSLg)</td><td><code>rec</code> (sox) or <code>ffmpeg</code></td></tr>
+          <tr><td>Clipboard</td><td><code>wl-copy</code> / <code>xclip</code></td><td><code>clip.exe</code></td><td><code>pbcopy</code></td></tr>
+          <tr><td>Paste keystroke</td><td><code>/dev/uinput</code></td><td>SendKeys (PowerShell)</td><td>System Events</td></tr>
+          <tr><td>Global shortcut</td><td>GNOME (<code>gsettings</code>)</td><td>Start menu</td><td><code>skhd</code>, or by hand</td></tr>
+          <tr><td>Service</td><td>systemd</td><td>systemd, otherwise on demand</td><td>launchd</td></tr>
           <tr><td>Notifications</td><td><code>notify-send</code></td><td><code>notify-send</code> (WSLg)</td><td><code>osascript</code></td></tr>
         </tbody>
       </table>
     </div>
-    <p>Aucun de ces choix n’est figé&nbsp;: <code>backend</code>, <code>keyboard</code> et <code>paste_shortcut</code> se forcent dans la configuration.</p>
+    <p>None of these choices are set in stone: <code>backend</code>, <code>keyboard</code> and <code>paste_shortcut</code> can be forced in the configuration.</p>
 
-    <h3>Prérequis</h3>
+    <h3>Requirements</h3>
     <div class="note">
       <ul>
-        <li><b>Linux</b> — GNOME (Wayland ou X11), <code>systemd</code> en session utilisateur.</li>
-        <li><b>WSL</b> — WSL&nbsp;2 avec WSLg (Windows&nbsp;11, ou Windows&nbsp;10 à jour) pour le micro, et l’interopérabilité Windows active. Le texte s’insère dans les fenêtres <b>Windows</b>.</li>
-        <li><b>macOS</b> — 12 ou plus récent. Le premier collage demande l’autorisation d’accessibilité, et la première dictée l’autorisation micro.</li>
+        <li><b>Linux</b> — GNOME (Wayland or X11), <code>systemd</code> in the user session.</li>
+        <li><b>WSL</b> — WSL&nbsp;2 with WSLg (Windows&nbsp;11, or an up-to-date Windows&nbsp;10) for the microphone, and Windows interoperability enabled. Text is inserted into <b>Windows</b> windows.</li>
+        <li><b>macOS</b> — 12 or newer. The first paste asks for accessibility permission, and the first dictation asks for microphone permission.</li>
       </ul>
-      <p>Un GPU NVIDIA est un plus, pas une obligation&nbsp;; sur macOS la transcription se fait sur le CPU, CTranslate2 n’utilisant pas Metal.</p>
+      <p>An NVIDIA GPU is a bonus, not a requirement; on macOS transcription runs on the CPU, since CTranslate2 does not use Metal.</p>
     </div>
 
-    <h3>Désinstallation</h3>
+    <h3>Uninstalling</h3>
     <pre data-copy><span class="p">$ </span>curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/uninstall.sh | sh</pre>
-    <p>Ajoutez <code>WD_PURGE=1</code> pour supprimer aussi la configuration et l’historique. Les modèles téléchargés restent dans <code>~/.cache/huggingface</code>.</p>
+    <p>Add <code>WD_PURGE=1</code> to remove the configuration and the history as well. Downloaded models stay in <code>~/.cache/huggingface</code>.</p>
   </div>
 </section>
 
-<section id="utilisation">
+<section id="usage">
   <div class="wrap">
     <div class="sec-head">
-      <span class="sec-num">03 — Utilisation</span>
-      <h2>Un raccourci, une voix, du texte.</h2>
+      <span class="sec-num">03 — Usage</span>
+      <h2>A shortcut, a voice, some text.</h2>
     </div>
 
     <div class="tbl">
       <table>
-        <thead><tr><th>Geste</th><th>Effet</th></tr></thead>
+        <thead><tr><th>Gesture</th><th>Effect</th></tr></thead>
         <tbody>
-          <tr><td><kbd>Super</kbd> + <kbd>J</kbd></td><td>démarre l’écoute — l’overlay apparaît</td></tr>
-          <tr><td>une petite pause (~0,6&nbsp;s)</td><td>la phrase est transcrite et <b>insérée au curseur</b>, l’écoute continue</td></tr>
-          <tr><td>un silence de 2&nbsp;s</td><td>fin de la dictée</td></tr>
-          <tr><td><kbd>Super</kbd> + <kbd>J</kbd> (à nouveau)</td><td>arrête l’écoute immédiatement</td></tr>
+          <tr><td><kbd>Super</kbd> + <kbd>J</kbd></td><td>starts listening — the overlay appears</td></tr>
+          <tr><td>a short pause (~0.6&nbsp;s)</td><td>the sentence is transcribed and <b>inserted at the cursor</b>, listening continues</td></tr>
+          <tr><td>2&nbsp;s of silence</td><td>end of dictation</td></tr>
+          <tr><td><kbd>Super</kbd> + <kbd>J</kbd> (again)</td><td>stops listening immediately</td></tr>
         </tbody>
       </table>
     </div>
 
     <p>
-      Le raccourci par défaut suit l’hôte&nbsp;: <kbd>Super</kbd> + <kbd>J</kbd> sous Linux et macOS
-      (<kbd>Cmd</kbd> + <kbd>J</kbd>), <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>J</kbd> sous WSL —
-      Windows se réservant la touche Windows.
+      The default shortcut follows the host: <kbd>Super</kbd> + <kbd>J</kbd> on Linux and macOS
+      (<kbd>Cmd</kbd> + <kbd>J</kbd>), <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>J</kbd> on WSL —
+      Windows reserves the Windows key for itself.
     </p>
 
-    <h3>En ligne de commande</h3>
-    <pre data-copy><span class="p">$ </span>whisper-desk record     <span class="c"># dicte et écrit le texte sur la sortie standard</span>
-<span class="p">$ </span>whisper-desk toggle     <span class="c"># équivalent du raccourci clavier</span>
-<span class="p">$ </span>whisper-desk status     <span class="c"># état du daemon, modèle chargé, GPU ou CPU</span>
-<span class="p">$ </span>whisper-desk doctor     <span class="c"># diagnostic complet</span>
-<span class="p">$ </span>whisper-desk config     <span class="c"># ouvre la configuration dans $EDITOR</span>
-<span class="p">$ </span>whisper-desk reload     <span class="c"># recharge la configuration sans redémarrer</span>
-<span class="p">$ </span>whisper-desk quit       <span class="c"># arrête le daemon</span></pre>
+    <h3>From the command line</h3>
+    <pre data-copy><span class="p">$ </span>whisper-desk record     <span class="c"># dictate and write the text to standard output</span>
+<span class="p">$ </span>whisper-desk toggle     <span class="c"># same as the keyboard shortcut</span>
+<span class="p">$ </span>whisper-desk status     <span class="c"># daemon state, loaded model, GPU or CPU</span>
+<span class="p">$ </span>whisper-desk doctor     <span class="c"># full diagnostic</span>
+<span class="p">$ </span>whisper-desk config     <span class="c"># open the configuration in $EDITOR</span>
+<span class="p">$ </span>whisper-desk reload     <span class="c"># reload the configuration without restarting</span>
+<span class="p">$ </span>whisper-desk quit       <span class="c"># stop the daemon</span></pre>
   </div>
 </section>
 
@@ -569,33 +571,33 @@
   <div class="wrap">
     <div class="sec-head">
       <span class="sec-num">04 — Configuration</span>
-      <h2>Tout tient dans un fichier.</h2>
+      <h2>Everything fits in one file.</h2>
       <p><code>~/.config/whisper-desk/config.toml</code></p>
     </div>
 
     <pre data-copy><span class="k">[hotkey]</span>
-binding = <span class="s">"auto"</span>              <span class="c"># "auto", ou &lt;Ctrl&gt;/&lt;Alt&gt;/&lt;Shift&gt;/&lt;Super&gt; + une touche</span>
+binding = <span class="s">"auto"</span>              <span class="c"># "auto", or &lt;Ctrl&gt;/&lt;Alt&gt;/&lt;Shift&gt;/&lt;Super&gt; + a key</span>
 
 <span class="k">[model]</span>
 name = <span class="s">"auto"</span>                 <span class="c"># auto | tiny | base | small | medium | large-v3 | large-v3-turbo</span>
 device = <span class="s">"auto"</span>               <span class="c"># auto | cuda | cpu</span>
-language = <span class="s">"fr"</span>               <span class="c"># code ISO, ou "auto" pour la détection</span>
-initial_prompt = <span class="s">""</span>           <span class="c"># vocabulaire à privilégier (noms propres, jargon)</span>
+language = <span class="s">"fr"</span>               <span class="c"># ISO code, or "auto" for detection</span>
+initial_prompt = <span class="s">""</span>           <span class="c"># vocabulary to favour (proper nouns, jargon)</span>
 
 <span class="k">[recording]</span>
 backend = <span class="s">"auto"</span>              <span class="c"># auto | arecord | parec | rec | sox | ffmpeg</span>
-streaming = <span class="n">true</span>              <span class="c"># insertion au fil de l'eau, phrase par phrase</span>
-segment_silence_seconds = <span class="n">0.6</span> <span class="c"># pause qui découpe une phrase</span>
-silence_seconds = <span class="n">2.0</span>         <span class="c"># silence qui met fin à la dictée</span>
+streaming = <span class="n">true</span>              <span class="c"># insertion as you go, sentence by sentence</span>
+segment_silence_seconds = <span class="n">0.6</span> <span class="c"># pause that splits a sentence</span>
+silence_seconds = <span class="n">2.0</span>         <span class="c"># silence that ends the dictation</span>
 max_seconds = <span class="n">120</span>
 
 <span class="k">[output]</span>
-mode = <span class="s">"cursor"</span>               <span class="c"># cursor | clipboard | stdout — combinables : "cursor+stdout"</span>
-paste_shortcut = <span class="s">"auto"</span>       <span class="c"># "shift+insert" si vous dictez surtout en terminal</span>
+mode = <span class="s">"cursor"</span>               <span class="c"># cursor | clipboard | stdout — combinable: "cursor+stdout"</span>
+paste_shortcut = <span class="s">"auto"</span>       <span class="c"># "shift+insert" if you mostly dictate in a terminal</span>
 keyboard = <span class="s">"auto"</span>             <span class="c"># auto | uinput | windows | applescript | none</span>
-restore_clipboard = <span class="n">true</span>      <span class="c"># rend votre presse-papiers d'origine à la fin</span>
+restore_clipboard = <span class="n">true</span>      <span class="c"># hands your original clipboard back at the end</span>
 notify = <span class="n">false</span>
-history = <span class="n">true</span>               <span class="c"># journal dans ~/.local/state/whisper-desk/history.log</span>
+history = <span class="n">true</span>               <span class="c"># log in ~/.local/state/whisper-desk/history.log</span>
 
 <span class="k">[overlay]</span>
 enabled = <span class="n">true</span>
@@ -603,211 +605,211 @@ accent = <span class="s">"#e46212"</span>
 position = <span class="s">"bottom-center"</span>    <span class="c"># bottom-center | top-center | center</span>
 margin = <span class="n">96</span></pre>
 
-    <p>Après modification&nbsp;:</p>
-    <pre data-copy><span class="p">$ </span>whisper-desk reload            <span class="c"># pour tout sauf le raccourci</span>
-<span class="p">$ </span>whisper-desk hotkey install    <span class="c"># pour appliquer un nouveau raccourci</span></pre>
+    <p>After a change:</p>
+    <pre data-copy><span class="p">$ </span>whisper-desk reload            <span class="c"># for everything but the shortcut</span>
+<span class="p">$ </span>whisper-desk hotkey install    <span class="c"># to apply a new shortcut</span></pre>
 
-    <h3>Choisir son modèle</h3>
+    <h3>Choosing a model</h3>
     <div class="tbl">
       <table>
-        <thead><tr><th>Modèle</th><th>VRAM</th><th>Vitesse</th><th>Qualité</th></tr></thead>
+        <thead><tr><th>Model</th><th>VRAM</th><th>Speed</th><th>Quality</th></tr></thead>
         <tbody>
-          <tr><td><code>small</code></td><td>~1 Go</td><td>très rapide</td><td>correcte — <b>défaut sans GPU</b></td></tr>
-          <tr><td><code>medium</code></td><td>~2,5 Go</td><td>rapide</td><td>bonne</td></tr>
-          <tr><td><code>large-v3-turbo</code></td><td>~2 Go</td><td>rapide</td><td>excellente — <b>défaut avec GPU</b></td></tr>
-          <tr><td><code>large-v3</code></td><td>~4,5 Go</td><td>plus lent</td><td>la meilleure</td></tr>
+          <tr><td><code>small</code></td><td>~1 GB</td><td>very fast</td><td>decent — <b>default without a GPU</b></td></tr>
+          <tr><td><code>medium</code></td><td>~2.5 GB</td><td>fast</td><td>good</td></tr>
+          <tr><td><code>large-v3-turbo</code></td><td>~2 GB</td><td>fast</td><td>excellent — <b>default with a GPU</b></td></tr>
+          <tr><td><code>large-v3</code></td><td>~4.5 GB</td><td>slower</td><td>the best</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Pour raccourcir encore le délai entre la fin d’une phrase et son insertion, baissez <code>beam_size</code> à <code>1</code> dans <code>[model]</code>.</p>
+    <p>To shorten the delay between the end of a sentence and its insertion even further, lower <code>beam_size</code> to <code>1</code> in <code>[model]</code>.</p>
   </div>
 </section>
 
-<section id="fonctionnement">
+<section id="how-it-works">
   <div class="wrap">
     <div class="sec-head">
-      <span class="sec-num">05 — Fonctionnement</span>
-      <h2>Trois contraintes de Wayland ont façonné l’architecture.</h2>
+      <span class="sec-num">05 — How it works</span>
+      <h2>Three Wayland constraints shaped this architecture.</h2>
     </div>
 
     <div class="diagram">
-<pre><span class="hl">Super + J</span>  <span class="ar">─→</span>  whisper-desk toggle  <span class="ar">─→</span>  socket Unix  <span class="ar">─→</span>  <span class="hl">daemon</span> (modèle en mémoire)
+<pre><span class="hl">Super + J</span>  <span class="ar">─→</span>  whisper-desk toggle  <span class="ar">─→</span>  Unix socket  <span class="ar">─→</span>  <span class="hl">daemon</span> (model in memory)
                                                               │
-                              overlay X11 <span class="ar">←──</span> niveau audio <span class="ar">────</span>┤
+                              X11 overlay <span class="ar">←──</span> audio level <span class="ar">─────</span>┤
                                                               │
- capture micro <span class="ar">─→</span> détection de silence <span class="ar">─→</span> phrase <span class="ar">─→</span> <span class="hl">faster-whisper</span> <span class="ar">─→</span> texte
+ mic capture <span class="ar">─→</span> silence detection <span class="ar">─→</span> sentence <span class="ar">─→</span> <span class="hl">faster-whisper</span> <span class="ar">─→</span> text
                                                               │
-                          presse-papiers + Ctrl+V (frappe simulée) <span class="ar">─→</span> <span class="hl">curseur</span></pre>
+                          clipboard + Ctrl+V (simulated keystroke) <span class="ar">─→</span> <span class="hl">cursor</span></pre>
     </div>
 
     <p>
-      Le daemon garde le modèle chargé en permanence, et transcrit une phrase pendant que le micro
-      enregistre déjà la suivante. Seules les deux extrémités de cette chaîne — la capture et la
-      frappe — changent d’un hôte à l’autre&nbsp;; le reste est commun.
+      The daemon keeps the model loaded at all times, and transcribes one sentence while the
+      microphone is already recording the next. Only the two ends of that chain — capture and
+      keystroke — change from one host to another; the rest is shared.
     </p>
 
     <details>
-      <summary>Un client ne peut pas taper dans la fenêtre d’un autre</summary>
+      <summary>A client cannot type into another client’s window</summary>
       <div class="details-body">
         <p>
-          Le protocole <code>virtual-keyboard</code> (celui de <code>wtype</code>) n’est pas implémenté
-          par GNOME. On passe donc par un clavier virtuel du noyau (<code>/dev/uinput</code>, accessible
-          sans privilèges grâce à l’ACL posée par systemd) qui envoie un simple raccourci de collage.
+          The <code>virtual-keyboard</code> protocol (the one <code>wtype</code> uses) is not
+          implemented by GNOME. So we go through a kernel virtual keyboard (<code>/dev/uinput</code>,
+          reachable without privileges thanks to the ACL set by systemd) that sends a plain paste shortcut.
         </p>
       </div>
     </details>
 
     <details>
-      <summary>Envoyer le texte touche par touche supposerait de connaître la carte XKB active</summary>
+      <summary>Sending the text key by key would mean knowing the active XKB layout</summary>
       <div class="details-body">
         <p>
-          Sur un clavier AZERTY, les accents et la moitié des lettres tomberaient à côté&nbsp;; le raccourci
-          de collage, lui, occupe la même touche physique partout. Le texte transite donc par le
-          presse-papiers, qui est restauré ensuite.
+          On an AZERTY keyboard, accents and half the letters would land on the wrong key; the paste
+          shortcut, on the other hand, sits on the same physical key everywhere. The text therefore
+          travels through the clipboard, which is restored afterwards.
         </p>
       </div>
     </details>
 
     <details>
-      <summary>Une fenêtre Wayland ne peut ni refuser le focus ni se positionner</summary>
+      <summary>A Wayland window can neither refuse focus nor position itself</summary>
       <div class="details-body">
         <p>
-          Un overlay Wayland capterait le collage à la place de votre application. L’overlay est donc un
-          client X11 (via Xwayland) de type <code>NOTIFICATION</code>&nbsp;: jamais focalisé, et positionnable.
+          A Wayland overlay would catch the paste instead of your application. The overlay is therefore
+          an X11 client (via Xwayland) of type <code>NOTIFICATION</code>: never focused, and positionable.
         </p>
       </div>
     </details>
 
     <p>
-      Les deux autres hôtes reprennent la même idée avec leurs propres outils&nbsp;: sous WSL, la frappe
-      part vers Windows par <code>SendKeys</code> (un clavier virtuel Linux ne toucherait que les fenêtres
-      WSLg)&nbsp;; sur macOS, elle passe par System Events, ce qui vaut au programme la demande
-      d’autorisation d’accessibilité.
+      The two other hosts follow the same idea with their own tools: on WSL, the keystroke goes to
+      Windows through <code>SendKeys</code> (a Linux virtual keyboard would only reach WSLg windows);
+      on macOS, it goes through System Events, which is what earns the program the accessibility
+      permission prompt.
     </p>
 
-    <h3>Le code, module par module</h3>
+    <h3>The code, module by module</h3>
     <div class="tbl">
       <table>
-        <thead><tr><th>Fichier</th><th>Rôle</th></tr></thead>
+        <thead><tr><th>File</th><th>Role</th></tr></thead>
         <tbody>
-          <tr><td><code>daemon.py</code></td><td>service, socket Unix, écoute et transcription en parallèle</td></tr>
-          <tr><td><code>host.py</code></td><td>détection de l’hôte, passerelle PowerShell sous WSL</td></tr>
-          <tr><td><code>capture.py</code></td><td>choix de l’outil de capture (<code>arecord</code>, <code>parec</code>, <code>rec</code>, <code>ffmpeg</code>)</td></tr>
-          <tr><td><code>recorder.py</code></td><td>détection de silence, découpage en phrases</td></tr>
-          <tr><td><code>transcriber.py</code></td><td>faster-whisper, choix GPU/CPU</td></tr>
-          <tr><td><code>inject.py</code></td><td>frappe simulée&nbsp;: <code>uinput</code>, SendKeys, System Events</td></tr>
-          <tr><td><code>output.py</code></td><td>insertion au curseur, presse-papiers, notifications</td></tr>
-          <tr><td><code>overlay.py</code></td><td>overlay X11 (processus séparé)</td></tr>
-          <tr><td><code>hotkey.py</code></td><td>raccourci global&nbsp;: GNOME, menu Démarrer, <code>skhd</code></td></tr>
-          <tr><td><code>service.py</code></td><td>démarrage du daemon&nbsp;: systemd, launchd ou direct</td></tr>
+          <tr><td><code>daemon.py</code></td><td>service, Unix socket, listening and transcription in parallel</td></tr>
+          <tr><td><code>host.py</code></td><td>host detection, PowerShell bridge on WSL</td></tr>
+          <tr><td><code>capture.py</code></td><td>choice of capture tool (<code>arecord</code>, <code>parec</code>, <code>rec</code>, <code>ffmpeg</code>)</td></tr>
+          <tr><td><code>recorder.py</code></td><td>silence detection, splitting into sentences</td></tr>
+          <tr><td><code>transcriber.py</code></td><td>faster-whisper, GPU/CPU selection</td></tr>
+          <tr><td><code>inject.py</code></td><td>simulated keystroke: <code>uinput</code>, SendKeys, System Events</td></tr>
+          <tr><td><code>output.py</code></td><td>insertion at the cursor, clipboard, notifications</td></tr>
+          <tr><td><code>overlay.py</code></td><td>X11 overlay (separate process)</td></tr>
+          <tr><td><code>hotkey.py</code></td><td>global shortcut: GNOME, Start menu, <code>skhd</code></td></tr>
+          <tr><td><code>service.py</code></td><td>daemon startup: systemd, launchd or direct</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3>Développement</h3>
+    <h3>Development</h3>
     <pre data-copy><span class="p">$ </span>git clone https://github.com/SalvadorCardona/whisper-desk
 <span class="p">$ </span>cd whisper-desk
-<span class="p">$ </span>WD_SRC="$PWD" sh install.sh     <span class="c"># installe depuis le clone local, sans réseau</span></pre>
+<span class="p">$ </span>WD_SRC="$PWD" sh install.sh     <span class="c"># installs from the local clone, without network access</span></pre>
     <p>
-      La suite de tests ne dépend que de la bibliothèque standard — ni environnement virtuel, ni modèle
-      à télécharger. La variable <code>WD_HOST</code> (<code>linux</code>, <code>wsl</code>,
-      <code>macos</code>) force la détection, ce qui permet de tester les trois hôtes depuis n’importe lequel.
+      The test suite depends on the standard library alone — no virtual environment, no model to
+      download. The <code>WD_HOST</code> variable (<code>linux</code>, <code>wsl</code>,
+      <code>macos</code>) forces the detection, which makes it possible to test all three hosts from any of them.
     </p>
     <pre data-copy><span class="p">$ </span>python3 -m unittest discover -s tests -t .</pre>
   </div>
 </section>
 
-<section id="depannage">
+<section id="troubleshooting">
   <div class="wrap">
     <div class="sec-head">
-      <span class="sec-num">06 — Dépannage</span>
-      <h2>Commencez toujours par le docteur.</h2>
+      <span class="sec-num">06 — Troubleshooting</span>
+      <h2>Always start with the doctor.</h2>
       <p>
-        <code>whisper-desk doctor</code> nomme l’hôte détecté, puis vérifie une à une les briques qu’il
-        utilise&nbsp;: c’est le premier réflexe pour tout ce qui suit.
+        <code>whisper-desk doctor</code> names the detected host, then checks one by one the pieces it
+        uses: it is the first thing to try for everything below.
       </p>
     </div>
 
     <details>
-      <summary>Le raccourci ne fait rien</summary>
+      <summary>The shortcut does nothing</summary>
       <div class="details-body">
-<pre data-copy><span class="p">$ </span>whisper-desk status                      <span class="c"># le daemon répond-il ?</span>
-<span class="p">$ </span>whisper-desk hotkey show                 <span class="c"># le raccourci est-il enregistré ?</span>
-<span class="p">$ </span>journalctl --user -u whisper-desk -f     <span class="c"># les logs (systemd)</span>
-<span class="p">$ </span>tail -f ~/.local/state/whisper-desk/daemon.log   <span class="c"># les logs (launchd)</span></pre>
+<pre data-copy><span class="p">$ </span>whisper-desk status                      <span class="c"># is the daemon answering?</span>
+<span class="p">$ </span>whisper-desk hotkey show                 <span class="c"># is the shortcut registered?</span>
+<span class="p">$ </span>journalctl --user -u whisper-desk -f     <span class="c"># the logs (systemd)</span>
+<span class="p">$ </span>tail -f ~/.local/state/whisper-desk/daemon.log   <span class="c"># the logs (launchd)</span></pre>
       </div>
     </details>
 
     <details>
-      <summary>Le texte reste dans le presse-papiers au lieu d’être inséré</summary>
+      <summary>The text stays in the clipboard instead of being inserted</summary>
       <div class="details-body">
-        <p>La frappe simulée n’a pas abouti. <code>whisper-desk doctor</code> dit laquelle est en cause&nbsp;:</p>
+        <p>The simulated keystroke did not get through. <code>whisper-desk doctor</code> says which one is at fault:</p>
         <ul>
-          <li><b>Linux</b> — <code>/dev/uinput</code> doit être accessible en écriture. Sur une session locale, systemd vous en donne l’accès automatiquement&nbsp;; en SSH ou en session distante, non.</li>
-          <li><b>macOS</b> — autorisez l’accessibilité pour le terminal (ou pour <code>whisper-desk</code>) dans Réglages Système → Confidentialité et sécurité → Accessibilité, puis relancez le daemon.</li>
-          <li><b>WSL</b> — <code>powershell.exe</code> doit être joignable depuis WSL, et la fenêtre visée doit être une fenêtre Windows au premier plan.</li>
+          <li><b>Linux</b> — <code>/dev/uinput</code> must be writable. In a local session, systemd grants you access automatically; over SSH or in a remote session, it does not.</li>
+          <li><b>macOS</b> — allow accessibility for the terminal (or for <code>whisper-desk</code>) in System Settings → Privacy &amp; Security → Accessibility, then restart the daemon.</li>
+          <li><b>WSL</b> — <code>powershell.exe</code> must be reachable from WSL, and the target window must be a Windows window in the foreground.</li>
         </ul>
       </div>
     </details>
 
     <details>
-      <summary>Je dicte dans un terminal et j’obtiens <code>^V</code></summary>
+      <summary>I dictate in a terminal and get <code>^V</code></summary>
       <div class="details-body">
-        <p><kbd>Ctrl</kbd> + <kbd>V</kbd> n’y est pas le collage. Mettez <code>paste_shortcut = "shift+insert"</code> dans <code>[output]</code>, puis <code>whisper-desk reload</code>.</p>
+        <p><kbd>Ctrl</kbd> + <kbd>V</kbd> is not paste there. Set <code>paste_shortcut = "shift+insert"</code> in <code>[output]</code>, then run <code>whisper-desk reload</code>.</p>
       </div>
     </details>
 
     <details>
-      <summary>L’overlay s’ouvre mais rien ne s’écrit</summary>
+      <summary>The overlay opens but nothing is written</summary>
       <div class="details-body">
         <p>
-          Neuf fois sur dix, le micro par défaut n’est pas le bon — une prise jack vide reste souvent la
-          source par défaut, et ne renvoie que du silence. <code>whisper-desk doctor</code> mesure le niveau
-          réellement capté&nbsp;:
+          Nine times out of ten, the default microphone is the wrong one — an empty jack socket often
+          stays the default source, and returns nothing but silence. <code>whisper-desk doctor</code>
+          measures the level actually captured:
         </p>
-<pre data-copy><span class="p">$ </span>whisper-desk doctor          <span class="c"># « le micro capte du son » doit être coché</span>
-<span class="p">$ </span>wpctl status                 <span class="c"># liste les sources ; repérez le vrai micro</span>
-<span class="p">$ </span>wpctl set-default &lt;id&gt;       <span class="c"># bascule dessus</span></pre>
+<pre data-copy><span class="p">$ </span>whisper-desk doctor          <span class="c"># "the microphone picks up sound" must be ticked</span>
+<span class="p">$ </span>wpctl status                 <span class="c"># lists the sources; spot the real microphone</span>
+<span class="p">$ </span>wpctl set-default &lt;id&gt;       <span class="c"># switch to it</span></pre>
       </div>
     </details>
 
     <details>
-      <summary>Les phrases se coupent trop tôt, ou trop tard</summary>
+      <summary>Sentences are cut too early, or too late</summary>
       <div class="details-body">
-        <p>Ajustez <code>segment_silence_seconds</code> (le découpage) et <code>silence_seconds</code> (la fin de dictée) dans <code>[recording]</code>.</p>
+        <p>Adjust <code>segment_silence_seconds</code> (the splitting) and <code>silence_seconds</code> (the end of dictation) in <code>[recording]</code>.</p>
       </div>
     </details>
 
     <details>
-      <summary>La transcription tourne sur le CPU alors que j’ai un GPU</summary>
+      <summary>Transcription runs on the CPU even though I have a GPU</summary>
       <div class="details-body">
         <p>
-          <code>whisper-desk status</code> indique le périphérique retenu, et
-          <code>journalctl --user -u whisper-desk</code> la raison du repli — souvent des bibliothèques
-          CUDA absentes, ou une VRAM insuffisante.
+          <code>whisper-desk status</code> reports the selected device, and
+          <code>journalctl --user -u whisper-desk</code> the reason for the fallback — often missing
+          CUDA libraries, or not enough VRAM.
         </p>
       </div>
     </details>
 
     <p style="margin-top:26px;color:var(--muted)">
-      Les cas propres à WSL et à macOS (aucun son capté, raccourci sans <code>skhd</code>, gain du micro…)
-      sont détaillés dans le
-      <a href="https://github.com/SalvadorCardona/whisper-desk#dépannage">README du dépôt</a>.
+      The cases specific to WSL and macOS (no sound captured, the shortcut without <code>skhd</code>,
+      microphone gain…) are detailed in the
+      <a href="https://github.com/SalvadorCardona/whisper-desk#troubleshooting">repository README</a>.
     </p>
   </div>
 </section>
 
-<section id="auteur">
+<section id="author">
   <div class="wrap">
     <div class="sec-head">
-      <span class="sec-num">07 — L’auteur</span>
-      <h2>Fait à la main, par un développeur.</h2>
+      <span class="sec-num">07 — The author</span>
+      <h2>Handmade, by a developer.</h2>
     </div>
     <div class="author">
       <div class="av">SC</div>
       <div class="txt">
         <b>Salvador Cardona</b>
-        <span>Treize ans de développement web — et les autres projets à la même adresse.</span>
+        <span>Thirteen years of web development — and the other projects at the same address.</span>
       </div>
       <a class="go" href="https://cardona.digital" target="_blank" rel="noopener">
         cardona.digital
@@ -819,10 +821,10 @@ margin = <span class="n">96</span></pre>
 
 <footer>
   <div class="wrap foot">
-    <div class="l">whisper-desk — licence <b>MIT</b> · © 2026 <a href="https://cardona.digital" target="_blank" rel="noopener">Salvador Cardona</a></div>
+    <div class="l">whisper-desk — <b>MIT</b> licence · © 2026 <a href="https://cardona.digital" target="_blank" rel="noopener">Salvador Cardona</a></div>
     <nav>
-      <a href="https://github.com/SalvadorCardona/whisper-desk">Dépôt</a>
-      <a href="https://github.com/SalvadorCardona/whisper-desk/issues">Signaler un bug</a>
+      <a href="https://github.com/SalvadorCardona/whisper-desk">Repository</a>
+      <a href="https://github.com/SalvadorCardona/whisper-desk/issues">Report a bug</a>
       <a href="https://github.com/SYSTRAN/faster-whisper" target="_blank" rel="noopener">faster-whisper</a>
       <a href="https://cardona.digital" target="_blank" rel="noopener">cardona.digital</a>
     </nav>
@@ -834,13 +836,13 @@ margin = <span class="n">96</span></pre>
   'use strict';
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* --- nav ombrée au scroll --- */
+  /* --- nav shadow on scroll --- */
   var nav = document.getElementById('nav');
   var onScroll = function () { nav.classList.toggle('stuck', window.scrollY > 8); };
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
 
-  /* --- copie --- */
+  /* --- copy --- */
   function flash(btn, label) {
     var old = btn.textContent;
     btn.textContent = label;
@@ -848,16 +850,16 @@ margin = <span class="n">96</span></pre>
     setTimeout(function () { btn.textContent = old; btn.classList.remove('done'); }, 1600);
   }
   function copy(text, btn) {
-    var done = function () { flash(btn, 'Copié !'); };
+    var done = function () { flash(btn, 'Copied!'); };
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(done, function () { flash(btn, 'Échec'); });
+      navigator.clipboard.writeText(text).then(done, function () { flash(btn, 'Failed'); });
       return;
     }
     var ta = document.createElement('textarea');
     ta.value = text; ta.setAttribute('readonly', '');
     ta.style.cssText = 'position:absolute;left:-9999px';
     document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); done(); } catch (e) { flash(btn, 'Échec'); }
+    try { document.execCommand('copy'); done(); } catch (e) { flash(btn, 'Failed'); }
     document.body.removeChild(ta);
   }
 
@@ -870,8 +872,8 @@ margin = <span class="n">96</span></pre>
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'copy-pre';
-    btn.textContent = 'Copier';
-    btn.setAttribute('aria-label', 'Copier le bloc de code');
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy the code block');
     btn.addEventListener('click', function () {
       var text = pre.cloneNode(true);
       Array.prototype.forEach.call(text.querySelectorAll('.p, .copy-pre'), function (n) { n.remove(); });
@@ -880,7 +882,7 @@ margin = <span class="n">96</span></pre>
     pre.appendChild(btn);
   });
 
-  /* --- equalizer : montée rapide, retombée lente, comme un VU-mètre --- */
+  /* --- equalizer: fast rise, slow fall, like a VU meter --- */
   var BARS = 15, MIN = 5, MAX = 30;
   var host = document.getElementById('bars');
   var mic = document.getElementById('mic');
@@ -894,7 +896,7 @@ margin = <span class="n">96</span></pre>
   var speaking = true, visible = true, raf = null, last = 0;
 
   function shape(i) {
-    /* les graves portent plus d'énergie que les aiguës */
+    /* lows carry more energy than highs */
     var t = i / (BARS - 1);
     return 1 - 0.55 * t * t;
   }
@@ -910,7 +912,7 @@ margin = <span class="n">96</span></pre>
           : Math.random() * 0.06;
       }
       var d = target[i] - level[i];
-      level[i] += d > 0 ? d * 0.55 : d * 0.14;   /* monte vite, retombe doucement */
+      level[i] += d > 0 ? d * 0.55 : d * 0.14;   /* rises fast, falls gently */
       bars[i].style.height = (MIN + level[i] * (MAX - MIN)).toFixed(1) + 'px';
     }
     mic.style.setProperty('--glow', (0.35 + (speaking ? 0.5 : 0) * level[3]).toFixed(2));
@@ -923,9 +925,9 @@ margin = <span class="n">96</span></pre>
     for (var j = 0; j < BARS; j++) bars[j].style.height = (MIN + shape(j) * 14) + 'px';
   }
 
-  /* --- la dictée qui s'écrit --- */
-  var TEXT = "Ce texte n’a pas été tapé : il a été dicté. " +
-             "Le curseur n’a pas bougé, et rien n’est sorti de la machine.";
+  /* --- the dictation writing itself --- */
+  var TEXT = "This text was not typed: it was dictated. " +
+             "The cursor never moved, and nothing left the machine.";
   var typed = document.getElementById('typed');
   var pos = 0, timer = null;
 
@@ -952,7 +954,7 @@ margin = <span class="n">96</span></pre>
     schedule(900);
   }
 
-  /* --- ne tourner que quand c'est visible --- */
+  /* --- only run while visible --- */
   var demo = document.querySelector('.demo');
   if ('IntersectionObserver' in window) {
     new IntersectionObserver(function (entries) {
