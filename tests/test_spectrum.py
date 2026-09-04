@@ -1,4 +1,4 @@
-"""Découpage du son en bandes : l'equalizer doit montrer où passe la voix."""
+"""Splitting sound into bands: the equalizer must show where the voice sits."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ import math
 import unittest
 from unittest import mock
 
-from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
+from . import context  # noqa: F401  (adds src/ to the import path)
 
 from whisper_desk import spectrum
 from whisper_desk.spectrum import band_edges, bands, visual_level
 
-# La suite doit tourner sur la seule bibliothèque standard, comme en CI : sans
-# numpy, `bands` rend une liste vide et il n'y a plus de spectre à mesurer.
-requires_numpy = unittest.skipUnless(spectrum.numpy is not None, "numpy absent")
+# The suite must run on the standard library alone, as it does in CI: without
+# numpy, `bands` returns an empty list and there is no spectrum left to measure.
+requires_numpy = unittest.skipUnless(spectrum.numpy is not None, "numpy missing")
 
 RATE = 16000
 SAMPLES = 1600
@@ -36,59 +36,59 @@ def peak_band(chunk: bytes, count: int = 12, level: float = 5600.0) -> int:
 
 
 class BandEdgesTest(unittest.TestCase):
-    def test_les_bornes_sont_croissantes(self):
+    def test_the_edges_are_increasing(self):
         edges = band_edges(15, RATE, SAMPLES)
         self.assertEqual(len(edges), 16)
         self.assertTrue(all(b > a for a, b in zip(edges, edges[1:])))
 
-    def test_les_bandes_s_elargissent_vers_les_aigus(self):
-        """Échelle en octaves : la dernière bande couvre plus que la première."""
+    def test_the_bands_widen_towards_the_highs(self):
+        """Octave scale: the last band covers more than the first."""
         edges = band_edges(12, RATE, SAMPLES)
         self.assertGreater(edges[-1] - edges[-2], edges[1] - edges[0])
 
 
 class BandsTest(unittest.TestCase):
     @requires_numpy
-    def test_un_son_grave_allume_la_gauche(self):
+    def test_a_low_sound_lights_up_the_left(self):
         self.assertLess(peak_band(sine(160)), 4)
 
     @requires_numpy
-    def test_un_son_aigu_allume_la_droite(self):
+    def test_a_high_sound_lights_up_the_right(self):
         self.assertGreater(peak_band(sine(4000)), 7)
 
     @requires_numpy
-    def test_le_grave_et_l_aigu_ne_tombent_pas_dans_la_meme_bande(self):
+    def test_lows_and_highs_do_not_land_in_the_same_band(self):
         self.assertLess(peak_band(sine(160)), peak_band(sine(4000)))
 
     @requires_numpy
-    def test_toutes_les_valeurs_restent_dans_la_jauge(self):
+    def test_every_value_stays_within_the_gauge(self):
         values = bands(sine(300, amplitude=32000), 15, RATE, 22000.0, 200.0)
         self.assertEqual(len(values), 15)
         self.assertTrue(all(0.0 <= value <= 1.0 for value in values))
 
-    def test_le_silence_ne_donne_rien(self):
+    def test_silence_gives_nothing(self):
         self.assertEqual(bands(sine(300), 12, RATE, 0.0, 200.0), [])
         self.assertEqual(bands(b"\x00" * 3200, 12, RATE, 100.0, 200.0), [])
 
-    def test_sans_barres_rien_n_est_calcule(self):
+    def test_without_bars_nothing_is_computed(self):
         self.assertEqual(bands(sine(300), 0, RATE, 5600.0, 200.0), [])
 
-    def test_une_trame_trop_courte_est_ignoree(self):
-        """Une lecture tronquée ne vaut pas une FFT : mieux vaut ne rien dire."""
+    def test_a_frame_that_is_too_short_is_ignored(self):
+        """A truncated read is not worth an FFT: better to say nothing."""
         self.assertEqual(bands(sine(300, samples=64), 12, RATE, 5600.0, 200.0), [])
 
-    def test_sans_numpy_l_overlay_se_rabat_sur_le_volume(self):
+    def test_without_numpy_the_overlay_falls_back_on_the_volume(self):
         with mock.patch.object(spectrum, "numpy", None):
             self.assertEqual(bands(sine(300), 12, RATE, 5600.0, 200.0), [])
 
 
 class VisualLevelGainTest(unittest.TestCase):
-    def test_le_relevement_des_aigus_remonte_la_barre(self):
+    def test_the_high_frequency_tilt_raises_the_bar(self):
         self.assertGreater(
             visual_level(400.0, 200.0, gain_db=12.0), visual_level(400.0, 200.0)
         )
 
-    def test_le_relevement_ne_reveille_pas_le_silence(self):
+    def test_the_tilt_does_not_wake_silence_up(self):
         self.assertEqual(visual_level(0.0, 200.0, gain_db=12.0), 0.0)
 
 

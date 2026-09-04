@@ -1,5 +1,5 @@
 [Unit]
-Description=whisper-desk — daemon de dictée vocale
+Description=whisper-desk — voice dictation daemon
 Documentation=https://github.com/SalvadorCardona/whisper-desk
 After=graphical-session.target
 PartOf=graphical-session.target

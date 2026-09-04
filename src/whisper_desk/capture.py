@@ -1,9 +1,9 @@
-"""Choix de l'outil de capture du micro selon l'hôte.
+"""Choice of the microphone capture tool, depending on the host.
 
-Le reste du programme ne veut qu'une chose : un flux PCM s16le mono sur la
-sortie standard d'un processus. Plusieurs outils savent le produire, aucun
-n'est présent partout — arecord vient d'ALSA (Linux), parec de PulseAudio
-(seul chemin audio de WSLg), rec/sox et ffmpeg couvrent macOS.
+The rest of the program only wants one thing: a mono s16le PCM stream on the
+standard output of a process. Several tools can produce it, none of them is
+present everywhere — arecord comes from ALSA (Linux), parec from PulseAudio
+(the only audio path in WSLg), rec/sox and ffmpeg cover macOS.
 """
 
 from __future__ import annotations
@@ -16,12 +16,12 @@ from . import host
 
 
 class CaptureUnavailable(RuntimeError):
-    """Aucun outil de capture installé pour cet hôte."""
+    """No capture tool installed for this host."""
 
 
 @dataclass(frozen=True)
 class Capture:
-    """Une commande prête à lancer, et les variables d'environnement qu'elle exige."""
+    """A command ready to launch, and the environment variables it requires."""
 
     name: str
     command: list[str]
@@ -60,8 +60,8 @@ def _parec(device: str, rate: int, channels: int) -> Capture:
 
 def _ffmpeg(device: str, rate: int, channels: int) -> Capture:
     if host.is_macos():
-        # avfoundation désigne les entrées par index : « :0 » est le micro par
-        # défaut. « ffmpeg -f avfoundation -list_devices true -i "" » les liste.
+        # avfoundation names inputs by index: ":0" is the default microphone.
+        # `ffmpeg -f avfoundation -list_devices true -i ""` lists them.
         source = ":0" if _default_device(device) else (
             device if device.startswith(":") else f":{device}"
         )
@@ -79,12 +79,12 @@ def _sox(binary: str) -> Callable[[str, int, int], Capture]:
     def build(device: str, rate: int, channels: int) -> Capture:
         command = [binary, "-q"]
         if binary == "sox":
-            command.append("-d")          # « -d » : entrée = périphérique audio
+            command.append("-d")          # "-d": input = the audio device
         command += [
             "-t", "raw", "-b", "16", "-e", "signed-integer", "-L",
             "-r", str(rate), "-c", str(channels), "-",
         ]
-        # sox ne prend pas le périphérique en argument : il lit AUDIODEV.
+        # sox does not take the device as an argument: it reads AUDIODEV.
         env = {} if _default_device(device) else {"AUDIODEV": device}
         return Capture(binary, command, env)
 
@@ -99,15 +99,15 @@ BUILDERS: dict[str, Callable[[str, int, int], Capture]] = {
     "sox": _sox("sox"),
 }
 
-# Du plus adapté au plus dépanneur, pour chaque hôte.
+# From the most suitable to the last resort, for each host.
 PREFERENCES: dict[str, tuple[str, ...]] = {
     host.LINUX: ("arecord", "parec", "ffmpeg", "rec", "sox"),
-    # WSLg ne fournit que PulseAudio : arecord n'existe qu'avec le greffon ALSA.
+    # WSLg only provides PulseAudio: arecord exists only with the ALSA plugin.
     host.WSL: ("parec", "arecord", "ffmpeg", "rec", "sox"),
     host.MACOS: ("rec", "sox", "ffmpeg"),
 }
 
-# Paquets à installer, cités par le diagnostic et l'installeur.
+# Packages to install, quoted by the diagnostic and the installer.
 PACKAGES: dict[str, str] = {
     "arecord": "alsa-utils",
     "parec": "pulseaudio-utils",
@@ -126,26 +126,26 @@ def installed(name: str) -> bool:
 
 
 def available() -> list[str]:
-    """Les backends utilisables ici, dans l'ordre de préférence de l'hôte."""
+    """The backends usable here, in the host's order of preference."""
     return [name for name in preferences() if installed(name)]
 
 
 def recommended() -> str:
-    """Le backend à installer en priorité sur cet hôte."""
+    """The backend to install first on this host."""
     return preferences()[0]
 
 
 def choose(preferred: str = "auto") -> str:
-    """Nom du backend à employer. Lève CaptureUnavailable si rien n'est installé."""
+    """Name of the backend to use. Raises CaptureUnavailable if nothing is installed."""
     preferred = (preferred or "auto").strip().lower()
     if preferred not in ("", "auto"):
         if preferred not in BUILDERS:
             raise CaptureUnavailable(
-                f"backend de capture inconnu : « {preferred} » "
-                f"(connus : {', '.join(sorted(BUILDERS))})"
+                f"unknown capture backend: '{preferred}' "
+                f"(known: {', '.join(sorted(BUILDERS))})"
             )
         if not installed(preferred):
-            raise CaptureUnavailable(f"« {preferred} » n'est pas installé")
+            raise CaptureUnavailable(f"'{preferred}' is not installed")
         return preferred
 
     usable = available()
@@ -153,11 +153,11 @@ def choose(preferred: str = "auto") -> str:
         return usable[0]
     wanted = recommended()
     raise CaptureUnavailable(
-        f"aucun outil de capture trouvé sur {host.label()} — installez "
-        f"{PACKAGES[wanted]} (« {wanted} »)"
+        f"no capture tool found on {host.label()} — install "
+        f"{PACKAGES[wanted]} ('{wanted}')"
     )
 
 
 def build(device: str, rate: int, channels: int, backend: str = "auto") -> Capture:
-    """La commande de capture, prête pour Popen."""
+    """The capture command, ready for Popen."""
     return BUILDERS[choose(backend)](device, rate, channels)

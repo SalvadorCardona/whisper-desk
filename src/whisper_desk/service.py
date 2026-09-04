@@ -1,9 +1,9 @@
-"""Démarrage du daemon : systemd, launchd, ou lancement direct.
+"""Starting the daemon: systemd, launchd, or a direct launch.
 
-Aucun de ces gestionnaires n'est disponible partout — systemd n'existe pas sur
-macOS et pas toujours sous WSL, launchd n'existe que sur macOS. Le lancement
-direct est le filet de sécurité : un simple processus détaché, qui marche
-partout et suffit à ce que le premier raccourci fonctionne.
+None of these managers is available everywhere — systemd does not exist on
+macOS and is not always there under WSL, launchd only exists on macOS. The
+direct launch is the safety net: a plain detached process, which works
+everywhere and is enough for the first shortcut to do something.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ LOG_PATH = config_module.STATE_DIR / "daemon.log"
 
 
 def has_systemd() -> bool:
-    """systemd présent *et* actif : sous WSL sans systemd, systemctl existe mais échoue."""
+    """systemd present *and* running: under WSL without systemd, systemctl exists but fails."""
     return bool(shutil.which("systemctl")) and Path("/run/systemd/system").is_dir()
 
 
@@ -59,7 +59,7 @@ def _domain_target() -> str:
 
 
 def start() -> bool:
-    """Démarre le daemon par le meilleur moyen disponible."""
+    """Starts the daemon by the best means available."""
     current = manager()
     if current == SYSTEMD:
         try:
@@ -69,19 +69,19 @@ def start() -> bool:
             )
             return True
         except (OSError, subprocess.SubprocessError) as error:
-            logger.debug("systemd n'a pas démarré le service (%s) — lancement direct.", error)
+            logger.debug("systemd did not start the service (%s) — launching directly.", error)
     elif current == LAUNCHD:
         if _launchctl("kickstart", "-k", _domain_target()) or _launchctl("start", LAUNCH_LABEL):
             return True
-        logger.debug("launchd n'a pas démarré l'agent — lancement direct.")
+        logger.debug("launchd did not start the agent — launching directly.")
     return start_directly()
 
 
 def start_directly() -> bool:
-    """Lance « whisper-desk daemon » en processus détaché, sans gestionnaire.
+    """Launches "whisper-desk daemon" as a detached process, with no manager.
 
-    Le même interpréteur et le même environnement que le client : c'est le
-    lanceur installé qui a posé PYTHONPATH et les bibliothèques CUDA.
+    The same interpreter and the same environment as the client: it is the
+    installed launcher that set PYTHONPATH and the CUDA libraries.
     """
     try:
         config_module.STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -94,12 +94,12 @@ def start_directly() -> bool:
             stdin=subprocess.DEVNULL,
             stdout=log or subprocess.DEVNULL,
             stderr=subprocess.STDOUT if log else subprocess.DEVNULL,
-            start_new_session=True,   # survit à la fin du client
+            start_new_session=True,   # outlives the client
             cwd=str(Path.home()),
         )
         return True
     except OSError as error:
-        logger.warning("Démarrage direct du daemon impossible : %s", error)
+        logger.warning("Cannot start the daemon directly: %s", error)
         return False
     finally:
         if log is not None:
@@ -107,7 +107,7 @@ def start_directly() -> bool:
 
 
 def status() -> str:
-    """« active », « inactive », ou la raison pour laquelle on ne sait pas."""
+    """Returns "active", "inactive", or the reason why we cannot tell."""
     current = manager()
     if current == SYSTEMD:
         try:
@@ -116,17 +116,17 @@ def status() -> str:
                 capture_output=True, text=True, timeout=10,
             )
         except (OSError, subprocess.SubprocessError):
-            return "inconnu"
-        return result.stdout.strip() or "inconnu"
+            return "unknown"
+        return result.stdout.strip() or "unknown"
     if current == LAUNCHD:
         if not AGENT_PATH.exists():
-            return "non installé"
+            return "not installed"
         return "active" if _launchctl("list", LAUNCH_LABEL) else "inactive"
-    return "sans gestionnaire (lancement à la demande)"
+    return "no manager (started on demand)"
 
 
 def hint() -> str:
-    """Comment démarrer le daemon à la main, sur cet hôte."""
+    """How to start the daemon by hand, on this host."""
     return {
         SYSTEMD: f"systemctl --user start {UNIT}",
         LAUNCHD: f"launchctl start {LAUNCH_LABEL}",

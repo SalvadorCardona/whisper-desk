@@ -1,20 +1,20 @@
-"""Insertion du texte à l'emplacement du curseur : envoi d'un raccourci de collage.
+"""Inserting text where the cursor is: sending a paste shortcut.
 
-Le texte lui-même transite par le presse-papiers, et l'on simule seulement
-Ctrl+V. C'est la seule méthode indépendante de la disposition clavier : taper
-un texte accentué supposerait de connaître la carte active (ici AZERTY), alors
-que la touche du collage est la même partout.
+The text itself travels through the clipboard, and only Ctrl+V is simulated.
+That is the only method independent from the keyboard layout: typing accented
+text would mean knowing the active layout (AZERTY here), whereas the paste key
+sits in the same place everywhere.
 
-Trois façons d'envoyer ce raccourci, une par hôte :
+Three ways of sending that shortcut, one per host:
 
-* Linux — clavier virtuel noyau (/dev/uinput). Sous Wayland, un client ne peut
-  pas « taper » dans la fenêtre d'un autre : le protocole virtual-keyboard
-  (celui de wtype) n'est pas implémenté par GNOME ; passer par le noyau
-  contourne la question, et marche aussi bien sous X11.
-* WSL — SendKeys de Windows, via PowerShell : les fenêtres où l'on dicte sont
-  celles de Windows, qu'un clavier virtuel Linux ne toucherait jamais.
-* macOS — « keystroke » de System Events (osascript), qui demande à
-  l'application l'autorisation d'accessibilité.
+* Linux — kernel virtual keyboard (/dev/uinput). Under Wayland, a client cannot
+  "type" into another client's window: the virtual-keyboard protocol (the one
+  wtype uses) is not implemented by GNOME; going through the kernel sidesteps
+  the question, and works just as well under X11.
+* WSL — Windows SendKeys, through PowerShell: the windows you dictate into are
+  Windows ones, which a Linux virtual keyboard would never reach.
+* macOS — System Events "keystroke" (osascript), which asks the application for
+  accessibility permission.
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ EV_SYN = 0x00
 EV_KEY = 0x01
 SYN_REPORT = 0
 
-# struct input_event, en tailles et alignement natifs (24 octets en 64 bits).
+# struct input_event, in native sizes and alignment (24 bytes on 64-bit).
 EVENT_FORMAT = "@llHHi"
 
 KEY_CODES = {
@@ -63,7 +63,7 @@ KEY_CODES = {
 
 MODIFIERS = ("ctrl", "shift", "alt", "super")
 
-# Noms acceptés dans la configuration pour une même touche.
+# Names accepted in the configuration for one and the same key.
 ALIASES = {
     "control": "ctrl",
     "cmd": "super",
@@ -77,17 +77,17 @@ ALIASES = {
     "ins": "insert",
 }
 
-# udev ne pose ID_INPUT_KEYBOARD (et libinput ne voit donc un clavier) que si le
-# périphérique déclare toute la plage Échap → D. Un device à 7 touches est classé
-# « power-switch » et purement et simplement ignoré par le compositeur.
+# udev only sets ID_INPUT_KEYBOARD (and libinput therefore only sees a keyboard)
+# if the device declares the whole Esc → D range. A 7-key device is classified
+# as a "power-switch" and plainly ignored by the compositor.
 DECLARED_KEYS = range(1, 128)
 
-# Délai laissé au compositeur pour prendre en compte le nouveau périphérique.
+# Time left to the compositor to take the new device into account.
 DEVICE_SETTLE_SECONDS = 0.6
 
 
 def parse_shortcut(shortcut: str) -> list[str]:
-    """« ctrl+v », « Cmd + V » -> liste de touches canoniques connues."""
+    """Parses "ctrl+v" or "Cmd + V" into a list of known canonical keys."""
     keys = []
     for part in shortcut.split("+"):
         key = part.strip().lower()
@@ -98,12 +98,12 @@ def parse_shortcut(shortcut: str) -> list[str]:
 
 
 def default_shortcut() -> str:
-    """Le raccourci de collage de l'hôte, quand la configuration dit « auto »."""
+    """The host's paste shortcut, when the configuration says "auto"."""
     return "super+v" if host.is_macos() else "ctrl+v"
 
 
 def resolve_shortcut(configured: str) -> list[str]:
-    """Résout « auto » puis découpe ; retombe sur le défaut si rien n'est lisible."""
+    """Resolves "auto" then splits; falls back on the default if nothing is readable."""
     configured = (configured or "").strip()
     if not configured or configured.lower() == "auto":
         configured = default_shortcut()
@@ -111,16 +111,16 @@ def resolve_shortcut(configured: str) -> list[str]:
 
 
 def split_shortcut(keys: Iterable[str]) -> tuple[list[str], str | None]:
-    """Sépare les modificateurs de la touche finale."""
+    """Separates the modifiers from the final key."""
     modifiers = [key for key in keys if key in MODIFIERS]
     others = [key for key in keys if key not in MODIFIERS]
     return modifiers, others[-1] if others else None
 
 
 class Keyboard:
-    """Contrat commun aux trois façons d'envoyer un raccourci."""
+    """The contract shared by the three ways of sending a shortcut."""
 
-    name = "aucun"
+    name = "none"
     hint = ""
 
     @property
@@ -138,18 +138,18 @@ class Keyboard:
 
 
 class UinputKeyboard(Keyboard):
-    """Clavier virtuel noyau, créé une fois et gardé ouvert tant que le daemon vit."""
+    """Kernel virtual keyboard, created once and kept open as long as the daemon lives."""
 
     name = "uinput"
-    hint = f"{UINPUT_DEVICE} doit être accessible en écriture (groupe input)"
+    hint = f"{UINPUT_DEVICE} must be writable (input group)"
 
     def __init__(self, name: str = "whisper-desk virtual keyboard"):
         self.device_name = name
         self._fd: int | None = None
-        # prepare() ouvre le clavier dans un fil pendant que l'utilisateur parle,
-        # write() s'en sert depuis un autre : le verrou fait attendre le second
-        # jusqu'au bout du délai de prise en compte, sinon le premier collage
-        # part vers un périphérique que le compositeur n'a pas encore vu.
+        # prepare() opens the keyboard in one thread while the user speaks, and
+        # write() uses it from another: the lock makes the second wait until the
+        # settle delay is over, otherwise the first paste goes to a device the
+        # compositor has not seen yet.
         self._lock = threading.RLock()
 
     @property
@@ -161,21 +161,21 @@ class UinputKeyboard(Keyboard):
             if self._fd is not None:
                 return True
             if not self.available:
-                logger.warning("%s inaccessible en écriture : insertion impossible.", UINPUT_DEVICE)
+                logger.warning("%s is not writable: insertion impossible.", UINPUT_DEVICE)
                 return False
             try:
                 fd = os.open(UINPUT_DEVICE, os.O_WRONLY | os.O_NONBLOCK)
                 fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
                 for code in DECLARED_KEYS:
                     fcntl.ioctl(fd, UI_SET_KEYBIT, code)
-                # struct uinput_setup : input_id (bustype, vendor, product, version), name[80], ff_effects_max
+                # struct uinput_setup: input_id (bustype, vendor, product, version), name[80], ff_effects_max
                 setup = struct.pack(
                     "<4H80sI", 0x03, 0x1D6B, 0x0001, 0x0001, self.device_name.encode()[:79], 0
                 )
                 fcntl.ioctl(fd, UI_DEV_SETUP, setup)
                 fcntl.ioctl(fd, UI_DEV_CREATE)
             except OSError as error:
-                logger.warning("Clavier virtuel indisponible : %s", error)
+                logger.warning("Virtual keyboard unavailable: %s", error)
                 return False
             time.sleep(DEVICE_SETTLE_SECONDS)
             self._fd = fd
@@ -194,15 +194,15 @@ class UinputKeyboard(Keyboard):
 
     def _emit(self, event_type: int, code: int, value: int) -> None:
         assert self._fd is not None
-        # struct input_event : timeval (2 × long natif), type, code, value.
-        # Tailles natives obligatoires : « <l » ferait 4 octets, le noyau en attend 8.
+        # struct input_event: timeval (2 × native long), type, code, value.
+        # Native sizes are mandatory: "<l" would be 4 bytes, the kernel expects 8.
         os.write(self._fd, struct.pack(EVENT_FORMAT, 0, 0, event_type, code, value))
 
     def _sync(self) -> None:
         self._emit(EV_SYN, SYN_REPORT, 0)
 
     def press(self, keys: Iterable[str], hold: float = 0.02) -> bool:
-        """Enfonce puis relâche une combinaison, ex. ("ctrl", "v")."""
+        """Presses then releases a combination, e.g. ("ctrl", "v")."""
         codes = [KEY_CODES[key] for key in keys if key in KEY_CODES]
         if not codes:
             return False
@@ -218,21 +218,20 @@ class UinputKeyboard(Keyboard):
                     self._emit(EV_KEY, code, 0)
                 self._sync()
             except OSError as error:
-                logger.warning("Envoi de touches impossible : %s", error)
+                logger.warning("Cannot send keys: %s", error)
                 self.close()
                 return False
         return True
 
 
-# SendKeys : « ^ » Ctrl, « % » Alt, « + » Maj. Pas de touche Windows — elle est
-# réservée au système, et c'est aussi pour cela que le raccourci global de WSL
-# se prend sur Ctrl+Alt.
+# SendKeys: "^" Ctrl, "%" Alt, "+" Shift. No Windows key — it is reserved by the
+# system, which is also why the global shortcut under WSL is taken on Ctrl+Alt.
 SENDKEYS_MODIFIERS = {"ctrl": "^", "alt": "%", "shift": "+"}
 SENDKEYS_KEYS = {"insert": "{INS}", "enter": "{ENTER}", "space": " ", "tab": "{TAB}"}
 
 
 def sendkeys_sequence(keys: Iterable[str]) -> str | None:
-    """Traduit une combinaison canonique en séquence SendKeys, ou None si impossible."""
+    """Translates a canonical combination into a SendKeys sequence, or None if impossible."""
     modifiers, key = split_shortcut(keys)
     if key is None or "super" in modifiers:
         return None
@@ -241,10 +240,10 @@ def sendkeys_sequence(keys: Iterable[str]) -> str | None:
 
 
 class SendKeysKeyboard(Keyboard):
-    """Frappe côté Windows, pour les fenêtres où l'on dicte depuis WSL."""
+    """Keystrokes on the Windows side, for the windows dictated into from WSL."""
 
     name = "windows"
-    hint = "l'interopérabilité Windows (powershell.exe) doit être accessible depuis WSL"
+    hint = "Windows interoperability (powershell.exe) must be reachable from WSL"
 
     @property
     def available(self) -> bool:
@@ -254,8 +253,8 @@ class SendKeysKeyboard(Keyboard):
         sequence = sendkeys_sequence(keys)
         if sequence is None:
             logger.warning(
-                "Raccourci de collage inutilisable sous Windows (la touche Windows "
-                "n'est pas simulable) — préférez « ctrl+v »."
+                "Paste shortcut unusable under Windows (the Windows key cannot be "
+                "simulated) — prefer 'ctrl+v'."
             )
             return False
         script = (
@@ -265,8 +264,8 @@ class SendKeysKeyboard(Keyboard):
         return host.run_powershell(script) is not None
 
 
-# System Events nomme les modificateurs, et désigne par un code les touches
-# qui n'écrivent rien.
+# System Events names the modifiers, and designates by a code the keys that
+# write nothing.
 APPLESCRIPT_MODIFIERS = {
     "ctrl": "control down",
     "alt": "option down",
@@ -277,7 +276,7 @@ APPLESCRIPT_KEY_CODES = {"enter": 36, "tab": 48, "space": 49, "insert": 114}
 
 
 def applescript_command(keys: Iterable[str]) -> str | None:
-    """Traduit une combinaison canonique en ordre AppleScript, ou None si impossible."""
+    """Translates a canonical combination into an AppleScript order, or None if impossible."""
     modifiers, key = split_shortcut(keys)
     if key is None:
         return None
@@ -294,12 +293,12 @@ def applescript_command(keys: Iterable[str]) -> str | None:
 
 
 class AppleScriptKeyboard(Keyboard):
-    """Frappe via System Events — soumise à l'autorisation d'accessibilité."""
+    """Keystrokes through System Events — subject to accessibility permission."""
 
     name = "applescript"
     hint = (
-        "Réglages Système → Confidentialité et sécurité → Accessibilité : "
-        "autorisez le terminal (ou whisper-desk) à contrôler l'ordinateur"
+        "System Settings → Privacy & Security → Accessibility: "
+        "allow the terminal (or whisper-desk) to control the computer"
     )
 
     @property
@@ -309,27 +308,27 @@ class AppleScriptKeyboard(Keyboard):
     def press(self, keys: Iterable[str], hold: float = 0.02) -> bool:
         script = applescript_command(keys)
         if script is None:
-            logger.warning("Raccourci de collage intraduisible en AppleScript.")
+            logger.warning("Paste shortcut cannot be translated into AppleScript.")
             return False
         try:
             result = subprocess.run(
                 ["osascript", "-e", script], capture_output=True, timeout=10
             )
         except (OSError, subprocess.SubprocessError) as error:
-            logger.warning("osascript indisponible : %s", error)
+            logger.warning("osascript unavailable: %s", error)
             return False
         if result.returncode != 0:
             message = result.stderr.decode("utf-8", "replace").strip()
-            logger.warning("Frappe refusée par macOS : %s — %s", message[:160], self.hint)
+            logger.warning("Keystroke refused by macOS: %s — %s", message[:160], self.hint)
             return False
         return True
 
 
 class NullKeyboard(Keyboard):
-    """Aucune frappe : le texte reste dans le presse-papiers."""
+    """No keystroke at all: the text stays in the clipboard."""
 
     name = "none"
-    hint = "insertion au curseur désactivée"
+    hint = "insertion at the cursor is disabled"
 
     def press(self, keys: Iterable[str], hold: float = 0.02) -> bool:
         return False
@@ -344,7 +343,7 @@ BACKENDS: dict[str, type[Keyboard]] = {
 
 PREFERENCES: dict[str, tuple[str, ...]] = {
     host.LINUX: ("uinput",),
-    # Les fenêtres visées sont celles de Windows ; uinput ne sert que pour WSLg.
+    # The target windows are Windows ones; uinput only serves WSLg.
     host.WSL: ("windows", "uinput"),
     host.MACOS: ("applescript",),
 }
@@ -355,13 +354,13 @@ def preferences() -> tuple[str, ...]:
 
 
 def keyboard(preferred: str = "auto") -> Keyboard:
-    """Le clavier virtuel adapté à l'hôte, ou celui demandé par la configuration."""
+    """The virtual keyboard suited to the host, or the one the configuration asks for."""
     preferred = (preferred or "auto").strip().lower()
     if preferred not in ("", "auto"):
         backend = BACKENDS.get(preferred)
         if backend is None:
             logger.warning(
-                "Clavier « %s » inconnu (connus : %s) — choix automatique.",
+                "Unknown keyboard '%s' (known: %s) — choosing automatically.",
                 preferred, ", ".join(sorted(BACKENDS)),
             )
         else:
@@ -372,5 +371,5 @@ def keyboard(preferred: str = "auto") -> Keyboard:
         instance = BACKENDS[candidate]()
         if instance.available:
             return instance
-    # Rien n'est prêt : on rend le premier choix, dont l'échec dira quoi installer.
+    # Nothing is ready: return the first choice, whose failure will say what to install.
     return BACKENDS[candidates[0]]()

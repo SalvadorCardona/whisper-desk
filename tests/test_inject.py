@@ -1,4 +1,4 @@
-"""Raccourci de collage : lecture, résolution par hôte, traduction par backend."""
+"""Paste shortcut: parsing, per-host resolution, per-backend translation."""
 
 from __future__ import annotations
 
@@ -12,41 +12,41 @@ from whisper_desk import host, inject
 
 
 class DefaultShortcutTest(unittest.TestCase):
-    def test_macos_colle_avec_commande(self):
+    def test_macos_pastes_with_command(self):
         with forced_host(host.MACOS):
             self.assertEqual(inject.default_shortcut(), "super+v")
 
-    def test_ailleurs_c_est_ctrl(self):
+    def test_elsewhere_it_is_ctrl(self):
         for name in (host.LINUX, host.WSL):
             with forced_host(name):
                 self.assertEqual(inject.default_shortcut(), "ctrl+v")
 
-    def test_auto_se_resout_selon_l_hote(self):
+    def test_auto_is_resolved_per_host(self):
         with forced_host(host.MACOS):
             self.assertEqual(inject.resolve_shortcut("auto"), ["super", "v"])
         with forced_host(host.LINUX):
             self.assertEqual(inject.resolve_shortcut("auto"), ["ctrl", "v"])
 
-    def test_un_raccourci_explicite_est_respecte(self):
+    def test_an_explicit_shortcut_is_honoured(self):
         with forced_host(host.MACOS):
             self.assertEqual(inject.resolve_shortcut("shift+insert"), ["shift", "insert"])
 
-    def test_un_raccourci_illisible_retombe_sur_le_defaut(self):
+    def test_an_unreadable_shortcut_falls_back_on_the_default(self):
         with forced_host(host.LINUX):
-            self.assertEqual(inject.resolve_shortcut("hyper+truc"), ["ctrl", "v"])
+            self.assertEqual(inject.resolve_shortcut("hyper+thing"), ["ctrl", "v"])
 
 
 class ParseTest(unittest.TestCase):
-    def test_les_synonymes_se_ramenent_a_une_touche(self):
+    def test_synonyms_map_to_one_key(self):
         self.assertEqual(inject.parse_shortcut("cmd+v"), ["super", "v"])
         self.assertEqual(inject.parse_shortcut("command+v"), ["super", "v"])
         self.assertEqual(inject.parse_shortcut("control+v"), ["ctrl", "v"])
         self.assertEqual(inject.parse_shortcut("option+v"), ["alt", "v"])
 
-    def test_les_doublons_disparaissent(self):
+    def test_duplicates_disappear(self):
         self.assertEqual(inject.parse_shortcut("ctrl+control+v"), ["ctrl", "v"])
 
-    def test_separation_des_modificateurs(self):
+    def test_separating_the_modifiers(self):
         self.assertEqual(
             inject.split_shortcut(["ctrl", "shift", "insert"]), (["ctrl", "shift"], "insert")
         )
@@ -54,62 +54,62 @@ class ParseTest(unittest.TestCase):
 
 
 class SendKeysTest(unittest.TestCase):
-    def test_collage_courant(self):
+    def test_common_paste(self):
         self.assertEqual(inject.sendkeys_sequence(["ctrl", "v"]), "^v")
 
-    def test_touche_nommee(self):
+    def test_named_key(self):
         self.assertEqual(inject.sendkeys_sequence(["shift", "insert"]), "+{INS}")
 
-    def test_plusieurs_modificateurs(self):
+    def test_several_modifiers(self):
         self.assertEqual(inject.sendkeys_sequence(["ctrl", "shift", "v"]), "^+v")
 
-    def test_la_touche_windows_n_est_pas_simulable(self):
+    def test_the_windows_key_cannot_be_simulated(self):
         self.assertIsNone(inject.sendkeys_sequence(["super", "v"]))
 
-    def test_sans_touche_finale(self):
+    def test_without_a_final_key(self):
         self.assertIsNone(inject.sendkeys_sequence(["ctrl"]))
 
 
 class AppleScriptTest(unittest.TestCase):
-    def test_collage_courant(self):
+    def test_common_paste(self):
         self.assertEqual(
             inject.applescript_command(["super", "v"]),
             'tell application "System Events" to keystroke "v" using {command down}',
         )
 
-    def test_touche_sans_caractere_passe_par_son_code(self):
+    def test_a_key_without_a_character_goes_through_its_code(self):
         self.assertIn("key code 36", inject.applescript_command(["enter"]))
 
-    def test_sans_modificateur(self):
+    def test_without_a_modifier(self):
         self.assertNotIn("using", inject.applescript_command(["v"]))
 
-    def test_sans_touche_finale(self):
+    def test_without_a_final_key(self):
         self.assertIsNone(inject.applescript_command(["ctrl"]))
 
 
 class BackendChoiceTest(unittest.TestCase):
-    def test_chaque_hote_a_son_clavier(self):
-        attendus = {host.LINUX: "uinput", host.WSL: "windows", host.MACOS: "applescript"}
-        for name, expected in attendus.items():
+    def test_each_host_has_its_keyboard(self):
+        expectations = {host.LINUX: "uinput", host.WSL: "windows", host.MACOS: "applescript"}
+        for name, expected in expectations.items():
             with forced_host(name):
                 self.assertEqual(inject.preferences()[0], expected)
 
-    def test_le_choix_explicite_prime(self):
+    def test_an_explicit_choice_wins(self):
         with forced_host(host.LINUX):
             self.assertEqual(inject.keyboard("none").name, "none")
 
-    def test_un_clavier_inconnu_retombe_sur_l_automatique(self):
+    def test_an_unknown_keyboard_falls_back_on_automatic(self):
         with forced_host(host.MACOS), self.assertLogs(inject.logger, "WARNING"):
-            self.assertEqual(inject.keyboard("clavier-magique").name, "applescript")
+            self.assertEqual(inject.keyboard("magic-keyboard").name, "applescript")
 
-    def test_wsl_se_rabat_sur_uinput_si_windows_est_hors_jeu(self):
+    def test_wsl_falls_back_on_uinput_when_windows_is_out(self):
         with forced_host(host.WSL), \
                 mock.patch.object(inject.SendKeysKeyboard, "available", False), \
                 mock.patch.object(inject.UinputKeyboard, "available", True):
             self.assertEqual(inject.keyboard().name, "uinput")
 
-    def test_sans_rien_de_disponible_on_rend_le_premier_choix(self):
-        """Son message d'aide dira quoi installer."""
+    def test_with_nothing_available_the_first_choice_is_returned(self):
+        """Its hint will say what to install."""
         with forced_host(host.WSL), \
                 mock.patch.object(inject.SendKeysKeyboard, "available", False), \
                 mock.patch.object(inject.UinputKeyboard, "available", False):
@@ -117,7 +117,7 @@ class BackendChoiceTest(unittest.TestCase):
             self.assertEqual(keyboard.name, "windows")
             self.assertTrue(keyboard.hint)
 
-    def test_le_clavier_muet_ne_frappe_rien(self):
+    def test_the_silent_keyboard_presses_nothing(self):
         self.assertFalse(inject.NullKeyboard().press(["ctrl", "v"]))
 
 

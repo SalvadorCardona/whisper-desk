@@ -1,14 +1,14 @@
 #!/bin/sh
-# Installation de whisper-desk (Linux, WSL et macOS).
+# whisper-desk installation (Linux, WSL and macOS).
 #
 #   curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh | sh
 #
-# Variables d'environnement acceptées :
-#   WD_REPO   dépôt source           (défaut : SalvadorCardona/whisper-desk)
-#   WD_REF    branche ou tag         (défaut : main)
-#   WD_SRC    dossier local à copier  (installation depuis un clone, sans réseau)
-#   WD_NO_SERVICE=1   n'installe pas le service (systemd ou launchd)
-#   WD_NO_HOTKEY=1    n'installe pas le raccourci clavier
+# Environment variables accepted:
+#   WD_REPO   source repository       (default: SalvadorCardona/whisper-desk)
+#   WD_REF    branch or tag           (default: main)
+#   WD_SRC    local directory to copy (install from a clone, without network)
+#   WD_NO_SERVICE=1   do not install the service (systemd or launchd)
+#   WD_NO_HOTKEY=1    do not install the keyboard shortcut
 set -eu
 
 WD_REPO="${WD_REPO:-SalvadorCardona/whisper-desk}"
@@ -34,12 +34,12 @@ fi
 say()  { printf '%s==>%s %s\n' "$BOLD" "$RESET" "$1"; }
 ok()   { printf '    %s✓%s %s\n' "$GREEN" "$RESET" "$1"; }
 warn() { printf '    %s!%s %s\n' "$YELLOW" "$RESET" "$1"; }
-die()  { printf '%serreur:%s %s\n' "$BOLD" "$RESET" "$1" >&2; exit 1; }
+die()  { printf '%serror:%s %s\n' "$BOLD" "$RESET" "$1" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
-# --- 0. hôte ----------------------------------------------------------------
-# Le programme tourne sur trois hôtes : Linux, WSL (Linux dans Windows) et
-# macOS. Ils partagent tout, sauf leurs outils système.
+# --- 0. host ----------------------------------------------------------------
+# The program runs on three hosts: Linux, WSL (Linux inside Windows) and
+# macOS. They share everything but their system tools.
 HOST=linux
 case "$(uname -s)" in
     Darwin) HOST=macos ;;
@@ -48,164 +48,164 @@ case "$(uname -s)" in
             HOST=wsl
         fi
         ;;
-    *) die "système non géré : $(uname -s)" ;;
+    *) die "unsupported system: $(uname -s)" ;;
 esac
 case "$HOST" in
     linux) HOST_LABEL="Linux" ;;
     wsl)   HOST_LABEL="WSL (Windows)" ;;
     macos) HOST_LABEL="macOS" ;;
 esac
-say "Hôte détecté : $HOST_LABEL"
+say "Detected host: $HOST_LABEL"
 
-# --- 1. dépendances système -------------------------------------------------
-say "Vérification des dépendances système"
+# --- 1. system dependencies -------------------------------------------------
+say "Checking the system dependencies"
 MISSING=""
 if [ "$HOST" = macos ]; then
-    # sox fournit « rec » : la capture micro. Le reste (pbcopy, osascript) est
-    # livré avec le système.
+    # sox provides "rec": the microphone capture. The rest (pbcopy, osascript)
+    # ships with the system.
     have rec || have sox || have ffmpeg || MISSING="$MISSING sox"
-    have pbcopy || warn "pbcopy introuvable — presse-papiers indisponible"
+    have pbcopy || warn "pbcopy not found — clipboard unavailable"
     if [ -n "$MISSING" ]; then
         if have brew; then
-            warn "paquets manquants :$MISSING"
+            warn "missing packages:$MISSING"
             INSTALLED=0
             if (exec 3</dev/tty) 2>/dev/null; then
-                printf '    Les installer avec brew ? [O/n] '
+                printf '    Install them with brew? [Y/n] '
                 read -r answer </dev/tty || answer="n"
                 case "$answer" in
-                    ""|o|O|y|Y|oui|yes)
+                    ""|y|Y|yes|Yes|YES)
                         # shellcheck disable=SC2086
                         brew install $MISSING && INSTALLED=1 ;;
                 esac
             fi
-            [ "$INSTALLED" = 1 ] || warn "à installer :${BOLD} brew install$MISSING${RESET}"
+            [ "$INSTALLED" = 1 ] || warn "to install:${BOLD} brew install$MISSING${RESET}"
         else
-            warn "Homebrew absent — installez sox à la main :$MISSING"
+            warn "Homebrew missing — install sox by hand:$MISSING"
         fi
     else
-        ok "micro, presse-papiers et notifications disponibles"
+        ok "microphone, clipboard and notifications available"
     fi
 else
     if [ "$HOST" = wsl ]; then
-        # WSLg ne transporte l'audio que par PulseAudio.
+        # WSLg only carries audio through PulseAudio.
         have parec || have arecord || MISSING="$MISSING pulseaudio-utils"
     else
         have arecord || MISSING="$MISSING alsa-utils"
     fi
     have notify-send || MISSING="$MISSING libnotify-bin"
     if [ "$HOST" = wsl ]; then
-        have clip.exe || warn "clip.exe introuvable — l'interop Windows semble désactivée"
+        have clip.exe || warn "clip.exe not found — Windows interop seems disabled"
     elif ! have wl-copy && ! have xclip && ! have xsel; then
         MISSING="$MISSING wl-clipboard"
     fi
-    # L'overlay tourne en GTK3 avec le Python système.
+    # The overlay runs in GTK3 with the system Python.
     if ! python3 -c "import gi; gi.require_version('Gtk','3.0'); from gi.repository import Gtk" 2>/dev/null; then
         MISSING="$MISSING python3-gi gir1.2-gtk-3.0"
     fi
 
     if [ -n "$MISSING" ]; then
         if have apt-get; then
-            warn "paquets manquants :$MISSING"
+            warn "missing packages:$MISSING"
             INSTALLED=0
             if (exec 3</dev/tty) 2>/dev/null; then
-                printf '    Les installer avec sudo apt ? [O/n] '
+                printf '    Install them with sudo apt? [Y/n] '
                 read -r answer </dev/tty || answer="n"
                 case "$answer" in
-                    ""|o|O|y|Y|oui|yes)
+                    ""|y|Y|yes|Yes|YES)
                         # shellcheck disable=SC2086
                         sudo apt-get update && sudo apt-get install -y $MISSING && INSTALLED=1
                         ;;
                 esac
             fi
-            [ "$INSTALLED" = 1 ] || warn "à installer :${BOLD} sudo apt install$MISSING${RESET}"
+            [ "$INSTALLED" = 1 ] || warn "to install:${BOLD} sudo apt install$MISSING${RESET}"
         else
-            warn "paquets manquants (équivalents à installer) :$MISSING"
+            warn "missing packages (install the equivalents):$MISSING"
         fi
     else
-        ok "micro, presse-papiers, notifications et GTK3 disponibles"
+        ok "microphone, clipboard, notifications and GTK3 available"
     fi
 fi
 
 if [ "$HOST" = linux ] && [ ! -w /dev/uinput ]; then
-    warn "/dev/uinput non accessible : l'insertion au curseur restera indisponible"
+    warn "/dev/uinput is not writable: insertion at the cursor will stay unavailable"
 fi
 
-# --- 2. récupération des sources -------------------------------------------
+# --- 2. fetching the sources ------------------------------------------------
 mkdir -p "$APP_DIR" "$BIN_DIR" "$CONFIG_DIR"
 if [ -n "${WD_SRC:-}" ]; then
-    say "Copie des sources depuis $WD_SRC"
-    [ -d "$WD_SRC/src/whisper_desk" ] || die "$WD_SRC ne contient pas src/whisper_desk"
+    say "Copying the sources from $WD_SRC"
+    [ -d "$WD_SRC/src/whisper_desk" ] || die "$WD_SRC does not contain src/whisper_desk"
     rm -rf "$APP_DIR"
     mkdir -p "$APP_DIR"
     tar -C "$WD_SRC" --exclude='.git' --exclude='__pycache__' -cf - . | tar -C "$APP_DIR" -xf -
 else
-    say "Téléchargement de $WD_REPO ($WD_REF)"
-    have curl || die "curl est requis"
-    have tar  || die "tar est requis"
+    say "Downloading $WD_REPO ($WD_REF)"
+    have curl || die "curl is required"
+    have tar  || die "tar is required"
     TMP=$(mktemp -d)
     trap 'rm -rf "$TMP"' EXIT INT TERM
     curl -fsSL "https://codeload.github.com/$WD_REPO/tar.gz/refs/heads/$WD_REF" -o "$TMP/src.tar.gz" \
-        || die "téléchargement impossible (dépôt privé ou branche inexistante ?)"
+        || die "download failed (private repository or nonexistent branch?)"
     rm -rf "$APP_DIR"
     mkdir -p "$APP_DIR"
     tar -xzf "$TMP/src.tar.gz" -C "$APP_DIR" --strip-components=1
 fi
-ok "sources dans $APP_DIR"
+ok "sources in $APP_DIR"
 
-# --- 3. environnement Python isolé -----------------------------------------
+# --- 3. isolated Python environment -----------------------------------------
 if ! have uv; then
-    say "Installation de uv (gestionnaire d'environnements Python)"
-    curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1 || die "installation de uv impossible"
+    say "Installing uv (Python environment manager)"
+    curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1 || die "cannot install uv"
 fi
 UV="$(command -v uv || echo "$HOME/.local/bin/uv")"
-[ -x "$UV" ] || die "uv introuvable après installation"
-ok "uv : $UV"
+[ -x "$UV" ] || die "uv not found after installation"
+ok "uv: $UV"
 
 if [ -x "$VENV_DIR/bin/python" ]; then
-    say "Mise à jour de l'environnement Python existant"
+    say "Updating the existing Python environment"
 else
-    say "Création de l'environnement Python (3.12)"
+    say "Creating the Python environment (3.12)"
 fi
 "$UV" venv --python 3.12 --allow-existing "$VENV_DIR" >/dev/null \
-    || die "création de l'environnement Python impossible"
-say "Installation de faster-whisper"
+    || die "cannot create the Python environment"
+say "Installing faster-whisper"
 VIRTUAL_ENV="$VENV_DIR"; export VIRTUAL_ENV
-"$UV" pip install --quiet faster-whisper || die "installation de faster-whisper impossible"
-ok "faster-whisper installé"
+"$UV" pip install --quiet faster-whisper || die "cannot install faster-whisper"
+ok "faster-whisper installed"
 
 if [ "$HOST" = macos ]; then
-    warn "macOS : transcription sur CPU (CTranslate2 n'utilise pas Metal)"
+    warn "macOS: transcription on the CPU (CTranslate2 does not use Metal)"
 elif have nvidia-smi && nvidia-smi -L >/dev/null 2>&1; then
-    say "GPU NVIDIA détecté — ajout des bibliothèques CUDA"
+    say "NVIDIA GPU detected — adding the CUDA libraries"
     "$UV" pip install --quiet "nvidia-cublas-cu12" "nvidia-cudnn-cu12>=9,<10" \
-        && ok "cuBLAS + cuDNN installés" \
-        || warn "CUDA non installé — la transcription tournera sur le CPU"
+        && ok "cuBLAS + cuDNN installed" \
+        || warn "CUDA not installed — transcription will run on the CPU"
 else
-    warn "pas de GPU NVIDIA — transcription sur CPU (modèle « small » par défaut)"
+    warn "no NVIDIA GPU — transcription on the CPU ('small' model by default)"
 fi
 
-# --- 4. exécutable ----------------------------------------------------------
+# --- 4. executable ----------------------------------------------------------
 SYSTEM_PYTHON="$(command -v python3 || echo /usr/bin/python3)"
 sed -e "s|@APP_DIR@|$APP_DIR|g" \
     -e "s|@VENV@|$VENV_DIR|g" \
     -e "s|@SYSTEM_PYTHON@|$SYSTEM_PYTHON|g" \
     "$APP_DIR/bin/whisper-desk.in" > "$BIN"
 chmod +x "$BIN"
-ok "commande installée : $BIN"
+ok "command installed: $BIN"
 
 # --- 5. configuration -------------------------------------------------------
 if [ -f "$CONFIG" ]; then
-    ok "configuration existante conservée : $CONFIG"
+    ok "existing configuration kept: $CONFIG"
 else
     cp "$APP_DIR/config.example.toml" "$CONFIG"
-    ok "configuration créée : $CONFIG"
+    ok "configuration created: $CONFIG"
 fi
 
-# --- 6. service utilisateur (démarrage automatique) -------------------------
+# --- 6. user service (automatic startup) ------------------------------------
 SERVICE_INSTALLED=0
 if [ "${WD_NO_SERVICE:-0}" != "1" ]; then
     if [ "$HOST" = macos ] && have launchctl; then
-        say "Installation de l'agent launchd (démarrage à l'ouverture de session)"
+        say "Installing the launchd agent (started at login)"
         mkdir -p "$AGENT_DIR" "$STATE_DIR"
         AGENT="$AGENT_DIR/$AGENT_LABEL.plist"
         sed -e "s|@BIN@|$BIN|g" -e "s|@LOG@|$STATE_DIR/daemon.log|g" \
@@ -213,33 +213,33 @@ if [ "${WD_NO_SERVICE:-0}" != "1" ]; then
         launchctl bootout "gui/$(id -u)/$AGENT_LABEL" >/dev/null 2>&1 || true
         if launchctl bootstrap "gui/$(id -u)" "$AGENT" >/dev/null 2>&1 \
             || launchctl load -w "$AGENT" >/dev/null 2>&1; then
-            ok "agent $AGENT_LABEL chargé"
+            ok "agent $AGENT_LABEL loaded"
             SERVICE_INSTALLED=1
         else
-            warn "chargement de l'agent impossible — le daemon démarrera à la demande"
+            warn "cannot load the agent — the daemon will start on demand"
         fi
     elif have systemctl && [ -d /run/systemd/system ]; then
-        say "Installation du service (démarrage à l'ouverture de session)"
+        say "Installing the service (started at login)"
         mkdir -p "$UNIT_DIR"
         sed -e "s|@BIN@|$BIN|g" "$APP_DIR/systemd/whisper-desk.service.in" \
             > "$UNIT_DIR/whisper-desk.service"
         systemctl --user daemon-reload
-        systemctl --user enable whisper-desk.service >/dev/null 2>&1 || warn "enable a échoué"
-        systemctl --user restart whisper-desk.service >/dev/null 2>&1 || warn "démarrage différé à la prochaine session"
-        ok "service whisper-desk.service activé"
+        systemctl --user enable whisper-desk.service >/dev/null 2>&1 || warn "enable failed"
+        systemctl --user restart whisper-desk.service >/dev/null 2>&1 || warn "startup deferred to the next session"
+        ok "service whisper-desk.service enabled"
         SERVICE_INSTALLED=1
     else
-        warn "ni systemd ni launchd — le daemon sera lancé à la demande, au premier raccourci"
+        warn "neither systemd nor launchd — the daemon will be started on demand, on the first shortcut"
     fi
 fi
 
-# --- 7. raccourci clavier ---------------------------------------------------
+# --- 7. keyboard shortcut ---------------------------------------------------
 if [ "${WD_NO_HOTKEY:-0}" != "1" ]; then
-    say "Installation du raccourci clavier"
-    "$BIN" hotkey install || warn "raccourci à créer à la main sur « $BIN toggle »"
+    say "Installing the keyboard shortcut"
+    "$BIN" hotkey install || warn "create the shortcut by hand on '$BIN toggle'"
 fi
 
-# --- 8. résumé --------------------------------------------------------------
+# --- 8. summary -------------------------------------------------------------
 BINDING=$("$BIN" hotkey show 2>/dev/null | sed -n 's/.*"binding": "\(.*\)".*/\1/p' | head -1)
 if [ -z "$BINDING" ]; then
     case "$HOST" in
@@ -248,21 +248,21 @@ if [ -z "$BINDING" ]; then
         *) BINDING="<Super>j" ;;
     esac
 fi
-printf '\n%sinstallation terminée.%s\n\n' "$BOLD" "$RESET"
-printf '  Appuyez sur %s%s%s, parlez, puis marquez un silence :\n' "$BOLD" "$BINDING" "$RESET"
-printf '  le texte est transcrit hors-ligne et inséré au curseur.\n\n'
+printf '\n%sinstallation complete.%s\n\n' "$BOLD" "$RESET"
+printf '  Press %s%s%s, speak, then pause:\n' "$BOLD" "$BINDING" "$RESET"
+printf '  the text is transcribed offline and inserted at the cursor.\n\n'
 printf '  %sconfiguration%s  %s\n' "$DIM" "$RESET" "$CONFIG"
 printf '  %sdiagnostic%s     whisper-desk doctor\n' "$DIM" "$RESET"
-printf '  %sdictée CLI%s     whisper-desk record\n\n' "$DIM" "$RESET"
+printf '  %sCLI dictation%s  whisper-desk record\n\n' "$DIM" "$RESET"
 if [ "$SERVICE_INSTALLED" = 0 ] && [ "${WD_NO_SERVICE:-0}" != "1" ]; then
-    printf '  %s!%s aucun gestionnaire de service : le daemon démarre au premier appel\n\n' "$YELLOW" "$RESET"
+    printf '  %s!%s no service manager: the daemon starts on the first call\n\n' "$YELLOW" "$RESET"
 fi
 if [ "$HOST" = macos ]; then
-    printf '  %s!%s macOS demandera l’autorisation d’accessibilité au premier collage\n' "$YELLOW" "$RESET"
-    printf '     (Réglages Système → Confidentialité et sécurité → Accessibilité).\n\n'
+    printf '  %s!%s macOS will ask for accessibility permission on the first paste\n' "$YELLOW" "$RESET"
+    printf '     (System Settings → Privacy & Security → Accessibility).\n\n'
 fi
 case ":$PATH:" in
     *":$BIN_DIR:"*) ;;
-    *) printf '  %s!%s ajoutez %s à votre PATH : echo '"'"'export PATH="$HOME/.local/bin:$PATH"'"'"' >> ~/.bashrc\n\n' "$YELLOW" "$RESET" "$BIN_DIR" ;;
+    *) printf '  %s!%s add %s to your PATH: echo '"'"'export PATH="$HOME/.local/bin:$PATH"'"'"' >> ~/.bashrc\n\n' "$YELLOW" "$RESET" "$BIN_DIR" ;;
 esac
-printf '  %sLe modèle se télécharge au premier démarrage (quelques centaines de Mo).%s\n\n' "$DIM" "$RESET"
+printf '  %sThe model is downloaded on the first startup (a few hundred MB).%s\n\n' "$DIM" "$RESET"
