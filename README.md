@@ -19,6 +19,8 @@ sits in the middle of the range.
 No data leaves the machine: transcription runs on your GPU (or your CPU)
 with [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
 
+📖 **[The documentation, online](https://cardona.digital/whisper-desk/)**
+
 ---
 
 ## Installation
