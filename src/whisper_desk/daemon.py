@@ -1,7 +1,7 @@
-"""Daemon : garde le modèle en mémoire et exécute les dictées à la demande.
+"""Daemon: keeps the model in memory and runs dictations on demand.
 
-Protocole : une requête JSON par ligne sur une socket Unix, une réponse JSON
-par ligne. Commandes : toggle, record, stop, status, reload, quit.
+Protocol: one JSON request per line on a Unix socket, one JSON response per
+line. Commands: toggle, record, stop, status, reload, quit.
 """
 
 from __future__ import annotations
@@ -28,10 +28,10 @@ logger = logging.getLogger("whisper-desk.daemon")
 
 
 def socket_path() -> Path:
-    """La socket du daemon, dans le dossier d'exécution de l'hôte.
+    """The daemon's socket, in the host's runtime directory.
 
-    XDG_RUNTIME_DIR sous Linux, TMPDIR (privé) sous macOS ; à défaut /tmp, qui
-    est partagé — on y ajoute donc l'identifiant de l'utilisateur.
+    XDG_RUNTIME_DIR on Linux, TMPDIR (private) on macOS; failing that /tmp,
+    which is shared — so the user id is appended there.
     """
     base = config_module.RUNTIME_DIR
     if base == Path("/tmp"):
@@ -40,15 +40,15 @@ def socket_path() -> Path:
 
 
 class Session:
-    """Une dictée : écoute, transcription phrase par phrase, insertion.
+    """One dictation: listening, sentence-by-sentence transcription, insertion.
 
-    L'écoute et la transcription tournent dans deux fils séparés : le modèle
-    travaille sur la phrase précédente pendant que le micro continue d'enregistrer.
+    Listening and transcription run in two separate threads: the model works on
+    the previous sentence while the microphone keeps recording.
     """
 
     def __init__(self, service: "Service", capture: bool):
         self.service = service
-        self.capture = capture          # True -> le texte est renvoyé au client
+        self.capture = capture          # True -> the text is returned to the client
         self.done = threading.Event()
         self.recording_over = threading.Event()
         self.text = ""
@@ -72,7 +72,7 @@ class Session:
             self.overlay.start()
             if not self.capture and "cursor" in output.modes(self.service.config):
                 self.writer = output.CursorWriter(self.service.config, self.overlay)
-                # Pendant que l'utilisateur parle, on prépare le clavier virtuel.
+                # While the user speaks, the virtual keyboard is being prepared.
                 threading.Thread(target=self.writer.prepare, daemon=True).start()
             worker = threading.Thread(target=self._transcribe_loop, daemon=True)
             worker.start()
@@ -90,14 +90,14 @@ class Session:
             if not self.parts:
                 self._report_silence()
         except CaptureUnavailable as error:
-            # Un outil à installer, pas un bogue : inutile d'étaler une trace.
+            # A tool to install, not a bug: no need to spread out a traceback.
             self.error = str(error)
-            logger.error("Capture impossible : %s", error)
-            output.notify("whisper-desk : micro inutilisable", str(error))
-        except Exception as error:  # le daemon ne doit jamais mourir sur une dictée
+            logger.error("Capture impossible: %s", error)
+            output.notify("whisper-desk: unusable microphone", str(error))
+        except Exception as error:  # the daemon must never die on a dictation
             self.error = str(error)
-            logger.exception("Dictée en échec")
-            output.notify("whisper-desk", f"Erreur : {error}")
+            logger.exception("Dictation failed")
+            output.notify("whisper-desk", f"Error: {error}")
         finally:
             if self.writer:
                 self.writer.close()
@@ -106,26 +106,26 @@ class Session:
             self.done.set()
 
     def _report_silence(self) -> None:
-        """Une dictée vide : distinguer le silence de l'utilisateur du micro muet."""
+        """An empty dictation: tell the user's silence apart from a mute microphone."""
         peak = self.recorder.peak
         device = self.service.config["recording"]["device"]
         if peak < SILENT_INPUT_PEAK:
             logger.warning(
-                "Aucun son capté sur le micro « %s » via %s (pic %.0f) — périphérique "
-                "muet ou mauvaise source par défaut ; voir « whisper-desk doctor ».",
+                "No sound captured on microphone '%s' through %s (peak %.0f) — mute "
+                "device or wrong default source; see 'whisper-desk doctor'.",
                 device, self.recorder.backend or "?", peak,
             )
             output.notify(
-                "whisper-desk : micro muet",
-                f"Aucun son n'arrive du périphérique « {device} ».",
+                "whisper-desk: mute microphone",
+                f"No sound is coming from device '{device}'.",
             )
         else:
             logger.info(
-                "Aucune parole détectée (%s, pic %.0f).", self.recorder.reason, peak
+                "No speech detected (%s, peak %.0f).", self.recorder.reason, peak
             )
 
     def _transcribe_loop(self) -> None:
-        """Transcrit les phrases dans l'ordre, au fur et à mesure de leur arrivée."""
+        """Transcribes the sentences in order, as they come in."""
         while True:
             segment = self.queue.get()
             if segment is None:
@@ -136,14 +136,14 @@ class Session:
                 text = self.service.transcriber.transcribe(segment, " ".join(self.parts))
             except Exception as error:
                 self.error = str(error)
-                logger.exception("Transcription en échec")
+                logger.exception("Transcription failed")
                 continue
             finally:
                 if not self.recording_over.is_set():
                     self.overlay.set_state("listening")
             if not text:
                 continue
-            # Les phrases suivantes sont séparées par une espace de l'insertion précédente.
+            # Later sentences are separated from the previous insertion by a space.
             self.parts.append(text)
             if not self.capture:
                 output.deliver(
@@ -165,7 +165,7 @@ class Service:
         self.session: Session | None = None
         self.lock = threading.Lock()
 
-    # -- commandes ---------------------------------------------------------
+    # -- commands ----------------------------------------------------------
     def toggle(self) -> dict[str, Any]:
         with self.lock:
             if self.state == "recording" and self.session:
@@ -179,7 +179,7 @@ class Service:
     def record(self) -> dict[str, Any]:
         with self.lock:
             if self.state != "idle":
-                return {"error": f"occupé ({self.state})"}
+                return {"error": f"busy ({self.state})"}
             session = self._start(capture=True)
         session.done.wait()
         if session.error:
@@ -206,14 +206,14 @@ class Service:
     def reload(self) -> dict[str, Any]:
         with self.lock:
             if self.state != "idle":
-                return {"error": f"occupé ({self.state})"}
+                return {"error": f"busy ({self.state})"}
             self.config = config_module.load()
             self.transcriber = Transcriber(self.config)
             if self.config["model"]["preload"]:
                 threading.Thread(target=self._preload, daemon=True).start()
             return {"reloaded": True}
 
-    # -- interne -----------------------------------------------------------
+    # -- internals ---------------------------------------------------------
     def _start(self, capture: bool) -> Session:
         session = Session(self, capture)
         self.session = session
@@ -222,7 +222,7 @@ class Service:
         return session
 
     def finish(self, session: Session) -> None:
-        """Rend le service disponible, sous le même verrou que les commandes."""
+        """Makes the service available again, under the same lock as the commands."""
         with self.lock:
             if self.session is session:
                 self.session = None
@@ -232,7 +232,7 @@ class Service:
         try:
             self.transcriber.load()
         except Exception:
-            logger.exception("Préchargement du modèle impossible")
+            logger.exception("Cannot preload the model")
 
 
 class Handler(socketserver.StreamRequestHandler):
@@ -243,7 +243,7 @@ class Handler(socketserver.StreamRequestHandler):
             try:
                 request = json.loads(raw.decode("utf-8") or "{}")
             except ValueError:
-                self._reply({"error": "JSON invalide"})
+                self._reply({"error": "invalid JSON"})
                 continue
             command = request.get("cmd", "")
             handlers = {
@@ -259,7 +259,7 @@ class Handler(socketserver.StreamRequestHandler):
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
                 return
             handler = handlers.get(command)
-            self._reply(handler() if handler else {"error": f"commande inconnue : {command}"})
+            self._reply(handler() if handler else {"error": f"unknown command: {command}"})
 
     def _reply(self, payload: dict[str, Any]) -> None:
         self.wfile.write((json.dumps(payload) + "\n").encode("utf-8"))
@@ -272,7 +272,7 @@ class Server(socketserver.ThreadingUnixStreamServer):
 
 
 def _is_alive(path: Path) -> bool:
-    """Vrai si une socket existante répond encore."""
+    """True if an existing socket still answers."""
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client.settimeout(1.0)
     try:
@@ -289,7 +289,7 @@ def serve() -> int:
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
-    # Le téléchargement du modèle est bavard : on ne garde que les avertissements.
+    # Downloading the model is chatty: only warnings are kept.
     for noisy in ("httpx", "httpcore", "huggingface_hub", "urllib3", "filelock"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     config = config_module.load()
@@ -297,7 +297,7 @@ def serve() -> int:
 
     if path.exists():
         if _is_alive(path):
-            logger.error("Un daemon tourne déjà sur %s", path)
+            logger.error("A daemon is already running on %s", path)
             return 1
         path.unlink()
 
@@ -309,7 +309,7 @@ def serve() -> int:
     if config["model"]["preload"]:
         threading.Thread(target=service._preload, daemon=True).start()
 
-    logger.info("À l'écoute sur %s (%s)", path, host.label())
+    logger.info("Listening on %s (%s)", path, host.label())
     try:
         server.serve_forever()
     except KeyboardInterrupt:

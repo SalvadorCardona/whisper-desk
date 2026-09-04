@@ -7,7 +7,7 @@ on:
 
 jobs:
   unittest:
-    # macOS fait partie des hôtes gérés : la suite doit y passer aussi.
+    # macOS is one of the supported hosts: the suite must pass there too.
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -22,10 +22,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      # La suite ne dépend que de la bibliothèque standard : ni venv, ni faster-whisper.
-      - name: Tests unitaires
+      # The suite depends on the standard library alone: no venv, no faster-whisper.
+      - name: Unit tests
         run: python -m unittest discover -s tests -t . -v
-      - name: Compilation de tous les modules
+      - name: Compile every module
         run: python -m compileall -q src
-      - name: Syntaxe des scripts d'installation
+      - name: Syntax of the installation scripts
         run: sh -n install.sh && sh -n uninstall.sh

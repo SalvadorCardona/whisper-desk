@@ -1,4 +1,4 @@
-"""Pilotage de la fenêtre d'écoute : le tube peut casser, pas la fermeture."""
+"""Driving the listening window: the pipe may break, the closing may not."""
 
 from __future__ import annotations
 
@@ -30,13 +30,13 @@ class FakeStdin:
 
     def write(self, data: bytes) -> int:
         if self.broken:
-            raise BrokenPipeError("tube fermé")
+            raise BrokenPipeError("pipe closed")
         self.lines.append(data)
         return len(data)
 
     def flush(self) -> None:
         if self.broken:
-            raise BrokenPipeError("tube fermé")
+            raise BrokenPipeError("pipe closed")
 
     def close(self) -> None:
         self.closed = True
@@ -71,57 +71,57 @@ def attached(stdin: FakeStdin) -> tuple[OverlayProcess, FakeProcess]:
 
 
 class SendTest(unittest.TestCase):
-    def test_une_commande_par_ligne(self):
+    def test_one_command_per_line(self):
         stdin = FakeStdin()
         overlay, _ = attached(stdin)
         overlay.set_state("working")
         overlay.set_level(0.5)
         self.assertEqual(stdin.lines, [b"state working\n", b"level 0.500\n"])
 
-    def test_l_equalizer_voyage_sur_la_meme_ligne_que_le_niveau(self):
-        """Une écriture par mesure : deux lignes s'entrelaceraient sur le tube."""
+    def test_the_equalizer_travels_on_the_same_line_as_the_level(self):
+        """One write per measurement: two lines would interleave on the pipe."""
         stdin = FakeStdin()
         overlay, _ = attached(stdin)
         overlay.set_level(0.5, [0.25, 0.75])
         self.assertEqual(stdin.lines, [b"level 0.500 0.250 0.750\n"])
 
-    def test_le_nombre_de_barres_vient_de_la_configuration(self):
+    def test_the_number_of_bars_comes_from_the_configuration(self):
         self.assertEqual(OverlayProcess(CONFIG).bars, 15)
 
-    def test_overlay_desactive_personne_ne_regarde_les_bandes(self):
+    def test_overlay_disabled_means_nobody_watches_the_bands(self):
         config = {"overlay": {**CONFIG["overlay"], "enabled": False}}
         self.assertEqual(OverlayProcess(config).bars, 0)
 
-    def test_le_niveau_est_borne_a_trois_decimales(self):
+    def test_the_level_is_capped_to_three_decimals(self):
         stdin = FakeStdin()
         overlay, _ = attached(stdin)
         overlay.set_level(1 / 3)
         self.assertEqual(stdin.lines, [b"level 0.333\n"])
 
-    def test_le_texte_copie_passe_en_base64_sur_une_ligne(self):
+    def test_the_copied_text_travels_as_base64_on_one_line(self):
         stdin = FakeStdin()
         overlay, _ = attached(stdin)
-        self.assertTrue(overlay.copy("phrase avec espaces\net saut"))
+        self.assertTrue(overlay.copy("sentence with spaces\nand a line break"))
         self.assertEqual(len(stdin.lines), 1)
         self.assertTrue(stdin.lines[0].startswith(b"copy "))
         self.assertEqual(stdin.lines[0].count(b"\n"), 1)
 
 
 class BrokenPipeTest(unittest.TestCase):
-    """Un tube cassé ne doit pas laisser la fenêtre orpheline à l'écran."""
+    """A broken pipe must not leave the window orphaned on screen."""
 
-    def test_l_ecriture_ratee_n_est_pas_fatale(self):
+    def test_a_failed_write_is_not_fatal(self):
         overlay, _ = attached(FakeStdin(broken=True))
-        overlay.set_level(0.5)  # ne lève pas
+        overlay.set_level(0.5)  # does not raise
         self.assertFalse(overlay.alive)
 
-    def test_la_fenetre_est_quand_meme_fermee(self):
+    def test_the_window_is_closed_anyway(self):
         overlay, process = attached(FakeStdin(broken=True))
         overlay.set_level(0.5)
         overlay.stop()
         self.assertTrue(process.terminated or process.killed)
 
-    def test_plus_rien_n_est_envoye_apres_la_casse(self):
+    def test_nothing_more_is_sent_after_the_break(self):
         stdin = FakeStdin()
         overlay, _ = attached(stdin)
         overlay.set_level(0.1)
@@ -131,38 +131,38 @@ class BrokenPipeTest(unittest.TestCase):
         overlay.set_level(0.3)
         self.assertEqual(stdin.lines, [b"level 0.100\n"])
 
-    def test_la_copie_echoue_franchement(self):
+    def test_the_copy_fails_outright(self):
         overlay, _ = attached(FakeStdin(broken=True))
         overlay.set_level(0.5)
-        self.assertFalse(overlay.copy("texte"))
+        self.assertFalse(overlay.copy("text"))
         self.assertFalse(overlay.save_clipboard())
         self.assertFalse(overlay.restore_clipboard())
 
 
 class StopTest(unittest.TestCase):
-    def test_l_arret_demande_poliment_la_fermeture(self):
+    def test_stopping_asks_politely_for_the_closing(self):
         stdin = FakeStdin()
         overlay, _ = attached(stdin)
         overlay.stop()
         self.assertEqual(stdin.lines, [b"quit\n"])
         self.assertTrue(stdin.closed)
 
-    def test_arret_idempotent(self):
+    def test_stopping_is_idempotent(self):
         overlay, _ = attached(FakeStdin())
         overlay.stop()
-        overlay.stop()  # ne lève pas
+        overlay.stop()  # does not raise
         self.assertFalse(overlay.alive)
 
-    def test_un_process_mort_n_est_plus_vivant(self):
+    def test_a_dead_process_is_no_longer_alive(self):
         overlay = OverlayProcess(CONFIG)
         overlay._process = FakeProcess(FakeStdin(), returncode=0)
         self.assertFalse(overlay.alive)
 
 
 class ConcurrencyTest(unittest.TestCase):
-    """Les niveaux viennent du fil micro, les états du fil de la dictée."""
+    """Levels come from the microphone thread, states from the dictation thread."""
 
-    def test_les_lignes_ne_s_entrelacent_pas(self):
+    def test_the_lines_do_not_interleave(self):
         stdin = FakeStdin()
         overlay, _ = attached(stdin)
         start = threading.Barrier(4)

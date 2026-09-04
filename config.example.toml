@@ -1,72 +1,72 @@
-# Configuration de whisper-desk — ~/.config/whisper-desk/config.toml
-# Après modification : whisper-desk reload
+# whisper-desk configuration — ~/.config/whisper-desk/config.toml
+# After a change: whisper-desk reload
 
 [hotkey]
-# Syntaxe GTK : <Super>, <Ctrl>, <Alt>, <Shift>. Ex. "<Super><Shift>d", "<Ctrl><Alt>space".
-# "auto" : <Super>j — mais <Ctrl><Alt>j sous WSL, Windows se réservant la
-# touche Windows et n'acceptant de raccourci global qu'en Ctrl+Alt.
+# GTK syntax: <Super>, <Ctrl>, <Alt>, <Shift>. E.g. "<Super><Shift>d", "<Ctrl><Alt>space".
+# "auto": <Super>j — but <Ctrl><Alt>j under WSL, since Windows reserves the
+# Windows key for itself and only accepts global shortcuts based on Ctrl+Alt.
 binding = "auto"
 name = "whisper-desk"
-# Appliquer un changement de raccourci : whisper-desk hotkey install
+# To apply a shortcut change: whisper-desk hotkey install
 action = "toggle"
 
 [model]
-# "auto" : large-v3-turbo si GPU NVIDIA, sinon small.
-# Autres valeurs : tiny, base, small, medium, large-v3, large-v3-turbo, distil-large-v3
+# "auto": large-v3-turbo with an NVIDIA GPU, small otherwise.
+# Other values: tiny, base, small, medium, large-v3, large-v3-turbo, distil-large-v3
 name = "auto"
 device = "auto"          # auto | cuda | cpu
 compute_type = "auto"    # auto | float16 | int8_float16 | int8
-language = "fr"          # code ISO 639-1, ou "auto" pour la détection automatique
+language = "fr"          # ISO 639-1 code, or "auto" for automatic detection
 beam_size = 5
-# Phrase d'amorce donnée au modèle (style, contexte général) :
+# Priming sentence given to the model (style, general context):
 initial_prompt = ""
-# Termes que le modèle écorche — noms propres, outils, jargon — séparés par des
-# virgules. Ils sont poussés dans le décodeur à chaque phrase.
+# Terms the model mangles — proper nouns, tools, jargon — separated by commas.
+# They are pushed into the decoder for every sentence.
 vocabulary = ""
-# Repasse au modèle la fin de ce qui vient d'être dicté : une phrase isolée par
-# le découpage au fil de l'eau retrouve son contexte.
+# Feeds the end of what was just dictated back to the model: a sentence isolated
+# by the as-you-go splitting gets its context back.
 context = true
-# Charge le modèle au démarrage du service : la première dictée est instantanée.
+# Loads the model when the service starts: the first dictation is instant.
 preload = true
 
 [recording]
-device = "default"              # périphérique de capture (arecord -L, pactl list sources)
-# Outil de capture. "auto" prend le premier disponible sur l'hôte :
-# arecord (Linux), parec (WSLg), rec/sox puis ffmpeg (macOS).
+device = "default"              # capture device (arecord -L, pactl list sources)
+# Capture tool. "auto" takes the first one available on the host:
+# arecord (Linux), parec (WSLg), rec/sox then ffmpeg (macOS).
 backend = "auto"
 max_seconds = 120
-# Dictée au fil de l'eau : chaque phrase est transcrite et insérée dès que vous
-# marquez une petite pause, sans interrompre l'écoute.
+# Dictation as you go: each sentence is transcribed and inserted as soon as you
+# make a short pause, without interrupting listening.
 streaming = true
-segment_silence_seconds = 0.6   # pause qui découpe une phrase
-silence_seconds = 2.0           # silence qui met fin à la dictée ; 0 = désactivé
-start_timeout_seconds = 8       # abandon si rien n'est dit après l'appui
-threshold = "auto"              # "auto" ou un entier (RMS 0-32767)
+segment_silence_seconds = 0.6   # pause that splits a sentence
+silence_seconds = 2.0           # silence that ends the dictation; 0 = disabled
+start_timeout_seconds = 8       # give up if nothing is said after the key press
+threshold = "auto"              # "auto" or an integer (RMS 0-32767)
 
 [output]
-# cursor    : insère le texte là où est le curseur (collage simulé)
-# clipboard : se contente de le copier
-# stdout    : l'écrit sur la sortie standard du daemon
-# Combinables avec « + », ex. "cursor+stdout".
+# cursor    : inserts the text where the cursor is (simulated paste)
+# clipboard : merely copies it
+# stdout    : writes it to the daemon's standard output
+# Combinable with "+", e.g. "cursor+stdout".
 mode = "cursor"
-# Raccourci envoyé au clavier virtuel pour insérer le texte.
-# "auto" : cmd+v sur macOS, ctrl+v ailleurs.
-# "shift+insert" si vous dictez surtout dans un terminal (Ctrl+V y est autre chose).
+# Shortcut sent to the virtual keyboard to insert the text.
+# "auto": cmd+v on macOS, ctrl+v elsewhere.
+# "shift+insert" if you mostly dictate in a terminal (Ctrl+V means something else there).
 paste_shortcut = "auto"
-# Comment cette frappe est envoyée. "auto" suit l'hôte :
-# uinput (Linux), windows/SendKeys (WSL), applescript (macOS). "none" désactive.
+# How that keystroke is sent. "auto" follows the host:
+# uinput (Linux), windows/SendKeys (WSL), applescript (macOS). "none" disables it.
 keyboard = "auto"
-# Rend votre presse-papiers d'origine à la fin de la dictée.
+# Hands your original clipboard back at the end of the dictation.
 restore_clipboard = true
-notify = false                  # notification à chaque transcription
-history = true                  # journal dans ~/.local/state/whisper-desk/history.log
+notify = false                  # a notification for every transcription
+history = true                  # log in ~/.local/state/whisper-desk/history.log
 
 [overlay]
-# Ignoré si le Python système n'a pas PyGObject + GTK3 (cas courant sur macOS).
+# Ignored if the system Python lacks PyGObject + GTK3 (common on macOS).
 enabled = true
 accent = "#e46212"
 width = 232
 height = 64
-bars = 15                       # nombre de barres de l'equalizer
+bars = 15                       # number of equalizer bars
 position = "bottom-center"      # bottom-center | top-center | center
-margin = 96                     # distance au bord de l'écran, en pixels
+margin = 96                     # distance to the screen edge, in pixels

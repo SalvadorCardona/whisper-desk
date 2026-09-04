@@ -1,4 +1,4 @@
-"""Rend le paquet importable depuis le dépôt, sans installation."""
+"""Makes the package importable from the repository, without installing it."""
 
 from __future__ import annotations
 
@@ -16,10 +16,10 @@ import os  # noqa: E402
 
 @contextlib.contextmanager
 def forced_host(name: str):
-    """Fait croire au programme qu'il tourne sur cet hôte, le temps du bloc.
+    """Makes the program believe it runs on this host, for the duration of the block.
 
-    Les tests des trois hôtes doivent passer depuis n'importe lequel : la
-    détection s'appuie sur WD_HOST, et son résultat est mis en cache.
+    The tests of all three hosts must pass from any of them: detection relies
+    on WD_HOST, and its result is cached.
     """
     from whisper_desk import host
 

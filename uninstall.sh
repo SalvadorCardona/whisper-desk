@@ -1,7 +1,7 @@
 #!/bin/sh
-# Désinstallation complète de whisper-desk (Linux, WSL et macOS).
+# Complete uninstallation of whisper-desk (Linux, WSL and macOS).
 #   curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/uninstall.sh | sh
-# Ajoutez WD_PURGE=1 pour supprimer aussi la configuration et l'historique.
+# Add WD_PURGE=1 to remove the configuration and the history as well.
 set -eu
 
 AGENT_LABEL="fr.whisperdesk.daemon"
@@ -10,36 +10,36 @@ AGENT="$HOME/Library/LaunchAgents/$AGENT_LABEL.plist"
 say() { printf '==> %s\n' "$1"; }
 
 if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
-    say "Arrêt du service"
+    say "Stopping the service"
     systemctl --user disable --now whisper-desk.service >/dev/null 2>&1 || true
     rm -f "$HOME/.config/systemd/user/whisper-desk.service"
     systemctl --user daemon-reload || true
 fi
 
 if command -v launchctl >/dev/null 2>&1 && [ -f "$AGENT" ]; then
-    say "Arrêt de l'agent launchd"
+    say "Stopping the launchd agent"
     launchctl bootout "gui/$(id -u)/$AGENT_LABEL" >/dev/null 2>&1 \
         || launchctl unload -w "$AGENT" >/dev/null 2>&1 || true
     rm -f "$AGENT"
 fi
 
 if [ -x "$HOME/.local/bin/whisper-desk" ]; then
-    say "Arrêt du daemon et suppression du raccourci clavier"
+    say "Stopping the daemon and removing the keyboard shortcut"
     "$HOME/.local/bin/whisper-desk" quit >/dev/null 2>&1 || true
     "$HOME/.local/bin/whisper-desk" hotkey remove >/dev/null 2>&1 || true
 fi
 
-say "Suppression des fichiers"
+say "Removing the files"
 rm -f "$HOME/.local/bin/whisper-desk"
 rm -rf "$HOME/.local/share/whisper-desk"
 
 if [ "${WD_PURGE:-0}" = "1" ]; then
     rm -rf "${XDG_CONFIG_HOME:-$HOME/.config}/whisper-desk"
     rm -rf "${XDG_STATE_HOME:-$HOME/.local/state}/whisper-desk"
-    say "Configuration et historique supprimés"
+    say "Configuration and history removed"
 else
-    say "Configuration conservée (WD_PURGE=1 pour la supprimer)"
+    say "Configuration kept (WD_PURGE=1 to remove it)"
 fi
 
-printf '\nwhisper-desk est désinstallé.\n'
-printf 'Les modèles Whisper restent dans ~/.cache/huggingface (rm -rf pour les enlever).\n'
+printf '\nwhisper-desk is uninstalled.\n'
+printf 'The Whisper models stay in ~/.cache/huggingface (rm -rf to get rid of them).\n'

@@ -1,7 +1,7 @@
-"""Capture micro + détection de silence (VAD par énergie).
+"""Microphone capture + silence detection (energy-based VAD).
 
-L'outil de capture dépend de l'hôte (arecord, parec, rec/sox, ffmpeg) :
-le module `capture` s'en charge, on ne voit ici qu'un flux PCM s16le.
+The capture tool depends on the host (arecord, parec, rec/sox, ffmpeg): the
+`capture` module takes care of that, here we only ever see an s16le PCM stream.
 """
 
 from __future__ import annotations
@@ -24,16 +24,16 @@ SAMPLE_WIDTH = 2
 CHUNK_SAMPLES = 1600           # 100 ms
 CHUNK_BYTES = CHUNK_SAMPLES * SAMPLE_WIDTH
 CHUNKS_PER_SECOND = RATE / CHUNK_SAMPLES
-NOISE_CHUNKS = 4               # 400 ms de bruit de fond pour calibrer le seuil
+NOISE_CHUNKS = 4               # 400 ms of background noise to calibrate the threshold
 MIN_THRESHOLD = 180.0
-MIN_SEGMENT_CHUNKS = 4         # en deçà de 400 ms, ce n'est pas une phrase
-SILENT_INPUT_PEAK = 30.0       # sous ce pic, l'entrée est muette, pas discrète
-# Marge gardée après la dernière voix, pour ne pas couper une fin de mot.
+MIN_SEGMENT_CHUNKS = 4         # under 400 ms, it is not a sentence
+SILENT_INPUT_PEAK = 30.0       # below this peak, the input is mute, not discreet
+# Margin kept after the last voice, so a word ending is not cut off.
 TRIM_MARGIN_SECONDS = 0.3
 
 
 def _rms(chunk: bytes) -> float:
-    """RMS d'un buffer PCM s16le, sans dépendre de numpy."""
+    """RMS of an s16le PCM buffer, without depending on numpy."""
     samples = array.array("h")
     samples.frombytes(chunk[: len(chunk) - len(chunk) % SAMPLE_WIDTH])
     if not samples:
@@ -44,7 +44,7 @@ def _rms(chunk: bytes) -> float:
 
 
 class Recorder:
-    """Enregistre jusqu'au silence, à l'appel de stop(), ou jusqu'au maximum."""
+    """Records until silence, until stop() is called, or until the maximum."""
 
     def __init__(
         self,
@@ -55,24 +55,24 @@ class Recorder:
     ):
         self.config = config["recording"]
         self.on_level = on_level
-        # Nombre de bandes réclamées par l'overlay ; 0 : personne ne regarde.
+        # Number of bands requested by the overlay; 0: nobody is watching.
         self.bands = bands
-        # Renseigné en mode « au fil de l'eau » : appelé à chaque phrase terminée.
+        # Set in "as you go" mode: called for every finished sentence.
         self.on_segment = on_segment
         self._stop = threading.Event()
         self._process: subprocess.Popen[bytes] | None = None
         self.reason = "unknown"
-        # Outil de capture réellement employé, renseigné au lancement.
+        # Capture tool actually used, filled in at launch.
         self.backend = ""
-        # Niveau maximal rencontré : sert à distinguer « il n'a rien dit »
-        # de « le micro ne capte rien du tout ».
+        # Highest level met: used to tell "they said nothing" apart from
+        # "the microphone picks up nothing at all".
         self.peak = 0.0
 
     def stop(self) -> None:
         self._stop.set()
 
     def record(self) -> bytes:
-        """Bloque jusqu'à la fin de la capture et retourne le PCM brut (s16le 16 kHz mono)."""
+        """Blocks until capture ends and returns the raw PCM (s16le 16 kHz mono)."""
         source = capture.build(
             str(self.config["device"]), RATE, CHANNELS, str(self.config["backend"])
         )
@@ -101,7 +101,7 @@ class Recorder:
         speaking = False
         spoke_once = False
         last_voice = started
-        segment_start = 0        # index de départ de la phrase en cours
+        segment_start = 0        # start index of the sentence in progress
 
         try:
             while not self._stop.is_set():
@@ -134,7 +134,7 @@ class Recorder:
                     spoke_once = True
                     last_voice = now
 
-                # Une petite pause termine une phrase : on l'envoie sans cesser d'écouter.
+                # A short pause ends a sentence: it is sent without stopping listening.
                 if streaming and speaking and now - last_voice > segment_silence:
                     segment = self._slice(frames, segment_start, segment_silence)
                     segment_start = len(frames)
@@ -159,18 +159,18 @@ class Recorder:
 
         if not spoke_once:
             return b""
-        # On ne rogne la fin que si l'écoute s'est arrêtée sur un silence : à
-        # l'arrêt manuel, l'utilisateur vient de parler et couper ici lui
-        # mangerait sa dernière seconde et demie.
+        # The tail is only trimmed if listening stopped on a silence: on a
+        # manual stop, the user has just spoken and cutting here would eat
+        # their last second and a half.
         trailing = silence_seconds if self.reason == "silence" else 0.0
         if streaming:
-            # Le reste éventuel après la dernière pause.
+            # Whatever is left after the last pause.
             return self._slice(frames, segment_start, trailing)
         return self._slice(frames, 0, trailing)
 
     @staticmethod
     def _slice(frames: list[bytes], start: int, trailing_silence: float) -> bytes:
-        """Extrait les trames depuis `start`, sans la queue de silence."""
+        """Extracts the frames from `start` on, without the trailing silence."""
         chunks = frames[start:]
         if trailing_silence > TRIM_MARGIN_SECONDS:
             drop = int((trailing_silence - TRIM_MARGIN_SECONDS) * CHUNKS_PER_SECOND)

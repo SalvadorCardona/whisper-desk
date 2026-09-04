@@ -1,4 +1,4 @@
-"""Pilotage du processus overlay (GTK3, Python système)."""
+"""Driving the overlay process (GTK3, system Python)."""
 
 from __future__ import annotations
 
@@ -19,16 +19,16 @@ OVERLAY_SCRIPT = Path(__file__).with_name("overlay.py")
 
 
 def system_python() -> str:
-    """Le Python système : c'est lui qui a PyGObject, pas celui du venv."""
+    """The system Python: it is the one with PyGObject, not the venv's."""
     return os.environ.get("WD_SYSTEM_PYTHON") or shutil.which("python3") or "/usr/bin/python3"
 
 
 @functools.cache
 def gtk_available() -> bool:
-    """Le Python système a-t-il PyGObject + GTK3 ?
+    """Does the system Python have PyGObject + GTK3?
 
-    Sur macOS, et sur un Linux sans python3-gi, la réponse est non : mieux vaut
-    le savoir une fois que lancer un processus condamné à chaque dictée.
+    On macOS, and on a Linux without python3-gi, the answer is no: better to
+    know it once than to launch a doomed process for every dictation.
     """
     try:
         return subprocess.run(
@@ -42,13 +42,13 @@ def gtk_available() -> bool:
 
 
 class OverlayProcess:
-    """Fenêtre d'écoute lancée à la demande, pilotée par des lignes sur stdin."""
+    """Listening window launched on demand, driven by lines on stdin."""
 
     def __init__(self, config: dict[str, Any]):
         self.config = config["overlay"]
         self._process: subprocess.Popen[bytes] | None = None
-        # Les niveaux arrivent du fil d'enregistrement, les états du fil de la
-        # dictée : sans verrou, deux lignes s'entrelaceraient sur le même tube.
+        # Levels come from the recording thread, states from the dictation
+        # thread: without a lock, two lines would interleave on the same pipe.
         self._lock = threading.Lock()
         self._broken = False
 
@@ -56,7 +56,7 @@ class OverlayProcess:
         if not self.config["enabled"] or self._process is not None:
             return
         if not gtk_available():
-            logger.debug("Overlay ignoré : GTK3 absent du Python système.")
+            logger.debug("Overlay skipped: GTK3 missing from the system Python.")
             return
         command = [
             system_python(),
@@ -73,7 +73,7 @@ class OverlayProcess:
                 command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
         except OSError as error:
-            logger.warning("Overlay indisponible : %s", error)
+            logger.warning("Overlay unavailable: %s", error)
             self._process = None
             return
         self._send("state listening")
@@ -82,7 +82,7 @@ class OverlayProcess:
         self._send(f"state {state}")
 
     def set_level(self, level: float, bands: Sequence[float] = ()) -> None:
-        """Volume global, suivi de l'énergie par bande quand elle est connue."""
+        """Overall volume, followed by the energy per band when it is known."""
         spectrum = "".join(f" {band:.3f}" for band in bands)
         self._send(f"level {level:.3f}{spectrum}")
 
@@ -99,7 +99,7 @@ class OverlayProcess:
         )
 
     def copy(self, text: str) -> bool:
-        """Copie via la fenêtre de l'overlay, qui possède une sélection X11."""
+        """Copies through the overlay window, which owns an X11 selection."""
         if not self.alive:
             return False
         payload = base64.b64encode(text.encode("utf-8")).decode("ascii")
@@ -126,7 +126,7 @@ class OverlayProcess:
             return
         try:
             if broken or process.stdin is None:
-                # Sans tube, impossible de demander la fermeture : on l'impose.
+                # Without a pipe, we cannot ask it to close: we force it.
                 process.terminate()
             else:
                 process.stdin.write(b"quit\n")
@@ -137,8 +137,8 @@ class OverlayProcess:
             process.kill()
             try:
                 process.wait(timeout=2)
-            except subprocess.TimeoutExpired:  # SIGKILL en attente : rien de plus à faire
-                logger.warning("L'overlay ne s'est pas terminé.")
+            except subprocess.TimeoutExpired:  # SIGKILL pending: nothing more to do
+                logger.warning("The overlay did not exit.")
 
     def _send(self, line: str) -> None:
         with self._lock:
@@ -149,6 +149,6 @@ class OverlayProcess:
                 process.stdin.write(f"{line}\n".encode())
                 process.stdin.flush()
             except (BrokenPipeError, ValueError, OSError):
-                # Le tube est mort, mais pas forcément la fenêtre : on garde le
-                # process sous la main pour que stop() puisse encore la fermer.
+                # The pipe is dead, but not necessarily the window: the process
+                # is kept around so that stop() can still close it.
                 self._broken = True

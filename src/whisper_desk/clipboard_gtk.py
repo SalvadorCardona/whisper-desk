@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Repli presse-papiers via GTK4, quand wl-copy/xclip ne sont pas installés.
+"""Clipboard fallback through GTK4, when wl-copy/xclip are not installed.
 
-Sous Wayland, seul un client possédant une fenêtre et le focus peut poser une
-sélection : on affiche donc une fenêtre minuscule le temps de la copie, puis on
-laisse le gestionnaire de presse-papiers du bureau (mutter…) reprendre le texte.
+Under Wayland, only a client that owns a window and has focus can set a
+selection: so a tiny window is shown for the duration of the copy, then the
+desktop's clipboard manager (mutter…) takes the text over.
 
-Lancé comme processus autonome avec le Python système ; le texte arrive sur stdin.
+Run as a standalone process with the system Python; the text arrives on stdin.
 """
 
 from __future__ import annotations

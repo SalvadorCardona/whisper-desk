@@ -1,11 +1,11 @@
-"""Niveaux de voix pour l'overlay : le volume global, et l'énergie par bande.
+"""Voice levels for the overlay: overall volume, and energy per band.
 
-Un equalizer a besoin de savoir *où* se trouve l'énergie, pas seulement combien
-il y en a : on découpe donc chaque tranche de 100 ms en bandes de fréquence,
-réparties en octaves — l'oreille entend en octaves, pas en hertz.
+An equalizer needs to know *where* the energy is, not just how much of it there
+is: so each 100 ms slice is split into frequency bands, spread over octaves —
+the ear hears in octaves, not in hertz.
 
-numpy arrive avec le modèle (faster-whisper en dépend). S'il manquait, `bands`
-rend une liste vide et l'overlay se rabat sur le seul volume global.
+numpy comes with the model (faster-whisper depends on it). Were it missing,
+`bands` returns an empty list and the overlay falls back on overall volume alone.
 """
 
 from __future__ import annotations
@@ -14,27 +14,27 @@ import math
 
 try:
     import numpy
-except ImportError:  # pragma: no cover - numpy vient avec faster-whisper
+except ImportError:  # pragma: no cover - numpy comes with faster-whisper
     numpy = None  # type: ignore[assignment]
 
-# Dynamique affichée par l'overlay, du seuil de parole au cri.
+# Dynamic range shown by the overlay, from the speech threshold to a shout.
 LEVEL_RANGE_DB = 36.0
-# La voix utile : le fondamental d'une voix grave part vers 80 Hz, les
-# fricatives portent jusqu'à quelques kHz. Au-delà, la barre resterait morte.
+# The useful voice range: the fundamental of a deep voice goes down to 80 Hz,
+# fricatives reach a few kHz. Beyond that, the bar would stay dead.
 LOW_HZ = 80.0
 HIGH_HZ = 6000.0
-# Les aigus portent bien moins d'énergie que les graves : sans ce relèvement
-# progressif, la moitié droite de l'equalizer ne bougerait jamais.
+# Highs carry far less energy than lows: without this progressive tilt, the
+# right half of the equalizer would never move.
 TILT_DB = 14.0
 MIN_SAMPLES = 256
 
 
 def visual_level(level: float, threshold: float, gain_db: float = 0.0) -> float:
-    """RMS -> 0..1 pour l'overlay, en décibels au-dessus du seuil de parole.
+    """RMS -> 0..1 for the overlay, in decibels above the speech threshold.
 
-    L'œil suit l'oreille : une échelle linéaire écrase la parole ordinaire tout
-    en bas de la jauge et sature sur les pics. En décibels, le silence reste à
-    zéro et toute la course sert à ce qui s'entend vraiment.
+    The eye follows the ear: a linear scale crushes ordinary speech at the very
+    bottom of the gauge and saturates on peaks. In decibels, silence stays at
+    zero and the whole range serves what can actually be heard.
     """
     if level <= 0.0 or threshold <= 0.0:
         return 0.0
@@ -43,19 +43,19 @@ def visual_level(level: float, threshold: float, gain_db: float = 0.0) -> float:
 
 
 def band_edges(count: int, rate: int, size: int) -> list[int]:
-    """Bornes des bandes, en indices de bins FFT, réparties en octaves."""
+    """Band boundaries, as FFT bin indexes, spread over octaves."""
     hz_per_bin = rate / size
     ratio = HIGH_HZ / LOW_HZ
     edges = [int(LOW_HZ * ratio ** (index / count) / hz_per_bin) for index in range(count + 1)]
-    # Deux bandes ne peuvent pas partager le même bin : en bas du spectre, la
-    # résolution de la FFT est trop grossière pour l'échelle logarithmique.
+    # Two bands cannot share the same bin: at the bottom of the spectrum, the
+    # FFT resolution is too coarse for the logarithmic scale.
     for index in range(1, len(edges)):
         edges[index] = max(edges[index], edges[index - 1] + 1)
     return edges
 
 
 def bands(chunk: bytes, count: int, rate: int, level: float, threshold: float) -> list[float]:
-    """Énergie par bande d'un buffer PCM s16le, chacune ramenée en 0..1."""
+    """Energy per band of an s16le PCM buffer, each one mapped to 0..1."""
     if numpy is None or count <= 0 or level <= 0.0 or threshold <= 0.0:
         return []
     samples = numpy.frombuffer(chunk[: len(chunk) - len(chunk) % 2], dtype="<i2")
@@ -71,9 +71,9 @@ def bands(chunk: bytes, count: int, rate: int, level: float, threshold: float) -
     values = []
     for index in range(count):
         share = float(power[edges[index] : edges[index + 1]].sum()) / total
-        # Part d'énergie ramenée à l'échelle du RMS global : une bande qui porte
-        # sa part d'un signal réparti uniformément retrouve exactement le niveau
-        # global, et sa barre monte comme le ferait le VU-mètre.
+        # Energy share brought back to the scale of the overall RMS: a band
+        # carrying its share of a uniformly spread signal lands exactly on the
+        # overall level, and its bar rises the way the VU meter would.
         band_rms = level * math.sqrt(share * count)
         values.append(visual_level(band_rms, threshold, TILT_DB * index / max(count - 1, 1)))
     return values
