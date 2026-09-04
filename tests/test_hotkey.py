@@ -1,4 +1,4 @@
-"""Raccourci global : syntaxe des combinaisons, et traduction pour chaque hôte."""
+"""Global shortcut: syntax of the combinations, and translation for each host."""
 
 from __future__ import annotations
 
@@ -11,46 +11,46 @@ from whisper_desk import host, hotkey
 
 
 class ParseTest(unittest.TestCase):
-    def test_syntaxe_gtk(self):
+    def test_gtk_syntax(self):
         self.assertEqual(hotkey.parse_binding("<Super>j"), (["super"], "j"))
 
-    def test_plusieurs_modificateurs(self):
+    def test_several_modifiers(self):
         self.assertEqual(hotkey.parse_binding("<Ctrl><Alt>j"), (["ctrl", "alt"], "j"))
 
-    def test_syntaxe_a_plus(self):
+    def test_plus_syntax(self):
         self.assertEqual(hotkey.parse_binding("ctrl+alt+j"), (["ctrl", "alt"], "j"))
 
-    def test_synonymes(self):
+    def test_synonyms(self):
         self.assertEqual(hotkey.parse_binding("cmd+j"), (["super"], "j"))
         self.assertEqual(hotkey.parse_binding("<Primary><Option>j"), (["ctrl", "alt"], "j"))
 
-    def test_touche_nommee(self):
+    def test_named_key(self):
         self.assertEqual(hotkey.parse_binding("<Ctrl><Alt>space"), (["ctrl", "alt"], "space"))
 
-    def test_l_ordre_des_modificateurs_est_normalise(self):
+    def test_the_modifier_order_is_normalised(self):
         self.assertEqual(
             hotkey.parse_binding("<Alt><Ctrl>j"), hotkey.parse_binding("<Ctrl><Alt>j")
         )
 
-    def test_aller_retour_gtk(self):
+    def test_gtk_round_trip(self):
         self.assertEqual(hotkey.format_gtk(*hotkey.parse_binding("<Ctrl><Alt>j")), "<Ctrl><Alt>j")
 
 
 class DefaultBindingTest(unittest.TestCase):
-    def test_wsl_evite_la_touche_windows(self):
+    def test_wsl_avoids_the_windows_key(self):
         with forced_host(host.WSL):
             self.assertEqual(hotkey.default_binding(), "<Ctrl><Alt>j")
 
-    def test_ailleurs_c_est_super(self):
+    def test_elsewhere_it_is_super(self):
         for name in (host.LINUX, host.MACOS):
             with forced_host(name):
                 self.assertEqual(hotkey.default_binding(), "<Super>j")
 
-    def test_auto_se_resout(self):
+    def test_auto_is_resolved(self):
         with forced_host(host.LINUX):
             self.assertEqual(hotkey.resolve_binding({"hotkey": {"binding": "auto"}}), "<Super>j")
 
-    def test_un_raccourci_explicite_est_respecte(self):
+    def test_an_explicit_shortcut_is_honoured(self):
         with forced_host(host.WSL):
             self.assertEqual(
                 hotkey.resolve_binding({"hotkey": {"binding": "<Super><Shift>d"}}),
@@ -59,52 +59,52 @@ class DefaultBindingTest(unittest.TestCase):
 
 
 class WindowsFormatTest(unittest.TestCase):
-    def test_combinaison_acceptee(self):
+    def test_accepted_combination(self):
         self.assertEqual(hotkey.format_windows(["ctrl", "alt"], "j"), "CTRL+ALT+J")
 
-    def test_ctrl_maj_aussi(self):
+    def test_ctrl_shift_too(self):
         self.assertEqual(hotkey.format_windows(["ctrl", "shift"], "k"), "CTRL+SHIFT+K")
 
-    def test_touche_nommee(self):
+    def test_named_key(self):
         self.assertEqual(hotkey.format_windows(["ctrl", "alt"], "space"), "CTRL+ALT+SPACE")
 
-    def test_la_touche_windows_est_refusee(self):
+    def test_the_windows_key_is_refused(self):
         with self.assertRaises(hotkey.UnsupportedDesktop) as raised:
             hotkey.format_windows(["super"], "j")
         self.assertIn("Ctrl+Alt", str(raised.exception))
 
-    def test_ctrl_seul_est_refuse(self):
+    def test_ctrl_alone_is_refused(self):
         with self.assertRaises(hotkey.UnsupportedDesktop):
             hotkey.format_windows(["ctrl"], "j")
 
-    def test_sans_touche_finale(self):
+    def test_without_a_final_key(self):
         with self.assertRaises(hotkey.UnsupportedDesktop):
             hotkey.format_windows(["ctrl", "alt"], "")
 
 
 class SkhdFormatTest(unittest.TestCase):
-    def test_commande_seule(self):
+    def test_command_alone(self):
         self.assertEqual(hotkey.format_skhd(["super"], "j"), "cmd - j")
 
-    def test_plusieurs_modificateurs(self):
+    def test_several_modifiers(self):
         self.assertEqual(hotkey.format_skhd(["ctrl", "alt"], "j"), "ctrl + alt - j")
 
-    def test_sans_modificateur(self):
+    def test_without_a_modifier(self):
         self.assertEqual(hotkey.format_skhd([], "f13"), "f13")
 
-    def test_sans_touche_finale(self):
+    def test_without_a_final_key(self):
         with self.assertRaises(hotkey.UnsupportedDesktop):
             hotkey.format_skhd(["super"], "")
 
 
 class BackendTest(unittest.TestCase):
-    def test_chaque_hote_a_son_greffon(self):
-        attendus = {host.LINUX: "GNOME", host.WSL: "Windows", host.MACOS: "skhd"}
-        for name, expected in attendus.items():
+    def test_each_host_has_its_plugin(self):
+        expectations = {host.LINUX: "GNOME", host.WSL: "Windows", host.MACOS: "skhd"}
+        for name, expected in expectations.items():
             with forced_host(name):
                 self.assertEqual(hotkey.backend().name, expected)
 
-    def test_hors_wsl_le_greffon_windows_refuse(self):
+    def test_outside_wsl_the_windows_plugin_refuses(self):
         with forced_host(host.LINUX):
             with self.assertRaises(hotkey.UnsupportedDesktop):
                 hotkey.WindowsHotkey().check()

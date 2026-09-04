@@ -1,4 +1,4 @@
-"""Fusion de la configuration utilisateur avec les valeurs par défaut."""
+"""Merging the user configuration with the default values."""
 
 from __future__ import annotations
 
@@ -12,17 +12,17 @@ from whisper_desk import config as config_module
 
 
 class MergeTest(unittest.TestCase):
-    def test_les_cles_absentes_gardent_le_defaut(self):
+    def test_missing_keys_keep_the_default(self):
         merged = config_module._merge({"a": 1, "b": 2}, {"b": 3})
         self.assertEqual(merged, {"a": 1, "b": 3})
 
-    def test_fusion_en_profondeur(self):
+    def test_deep_merge(self):
         merged = config_module._merge(
             {"model": {"name": "auto", "language": "fr"}}, {"model": {"language": "en"}}
         )
         self.assertEqual(merged, {"model": {"name": "auto", "language": "en"}})
 
-    def test_le_defaut_n_est_pas_modifie(self):
+    def test_the_default_is_not_modified(self):
         base = {"model": {"language": "fr"}}
         config_module._merge(base, {"model": {"language": "en"}})
         self.assertEqual(base, {"model": {"language": "fr"}})
@@ -36,27 +36,27 @@ class LoadTest(unittest.TestCase):
         path.write_text(content, encoding="utf-8")
         return path
 
-    def test_fichier_absent(self):
-        config = config_module.load(Path("/inexistant/config.toml"))
+    def test_missing_file(self):
+        config = config_module.load(Path("/nonexistent/config.toml"))
         self.assertEqual(config, config_module.DEFAULTS)
         self.assertIsNot(config["model"], config_module.DEFAULTS["model"])
 
-    def test_surcharge_partielle(self):
+    def test_partial_override(self):
         config = config_module.load(self.write('[model]\nlanguage = "en"\n'))
         self.assertEqual(config["model"]["language"], "en")
         self.assertEqual(config["model"]["name"], config_module.DEFAULTS["model"]["name"])
         self.assertEqual(config["overlay"], config_module.DEFAULTS["overlay"])
 
-    def test_toutes_les_sections_attendues_sont_la(self):
-        config = config_module.load(Path("/inexistant"))
+    def test_every_expected_section_is_there(self):
+        config = config_module.load(Path("/nonexistent"))
         self.assertEqual(
             set(config), {"hotkey", "model", "recording", "output", "overlay"}
         )
 
-    def test_les_cles_lues_par_le_code_existent(self):
-        """Le code indexe la config sans .get() : une clé manquante planterait."""
-        config = config_module.load(Path("/inexistant"))
-        attendues = {
+    def test_the_keys_read_by_the_code_exist(self):
+        """The code indexes the config without .get(): a missing key would crash."""
+        config = config_module.load(Path("/nonexistent"))
+        expected = {
             "recording": {
                 "device", "backend", "max_seconds", "streaming",
                 "segment_silence_seconds", "silence_seconds",
@@ -73,7 +73,7 @@ class LoadTest(unittest.TestCase):
             },
             "hotkey": {"binding", "name", "action"},
         }
-        for section, keys in attendues.items():
+        for section, keys in expected.items():
             self.assertLessEqual(keys, set(config[section]), section)
 
 

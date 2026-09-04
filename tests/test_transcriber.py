@@ -1,22 +1,22 @@
-"""Prompt glissant, vocabulaire, et tri des hallucinations de Whisper."""
+"""Sliding prompt, vocabulary, and sorting out Whisper's hallucinations."""
 
 from __future__ import annotations
 
 import unittest
 from unittest import mock
 
-from . import context  # noqa: F401  (ajoute src/ au chemin d'import)
+from . import context  # noqa: F401  (adds src/ to the import path)
 
 from whisper_desk.transcriber import CONTEXT_CHARS, Transcriber, is_filler
 
 try:
     import numpy
-except ImportError:  # la CI n'installe que la bibliothèque standard
+except ImportError:  # CI only installs the standard library
     numpy = None
 
-# transcribe() convertit le PCM en flottants avec numpy avant d'appeler le
-# modèle : sans lui, seules les fonctions pures restent testables.
-requires_numpy = unittest.skipUnless(numpy is not None, "numpy absent")
+# transcribe() converts the PCM into floats with numpy before calling the
+# model: without it, only the pure functions remain testable.
+requires_numpy = unittest.skipUnless(numpy is not None, "numpy missing")
 
 
 def settings(**overrides):
@@ -36,7 +36,7 @@ def settings(**overrides):
 
 
 class Segment:
-    """Ce que faster-whisper rend, réduit à ce que le tri regarde."""
+    """What faster-whisper returns, reduced to what the filter looks at."""
 
     def __init__(self, text: str, no_speech_prob: float = 0.0):
         self.text = text
@@ -44,48 +44,51 @@ class Segment:
 
 
 class FillerTest(unittest.TestCase):
-    def test_le_generique_de_sous_titres_ne_vient_jamais_du_micro(self):
+    # The sample sentences stay in French: they are the credit lines Whisper
+    # itself emits when it hears nothing, and the filter matches them verbatim.
+
+    def test_a_subtitle_credit_never_comes_from_the_microphone(self):
         self.assertTrue(is_filler("Sous-titres réalisés par la communauté d'Amara.org", 0.0))
         self.assertTrue(is_filler("Sous-titrage Société Radio-Canada", 0.1))
 
-    def test_un_merci_sur_du_silence_est_une_hallucination(self):
+    def test_a_thank_you_over_silence_is_a_hallucination(self):
         self.assertTrue(is_filler("Merci.", 0.9))
 
-    def test_un_merci_reellement_prononce_est_garde(self):
-        """Le même mot, mais le modèle a bien entendu quelqu'un parler."""
+    def test_a_thank_you_actually_spoken_is_kept(self):
+        """The same word, but the model did hear somebody speak."""
         self.assertFalse(is_filler("Merci.", 0.1))
 
-    def test_la_ponctuation_et_la_casse_ne_sauvent_pas_le_remplissage(self):
+    def test_punctuation_and_case_do_not_save_the_filler(self):
         self.assertTrue(is_filler("  « MERCI ! »  ", 0.8))
 
-    def test_une_vraie_phrase_reste_meme_sur_un_no_speech_eleve(self):
-        self.assertFalse(is_filler("il faudrait rajouter des images de blocs", 0.99))
+    def test_a_real_sentence_stays_even_on_a_high_no_speech(self):
+        self.assertFalse(is_filler("we should add some pictures of blocks", 0.99))
 
 
 class PromptTest(unittest.TestCase):
-    def test_sans_rien_le_prompt_reste_vide(self):
+    def test_with_nothing_the_prompt_stays_empty(self):
         self.assertIsNone(Transcriber(settings()).prompt())
 
-    def test_le_vocabulaire_de_l_utilisateur_ouvre_le_prompt(self):
-        transcriber = Transcriber(settings(initial_prompt="Dictée technique."))
-        self.assertEqual(transcriber.prompt(), "Dictée technique.")
+    def test_the_user_vocabulary_opens_the_prompt(self):
+        transcriber = Transcriber(settings(initial_prompt="Technical dictation."))
+        self.assertEqual(transcriber.prompt(), "Technical dictation.")
 
-    def test_le_contexte_prolonge_la_phrase_d_amorce(self):
-        transcriber = Transcriber(settings(initial_prompt="Dictée technique."))
+    def test_the_context_extends_the_priming_sentence(self):
+        transcriber = Transcriber(settings(initial_prompt="Technical dictation."))
         self.assertEqual(
-            transcriber.prompt("il faudrait rajouter"),
-            "Dictée technique. il faudrait rajouter",
+            transcriber.prompt("we should add"),
+            "Technical dictation. we should add",
         )
 
-    def test_le_contexte_est_borne_aux_derniers_caracteres(self):
-        """Le modèle doit tenir le fil, pas relire toute la dictée."""
+    def test_the_context_is_capped_to_the_last_characters(self):
+        """The model must keep the thread, not reread the whole dictation."""
         transcriber = Transcriber(settings())
-        prompt = transcriber.prompt("mot " * 400)
+        prompt = transcriber.prompt("word " * 400)
         self.assertLessEqual(len(prompt), CONTEXT_CHARS)
 
-    def test_contexte_desactive_le_prompt_ignore_ce_qui_precede(self):
+    def test_with_context_disabled_the_prompt_ignores_what_came_before(self):
         transcriber = Transcriber(settings(context=False))
-        self.assertIsNone(transcriber.prompt("il faudrait rajouter"))
+        self.assertIsNone(transcriber.prompt("we should add"))
 
 
 class TranscribeTest(unittest.TestCase):
@@ -98,34 +101,34 @@ class TranscribeTest(unittest.TestCase):
         return text, model.transcribe.call_args.kwargs
 
     @requires_numpy
-    def test_les_phrases_sont_recollees(self):
-        text, _ = self.transcribe([Segment("Première phrase."), Segment("Et la suite.")])
-        self.assertEqual(text, "Première phrase. Et la suite.")
+    def test_the_sentences_are_glued_back_together(self):
+        text, _ = self.transcribe([Segment("First sentence."), Segment("And the rest.")])
+        self.assertEqual(text, "First sentence. And the rest.")
 
     @requires_numpy
-    def test_l_hallucination_est_ecartee_du_texte_rendu(self):
+    def test_the_hallucination_is_dropped_from_the_returned_text(self):
         text, _ = self.transcribe([
-            Segment("il faudrait rajouter"),
+            Segment("we should add"),
             Segment("Merci.", no_speech_prob=0.95),
         ])
-        self.assertEqual(text, "il faudrait rajouter")
+        self.assertEqual(text, "we should add")
 
     @requires_numpy
-    def test_le_vocabulaire_part_en_hotwords(self):
-        _, kwargs = self.transcribe([Segment("texte")], vocabulary="OpenRouter, repos GitHub")
-        self.assertEqual(kwargs["hotwords"], "OpenRouter, repos GitHub")
+    def test_the_vocabulary_goes_out_as_hotwords(self):
+        _, kwargs = self.transcribe([Segment("text")], vocabulary="OpenRouter, GitHub repos")
+        self.assertEqual(kwargs["hotwords"], "OpenRouter, GitHub repos")
 
     @requires_numpy
-    def test_sans_vocabulaire_aucun_hotword_n_est_impose(self):
-        _, kwargs = self.transcribe([Segment("texte")])
+    def test_without_a_vocabulary_no_hotword_is_imposed(self):
+        _, kwargs = self.transcribe([Segment("text")])
         self.assertIsNone(kwargs["hotwords"])
 
     @requires_numpy
-    def test_le_contexte_atteint_bien_le_modele(self):
-        _, kwargs = self.transcribe([Segment("des images")], context="il faudrait rajouter")
-        self.assertEqual(kwargs["initial_prompt"], "il faudrait rajouter")
+    def test_the_context_does_reach_the_model(self):
+        _, kwargs = self.transcribe([Segment("some pictures")], context="we should add")
+        self.assertEqual(kwargs["initial_prompt"], "we should add")
 
-    def test_sans_son_le_modele_n_est_pas_derange(self):
+    def test_without_sound_the_model_is_left_alone(self):
         transcriber = Transcriber(settings())
         transcriber._model = mock.Mock()
         self.assertEqual(transcriber.transcribe(b""), "")

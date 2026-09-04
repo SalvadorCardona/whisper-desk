@@ -1,4 +1,4 @@
-"""Client de la socket du daemon."""
+"""Client for the daemon's socket."""
 
 from __future__ import annotations
 
@@ -23,9 +23,9 @@ def _connect(timeout: float) -> socket.socket:
 
 
 def send(command: str, timeout: float = 300.0, autostart: bool = True) -> dict[str, Any]:
-    """Envoie une commande au daemon, en le démarrant au besoin."""
+    """Sends a command to the daemon, starting it if need be."""
     unreachable = DaemonUnavailable(
-        f"daemon injoignable — lancez « {service.hint()} »"
+        f"daemon unreachable — run '{service.hint()}'"
     )
     try:
         client = _connect(timeout)
@@ -33,7 +33,7 @@ def send(command: str, timeout: float = 300.0, autostart: bool = True) -> dict[s
         if not autostart or not _start_daemon():
             raise unreachable from None
         try:
-            # La socket existe, mais le daemon peut avoir échoué juste après.
+            # The socket exists, but the daemon may have died right after.
             client = _connect(timeout)
         except OSError:
             raise unreachable from None
@@ -46,12 +46,12 @@ def send(command: str, timeout: float = 300.0, autostart: bool = True) -> dict[s
         client.close()
 
     if not raw:
-        raise DaemonUnavailable("le daemon n'a pas répondu")
+        raise DaemonUnavailable("the daemon did not answer")
     return json.loads(raw.decode("utf-8"))
 
 
 def _start_daemon() -> bool:
-    """Démarre le daemon (systemd, launchd ou processus détaché) puis attend la socket."""
+    """Starts the daemon (systemd, launchd or a detached process) then waits for the socket."""
     if not service.start():
         return False
     for _ in range(40):

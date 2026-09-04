@@ -1,4 +1,4 @@
-"""Modes de sortie, journal d'historique, presse-papiers par hôte."""
+"""Output modes, history log, clipboard per host."""
 
 from __future__ import annotations
 
@@ -22,24 +22,24 @@ def with_mode(mode: str) -> dict:
 
 
 class ModesTest(unittest.TestCase):
-    def test_mode_simple(self):
+    def test_single_mode(self):
         self.assertEqual(output.modes(with_mode("cursor")), {"cursor"})
 
-    def test_modes_combines(self):
+    def test_combined_modes(self):
         self.assertEqual(output.modes(with_mode("cursor+stdout")), {"cursor", "stdout"})
 
-    def test_espaces_ignorees(self):
+    def test_spaces_are_ignored(self):
         self.assertEqual(output.modes(with_mode(" cursor + stdout ")), {"cursor", "stdout"})
 
-    def test_type_reste_un_synonyme_de_cursor(self):
+    def test_type_is_still_a_synonym_of_cursor(self):
         self.assertEqual(output.modes(with_mode("type")), {"cursor"})
         self.assertEqual(output.modes(with_mode("type+clipboard")), {"cursor", "clipboard"})
 
-    def test_mode_vide(self):
+    def test_empty_mode(self):
         self.assertEqual(output.modes(with_mode("")), set())
 
-    def test_le_defaut_du_projet_insere_au_curseur(self):
-        self.assertIn("cursor", output.modes(config_module.load(Path("/inexistant"))))
+    def test_the_project_default_inserts_at_the_cursor(self):
+        self.assertIn("cursor", output.modes(config_module.load(Path("/nonexistent"))))
 
 
 class HistoryTest(unittest.TestCase):
@@ -55,22 +55,22 @@ class HistoryTest(unittest.TestCase):
             encoding="utf-8"
         ).splitlines()
 
-    def test_une_ligne_par_transcription(self):
-        output.log_history("bonjour")
-        output.log_history("au revoir")
+    def test_one_line_per_transcription(self):
+        output.log_history("hello")
+        output.log_history("goodbye")
         self.assertEqual([line.split("\t", 1)[1] for line in self.lines()],
-                         ["bonjour", "au revoir"])
+                         ["hello", "goodbye"])
 
-    def test_l_espace_de_liaison_ne_survit_pas_au_journal(self):
-        """Les phrases suivantes arrivent en « " suite" » pour l'insertion."""
-        output.log_history(" suite de la phrase")
-        self.assertEqual(self.lines()[0].split("\t", 1)[1], "suite de la phrase")
+    def test_the_joining_space_does_not_survive_into_the_log(self):
+        """Later sentences arrive as " next" for the insertion."""
+        output.log_history(" rest of the sentence")
+        self.assertEqual(self.lines()[0].split("\t", 1)[1], "rest of the sentence")
 
-    def test_rien_a_journaliser(self):
+    def test_nothing_to_log(self):
         output.log_history("   ")
         self.assertFalse((config_module.STATE_DIR / "history.log").exists())
 
-    def test_horodatage_present(self):
+    def test_timestamp_present(self):
         output.log_history("test")
         stamp, text = self.lines()[0].split("\t", 1)
         self.assertEqual(text, "test")
@@ -78,25 +78,25 @@ class HistoryTest(unittest.TestCase):
 
 
 class ShortcutTest(unittest.TestCase):
-    def test_collage_par_defaut(self):
+    def test_default_paste(self):
         self.assertEqual(parse_shortcut("ctrl+v"), ["ctrl", "v"])
 
-    def test_variante_terminal(self):
+    def test_terminal_variant(self):
         self.assertEqual(parse_shortcut("shift+insert"), ["shift", "insert"])
 
-    def test_casse_et_espaces(self):
+    def test_case_and_spaces(self):
         self.assertEqual(parse_shortcut(" Ctrl + V "), ["ctrl", "v"])
 
-    def test_touches_inconnues_ecartees(self):
+    def test_unknown_keys_are_dropped(self):
         self.assertEqual(parse_shortcut("hyper+ctrl+v"), ["ctrl", "v"])
 
-    def test_raccourci_vide(self):
+    def test_empty_shortcut(self):
         self.assertEqual(parse_shortcut(""), [])
         self.assertEqual(parse_shortcut("++"), [])
 
 
 class ClipboardTest(unittest.TestCase):
-    """Le presse-papiers passe par l'outil de l'hôte, sans jamais tout tenter."""
+    """The clipboard goes through the host's tool, without ever trying them all."""
 
     def copy_with(self, host_name: str, present: tuple[str, ...], text: str = "l'été"):
         calls: list[tuple[list[str], bytes | None]] = []
@@ -110,50 +110,50 @@ class ClipboardTest(unittest.TestCase):
             copied = output.Clipboard().set(text)
         return copied, calls
 
-    def test_wayland_avant_x11(self):
+    def test_wayland_before_x11(self):
         _, calls = self.copy_with(host.LINUX, ("wl-copy", "xclip"))
         self.assertEqual(len(calls), 1)
         self.assertIn("wl-copy", calls[0][0][0])
 
-    def test_x11_quand_wayland_manque(self):
+    def test_x11_when_wayland_is_missing(self):
         _, calls = self.copy_with(host.LINUX, ("xclip",))
         self.assertIn("xclip", calls[0][0][0])
         self.assertEqual(calls[0][1], "l'été".encode())
 
-    def test_macos_utilise_pbcopy(self):
+    def test_macos_uses_pbcopy(self):
         _, calls = self.copy_with(host.MACOS, ("pbcopy", "wl-copy"))
         self.assertIn("pbcopy", calls[0][0][0])
 
-    def test_wsl_passe_par_windows_avant_les_outils_linux(self):
+    def test_wsl_goes_through_windows_before_the_linux_tools(self):
         _, calls = self.copy_with(host.WSL, ("clip.exe", "wl-copy"))
         self.assertIn("clip.exe", calls[0][0][0])
 
-    def test_clip_exe_recoit_de_l_utf16_avec_sa_marque(self):
-        """Sans marque d'ordre, clip.exe lit l'UTF-8 comme du texte natif : accents perdus."""
+    def test_clip_exe_receives_utf16_with_its_byte_order_mark(self):
+        """Without the mark, clip.exe reads UTF-8 as native text: accents are lost."""
         _, calls = self.copy_with(host.WSL, ("clip.exe",))
         data = calls[0][1]
         self.assertTrue(data.startswith(codecs.BOM_UTF16_LE))
         self.assertEqual(data[len(codecs.BOM_UTF16_LE):].decode("utf-16-le"), "l'été")
 
-    def test_l_overlay_prend_le_relais(self):
+    def test_the_overlay_takes_over(self):
         overlay = mock.Mock()
         overlay.copy.return_value = True
         with forced_host(host.LINUX), \
                 mock.patch.object(output.shutil, "which", lambda name: None):
-            self.assertTrue(output.Clipboard(overlay).set("bonjour"))
-        overlay.copy.assert_called_once_with("bonjour")
+            self.assertTrue(output.Clipboard(overlay).set("hello"))
+        overlay.copy.assert_called_once_with("hello")
 
-    def test_sauvegarde_puis_restitution(self):
+    def test_save_then_restore(self):
         with forced_host(host.MACOS), \
-                mock.patch.dict(output.GETTERS, {host.MACOS: (lambda: "avant",)}), \
+                mock.patch.dict(output.GETTERS, {host.MACOS: (lambda: "before",)}), \
                 mock.patch.object(output.Clipboard, "set") as setter:
             clipboard = output.Clipboard()
             clipboard.save()
-            clipboard.save()          # deux dictées d'affilée ne doivent pas écraser
+            clipboard.save()          # two dictations in a row must not overwrite it
             clipboard.restore()
-        setter.assert_called_once_with("avant")
+        setter.assert_called_once_with("before")
 
-    def test_l_outil_annonce_par_le_diagnostic(self):
+    def test_the_tool_reported_by_the_diagnostic(self):
         with forced_host(host.MACOS), \
                 mock.patch.object(
                     output.shutil, "which", lambda name: "/bin/pbcopy" if name == "pbcopy" else None):
@@ -161,7 +161,7 @@ class ClipboardTest(unittest.TestCase):
         with forced_host(host.LINUX), mock.patch.object(output.shutil, "which", lambda name: None):
             self.assertIsNone(output.clipboard_tool())
 
-    def test_chaque_hote_a_lecteurs_et_ecrivains(self):
+    def test_every_host_has_readers_and_writers(self):
         for name in (host.LINUX, host.WSL, host.MACOS):
             self.assertTrue(output.SETTERS[name])
             self.assertTrue(output.GETTERS[name])
@@ -169,7 +169,7 @@ class ClipboardTest(unittest.TestCase):
 
 
 class AppleScriptStringTest(unittest.TestCase):
-    def test_guillemets_et_backslash(self):
+    def test_quotes_and_backslash(self):
         self.assertEqual(output._applescript_string('a"b\\c'), '"a\\"b\\\\c"')
 
 

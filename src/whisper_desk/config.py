@@ -1,4 +1,4 @@
-"""Chargement de la configuration utilisateur (~/.config/whisper-desk/config.toml)."""
+"""Loading of the user configuration (~/.config/whisper-desk/config.toml)."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ def _xdg(var: str, fallback: str) -> Path:
 
 
 def _runtime_dir() -> Path:
-    """Dossier des sockets : XDG sous Linux, TMPDIR privé sous macOS, /tmp sinon."""
+    """Socket directory: XDG on Linux, private TMPDIR on macOS, /tmp otherwise."""
     runtime = os.environ.get("XDG_RUNTIME_DIR")
     if runtime:
         return Path(runtime)
@@ -30,74 +30,74 @@ RUNTIME_DIR = _runtime_dir()
 
 DEFAULTS: dict[str, Any] = {
     "hotkey": {
-        # Raccourci global. Syntaxe GTK : <Super>, <Ctrl>, <Alt>, <Shift>.
-        # "auto" -> <Super>j, sauf sous WSL où Windows réserve la touche Windows
-        # aux raccourcis système : <Ctrl><Alt>j.
+        # Global shortcut. GTK syntax: <Super>, <Ctrl>, <Alt>, <Shift>.
+        # "auto" -> <Super>j, except under WSL where Windows reserves the Windows
+        # key for its own system shortcuts: <Ctrl><Alt>j.
         "binding": "auto",
         "name": "whisper-desk",
-        # "toggle" : 1er appui = écoute, 2e appui = transcription.
+        # "toggle": first press = listen, second press = transcribe.
         "action": "toggle",
     },
     "model": {
-        # "auto" -> large-v3-turbo si GPU NVIDIA, sinon small.
+        # "auto" -> large-v3-turbo with an NVIDIA GPU, small otherwise.
         "name": "auto",
         "device": "auto",          # auto | cuda | cpu
         "compute_type": "auto",    # auto | float16 | int8_float16 | int8
-        "language": "fr",          # code ISO, ou "auto" pour détection
+        "language": "fr",          # ISO code, or "auto" for detection
         "beam_size": 5,
         "initial_prompt": "",
-        # Termes que le modèle écorche : noms propres, outils, jargon métier.
-        # Une simple liste séparée par des virgules, poussée dans le décodeur.
+        # Terms the model mangles: proper nouns, tools, domain jargon.
+        # A plain comma-separated list, pushed into the decoder.
         "vocabulary": "",
-        # Repasse au modèle la fin de ce qui vient d'être dicté : une phrase
-        # isolée par le découpage au fil de l'eau retrouve son contexte.
+        # Feeds the end of what was just dictated back to the model: a sentence
+        # isolated by the as-you-go splitting gets its context back.
         "context": True,
-        # Chargé au démarrage du daemon : la première dictée est instantanée.
+        # Loaded when the daemon starts: the first dictation is instant.
         "preload": True,
     },
     "recording": {
-        "device": "default",       # périphérique du backend de capture
+        "device": "default",       # device of the capture backend
         # auto | arecord | parec | rec | sox | ffmpeg
         "backend": "auto",
         "max_seconds": 120,
-        # Dictée au fil de l'eau : chaque phrase est transcrite et insérée
-        # dès que vous marquez une petite pause, sans arrêter l'écoute.
+        # Dictation as you go: each sentence is transcribed and inserted as soon
+        # as you make a short pause, without stopping listening.
         "streaming": True,
         "segment_silence_seconds": 0.6,
-        # Silence qui met fin à la dictée (secondes). 0 = désactivé.
+        # Silence that ends the dictation (seconds). 0 = disabled.
         "silence_seconds": 2.0,
-        # Abandon si rien n'est dit dans ce délai après l'appui.
+        # Give up if nothing is said within this delay after the key press.
         "start_timeout_seconds": 8,
-        # "auto" ou un entier (RMS 0-32767).
+        # "auto" or an integer (RMS 0-32767).
         "threshold": "auto",
     },
     "output": {
-        # cursor | clipboard | stdout | none  (combinables : "cursor+stdout")
+        # cursor | clipboard | stdout | none  (combinable: "cursor+stdout")
         "mode": "cursor",
-        # Raccourci de collage envoyé au clavier virtuel pour insérer le texte.
-        # "auto" -> cmd+v sur macOS, ctrl+v ailleurs ; « shift+insert » si vous
-        # dictez surtout dans un terminal.
+        # Paste shortcut sent to the virtual keyboard to insert the text.
+        # "auto" -> cmd+v on macOS, ctrl+v elsewhere; "shift+insert" if you
+        # mostly dictate in a terminal.
         "paste_shortcut": "auto",
-        # Comment la frappe du raccourci de collage est envoyée.
+        # How the paste shortcut keystroke is sent.
         # auto | uinput (Linux) | windows (WSL) | applescript (macOS) | none
         "keyboard": "auto",
-        # Remet votre presse-papiers d'origine à la fin de la dictée.
+        # Hands your original clipboard back at the end of the dictation.
         "restore_clipboard": True,
         "notify": False,
-        # Journalise chaque transcription dans ~/.local/state/whisper-desk/history.log
+        # Logs every transcription in ~/.local/state/whisper-desk/history.log
         "history": True,
     },
     "overlay": {
         "enabled": True,
         "accent": "#e46212",
-        # Taille de la pilule en pixels.
+        # Size of the pill, in pixels.
         "width": 232,
         "height": 64,
-        # Nombre de barres de l'equalizer.
+        # Number of equalizer bars.
         "bars": 15,
         # bottom-center | top-center | center
         "position": "bottom-center",
-        # Distance au bord de l'écran, en pixels.
+        # Distance to the screen edge, in pixels.
         "margin": 96,
     },
 }
@@ -114,7 +114,7 @@ def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
 
 
 def load(path: Path | None = None) -> dict[str, Any]:
-    """Retourne la config fusionnée avec les valeurs par défaut."""
+    """Returns the configuration merged with the default values."""
     path = path or CONFIG_PATH
     if not path.exists():
         return _merge(DEFAULTS, {})

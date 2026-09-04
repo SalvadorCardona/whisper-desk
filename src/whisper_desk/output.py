@@ -1,4 +1,4 @@
-"""Livraison du texte transcrit : insertion au curseur, presse-papiers, notifications."""
+"""Delivering the transcribed text: insertion at the cursor, clipboard, notifications."""
 
 from __future__ import annotations
 
@@ -20,16 +20,16 @@ from .overlay_proc import system_python
 logger = logging.getLogger("whisper-desk.output")
 
 CLIPBOARD_HELPER = Path(__file__).with_name("clipboard_gtk.py")
-# Laisse l'application cible réclamer les données de la sélection avant qu'on
-# ne remette l'ancien presse-papiers : un collage X11 est asynchrone.
+# Lets the target application claim the selection data before the previous
+# clipboard is put back: an X11 paste is asynchronous.
 PASTE_SETTLE_SECONDS = 0.25
 CLIPBOARD_SETTLE_SECONDS = 0.12
 
 
 def _run(command: list[str], data: bytes | None = None) -> bool:
     try:
-        # Pas de capture_output : wl-copy se détache pour servir la sélection et
-        # hériterait des tubes, ce qui bloquerait l'attente jusqu'au délai maximum.
+        # No capture_output: wl-copy detaches to serve the selection and would
+        # inherit the pipes, which would block the wait until the timeout.
         subprocess.run(
             command,
             input=data,
@@ -40,7 +40,7 @@ def _run(command: list[str], data: bytes | None = None) -> bool:
         )
         return True
     except (OSError, subprocess.SubprocessError) as error:
-        logger.warning("Échec de %s : %s", command[0], error)
+        logger.warning("%s failed: %s", command[0], error)
         return False
 
 
@@ -52,10 +52,10 @@ def _capture(command: list[str]) -> str | None:
         return None
 
 
-# -- presse-papiers, un chemin par hôte --------------------------------------
+# -- clipboard, one path per host --------------------------------------------
 #
-# Chaque fonction retourne False si son outil n'est pas là, pour laisser la
-# suivante tenter sa chance ; les lecteurs retournent None de la même façon.
+# Each function returns False if its tool is not there, to let the next one try
+# its luck; the readers return None in the same way.
 
 
 def _set_wayland(text: str) -> bool:
@@ -79,14 +79,14 @@ def _set_macos(text: str) -> bool:
 
 
 def _set_windows(text: str) -> bool:
-    """clip.exe reconnaît l'UTF-16LE à sa marque d'ordre : sans elle, les accents tombent."""
+    """clip.exe recognises UTF-16LE by its byte order mark: without it, accents are lost."""
     clip = shutil.which("clip.exe")
     if clip and _run([clip], codecs.BOM_UTF16_LE + text.encode("utf-16-le")):
         return True
     if not host.has_windows_interop():
         return False
-    # Repli sans clip.exe : le texte voyage en base64, pur ASCII, donc à l'abri
-    # des pages de codes de la console Windows.
+    # Fallback without clip.exe: the text travels as base64, pure ASCII, hence
+    # safe from the Windows console code pages.
     payload = base64.b64encode(text.encode("utf-8")).decode("ascii")
     script = (
         "Set-Clipboard -Value ([Text.Encoding]::UTF8.GetString("
@@ -115,7 +115,7 @@ def _get_windows() -> str | None:
     text = host.run_powershell("Get-Clipboard -Raw")
     if text is None:
         return None
-    # Get-Clipboard ajoute une fin de ligne, et Windows sépare en CRLF.
+    # Get-Clipboard adds a line ending, and Windows separates lines with CRLF.
     return text.replace("\r\n", "\n").rstrip("\n")
 
 
@@ -131,7 +131,7 @@ GETTERS: dict[str, tuple[Callable[[], str | None], ...]] = {
     host.MACOS: (_get_macos,),
 }
 
-# Outils à installer, cités par le diagnostic et l'installeur.
+# Tools to install, quoted by the diagnostic and the installer.
 CLIPBOARD_TOOLS: dict[str, tuple[str, ...]] = {
     host.LINUX: ("wl-copy", "xclip", "xsel"),
     host.WSL: ("clip.exe", "wl-copy", "xclip", "xsel"),
@@ -140,7 +140,7 @@ CLIPBOARD_TOOLS: dict[str, tuple[str, ...]] = {
 
 
 def clipboard_tool() -> str | None:
-    """Le premier outil de presse-papiers présent, pour le diagnostic."""
+    """The first clipboard tool present, for the diagnostic."""
     for tool in CLIPBOARD_TOOLS[host.name()]:
         if shutil.which(tool):
             return tool
@@ -148,11 +148,12 @@ def clipboard_tool() -> str | None:
 
 
 class Clipboard:
-    """Presse-papiers, avec sauvegarde et restitution du contenu de l'utilisateur.
+    """Clipboard, saving and handing back the user's own content.
 
-    Du plus fiable au plus débrouillard : les outils de l'hôte (wl-clipboard,
-    xclip, pbcopy, clip.exe), puis la fenêtre de l'overlay — sous Wayland seul
-    un client à fenêtre peut poser une sélection, et l'overlay en a une.
+    From the most reliable to the most resourceful: the host's tools
+    (wl-clipboard, xclip, pbcopy, clip.exe), then the overlay window — under
+    Wayland only a client with a window can set a selection, and the overlay
+    has one.
     """
 
     def __init__(self, overlay: Any = None):
@@ -170,9 +171,9 @@ class Clipboard:
                 self._saved = saved
                 return
         if self.overlay is not None and self.overlay.save_clipboard():
-            self._saved = None  # mémorisé côté overlay
+            self._saved = None  # remembered on the overlay side
             return
-        logger.debug("Presse-papiers non sauvegardé : aucun lecteur disponible.")
+        logger.debug("Clipboard not saved: no reader available.")
 
     def set(self, text: str) -> bool:
         for setter in SETTERS[host.name()]:
@@ -194,11 +195,11 @@ class Clipboard:
 
 
 class CursorWriter:
-    """Insère le texte là où se trouve le curseur, via un collage simulé.
+    """Inserts the text where the cursor is, through a simulated paste.
 
-    Envoyer le texte touche par touche supposerait de connaître la carte XKB
-    active (AZERTY, accents, touches mortes) ; le raccourci de collage, lui,
-    occupe la même touche physique sur toutes les dispositions.
+    Sending the text key by key would mean knowing the active XKB layout
+    (AZERTY, accents, dead keys); the paste shortcut, on the other hand, sits
+    on the same physical key on every layout.
     """
 
     def __init__(self, config: dict[str, Any], overlay: Any = None):
@@ -208,7 +209,7 @@ class CursorWriter:
         self.shortcut = resolve_shortcut(str(self.settings["paste_shortcut"]))
 
     def prepare(self) -> None:
-        """Crée le clavier virtuel à l'avance : le compositeur met ~0,6 s à le voir."""
+        """Creates the virtual keyboard ahead of time: the compositor takes ~0.6 s to see it."""
         self.keyboard.open()
         if self.settings["restore_clipboard"]:
             self.clipboard.save()
@@ -217,14 +218,14 @@ class CursorWriter:
         if self.settings["restore_clipboard"]:
             self.clipboard.save()
         if not self.clipboard.set(text):
-            logger.warning("Texte non copié : insertion impossible.")
+            logger.warning("Text not copied: insertion impossible.")
             return False
-        # wl-copy prend la propriété de la sélection dans un processus détaché :
-        # coller trop tôt collerait le contenu précédent.
+        # wl-copy takes ownership of the selection in a detached process:
+        # pasting too early would paste the previous content.
         time.sleep(CLIPBOARD_SETTLE_SECONDS)
         if not self.keyboard.press(self.shortcut):
             logger.warning(
-                "Clavier virtuel indisponible : le texte reste dans le presse-papiers."
+                "Virtual keyboard unavailable: the text stays in the clipboard."
             )
             return False
         time.sleep(PASTE_SETTLE_SECONDS)
@@ -241,12 +242,12 @@ def copy(text: str, overlay: Any = None) -> bool:
 
 
 def _applescript_string(text: str) -> str:
-    """Chaîne AppleScript : seuls le backslash et le guillemet s'échappent."""
+    """An AppleScript string: only the backslash and the double quote are escaped."""
     return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def notify(summary: str, body: str = "") -> None:
-    """Notification de bureau, quand l'hôte sait en afficher une."""
+    """Desktop notification, when the host knows how to show one."""
     if shutil.which("notify-send"):
         _run([
             "notify-send",
@@ -264,12 +265,12 @@ def notify(summary: str, body: str = "") -> None:
         )
         _run(["osascript", "-e", script])
         return
-    logger.debug("Notification ignorée : aucun afficheur disponible.")
+    logger.debug("Notification skipped: no display method available.")
 
 
 def log_history(text: str) -> None:
-    # Les phrases suivantes arrivent précédées d'une espace de liaison, qui n'a
-    # pas de sens une fois la ligne isolée dans le journal.
+    # Later sentences arrive preceded by a joining space, which makes no sense
+    # once the line stands alone in the log.
     entry = text.strip()
     if not entry:
         return
@@ -279,19 +280,19 @@ def log_history(text: str) -> None:
         with (config_module.STATE_DIR / "history.log").open("a", encoding="utf-8") as handle:
             handle.write(f"{stamp}\t{entry}\n")
     except OSError as error:
-        logger.warning("Historique non écrit : %s", error)
+        logger.warning("History not written: %s", error)
 
 
 def modes(config: dict[str, Any]) -> set[str]:
     raw = str(config["output"]["mode"])
     found = {mode.strip() for mode in raw.split("+") if mode.strip()}
-    # « type » reste accepté comme synonyme historique de « cursor ».
+    # "type" is still accepted as a historical synonym of "cursor".
     return {"cursor" if mode == "type" else mode for mode in found}
 
 
 def deliver(text: str, config: dict[str, Any], writer: CursorWriter | None = None,
             overlay: Any = None) -> None:
-    """Applique les modes de sortie configurés au texte transcrit."""
+    """Applies the configured output modes to the transcribed text."""
     settings = config["output"]
     selected = modes(config)
 

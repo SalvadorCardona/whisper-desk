@@ -1,23 +1,23 @@
 # whisper-desk
 
-**Dictée vocale hors-ligne pour Linux, WSL et macOS.** Vous appuyez sur `Super + J`, un petit overlay
-apparaît — un micro et un equalizer qui danse au rythme de votre voix — et le texte
-**s'écrit directement là où se trouve votre curseur**, phrase après phrase, pendant que
-vous parlez.
+**Offline voice dictation for Linux, WSL and macOS.** You press `Super + J`, a small overlay
+appears — a microphone and an equalizer dancing to your voice — and the text
+**is typed straight where your cursor is**, sentence after sentence, while
+you speak.
 
-Chaque barre suit une bande de fréquence, des graves à gauche aux aiguës à droite : on
-voit la voix, pas seulement son volume. L'échelle est en décibels et la retombée plus
-lente que la montée, comme un VU-mètre — le silence laisse les barres au repos, une voix
-ordinaire occupe le milieu de la course.
+Each bar tracks a frequency band, from lows on the left to highs on the right: you
+see the voice, not just its volume. The scale is in decibels and the fall is slower
+than the rise, like a VU meter — silence leaves the bars at rest, an ordinary voice
+sits in the middle of the range.
 
 <p align="center">
-  <img src="docs/overlay-listening.png" alt="Overlay pendant l'écoute" width="336">
+  <img src="docs/overlay-listening.png" alt="Overlay while listening" width="336">
   &nbsp;&nbsp;
-  <img src="docs/overlay-working.png" alt="Overlay pendant la transcription" width="336">
+  <img src="docs/overlay-working.png" alt="Overlay while transcribing" width="336">
 </p>
 
-Aucune donnée ne quitte la machine : la transcription tourne sur votre GPU (ou votre CPU)
-avec [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
+No data leaves the machine: transcription runs on your GPU (or your CPU)
+with [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
 
 📖 **[La documentation, en ligne](https://salvadorcardona.github.io/whisper-desk/)**
 
@@ -29,49 +29,49 @@ avec [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
 curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh | sh
 ```
 
-C'est tout. Le script reconnaît l'hôte — Linux, WSL ou macOS — et adapte chaque étape :
+That's all. The script recognises the host — Linux, WSL or macOS — and adapts every step:
 
-1. vérifie les dépendances système (micro, presse-papiers, notifications, GTK) et propose
-   de les installer, avec `apt` ou `brew` selon le cas ;
-2. crée un environnement Python isolé et y installe faster-whisper — plus les bibliothèques
-   CUDA si une carte NVIDIA est détectée ;
-3. installe la commande `whisper-desk` dans `~/.local/bin` ;
-4. active le service utilisateur — **systemd** sous Linux et WSL, **launchd** sur macOS —
-   démarré automatiquement à l'ouverture de session ;
-5. enregistre le raccourci global auprès du gestionnaire de l'hôte.
+1. checks the system dependencies (microphone, clipboard, notifications, GTK) and offers
+   to install them, with `apt` or `brew` as appropriate;
+2. creates an isolated Python environment and installs faster-whisper in it — plus the
+   CUDA libraries if an NVIDIA card is detected;
+3. installs the `whisper-desk` command in `~/.local/bin`;
+4. enables the user service — **systemd** on Linux and WSL, **launchd** on macOS —
+   started automatically at login;
+5. registers the global shortcut with the host's shortcut manager.
 
-Le modèle Whisper (quelques centaines de Mo) se télécharge au premier démarrage du service.
+The Whisper model (a few hundred MB) is downloaded the first time the service starts.
 
-Relancer la même commande **met à jour** l'installation : le code est remplacé, le service
-redémarré, et votre configuration comme vos modèles sont conservés.
+Running the same command again **updates** the installation: the code is replaced, the
+service restarted, and your configuration and models are kept.
 
-### Ce que chaque hôte utilise
+### What each host uses
 
 | | Linux | WSL | macOS |
 |---|---|---|---|
-| **capture micro** | `arecord` (ALSA) | `parec` (PulseAudio/WSLg) | `rec` (sox) ou `ffmpeg` |
-| **presse-papiers** | `wl-copy` / `xclip` | `clip.exe` | `pbcopy` |
-| **frappe du collage** | `/dev/uinput` | SendKeys (PowerShell) | System Events (`osascript`) |
-| **raccourci global** | GNOME (`gsettings`) | raccourci du menu Démarrer | `skhd`, ou à la main |
-| **service** | systemd | systemd, sinon à la demande | launchd |
+| **microphone capture** | `arecord` (ALSA) | `parec` (PulseAudio/WSLg) | `rec` (sox) or `ffmpeg` |
+| **clipboard** | `wl-copy` / `xclip` | `clip.exe` | `pbcopy` |
+| **paste keystroke** | `/dev/uinput` | SendKeys (PowerShell) | System Events (`osascript`) |
+| **global shortcut** | GNOME (`gsettings`) | Start menu shortcut | `skhd`, or by hand |
+| **service** | systemd | systemd, otherwise on demand | launchd |
 | **notifications** | `notify-send` | `notify-send` (WSLg) | `osascript` |
 
-Aucun de ces choix n'est figé : `backend`, `keyboard` et `paste_shortcut` se forcent dans
-la configuration.
+None of these choices are set in stone: `backend`, `keyboard` and `paste_shortcut` can be
+forced in the configuration.
 
-> **Prérequis** — un micro, et selon l'hôte :
+> **Requirements** — a microphone, and depending on the host:
 >
-> - **Linux** : GNOME (Wayland ou X11), `systemd` en session utilisateur.
-> - **WSL** : WSL 2 avec WSLg (Windows 11, ou Windows 10 à jour) pour le micro, et
->   l'interopérabilité Windows active. Le texte s'insère dans les fenêtres **Windows**.
-> - **macOS** : 12 ou plus récent. Le premier collage demande l'autorisation
->   d'accessibilité (Réglages Système → Confidentialité et sécurité → Accessibilité), et
->   la première dictée l'autorisation micro.
+> - **Linux**: GNOME (Wayland or X11), `systemd` in the user session.
+> - **WSL**: WSL 2 with WSLg (Windows 11, or an up-to-date Windows 10) for the microphone,
+>   and Windows interoperability enabled. Text is inserted into **Windows** windows.
+> - **macOS**: 12 or newer. The first paste asks for accessibility permission
+>   (System Settings → Privacy & Security → Accessibility), and the first dictation asks
+>   for microphone permission.
 >
-> Un GPU NVIDIA est un plus, pas une obligation ; sur macOS la transcription se fait sur
-> le CPU, CTranslate2 n'utilisant pas Metal.
+> An NVIDIA GPU is a bonus, not a requirement; on macOS transcription runs on the CPU,
+> since CTranslate2 does not use Metal.
 
-### Vérifier que tout est en place
+### Check that everything is in place
 
 ```sh
 whisper-desk doctor
@@ -79,63 +79,63 @@ whisper-desk doctor
 
 ---
 
-## Utilisation
+## Usage
 
-| Geste | Effet |
+| Gesture | Effect |
 |---|---|
-| `Super + J` | démarre l'écoute — l'overlay apparaît |
-| une petite pause (~0,6 s) | la phrase est transcrite et **insérée au curseur**, l'écoute continue |
-| un silence de 2 s | fin de la dictée |
-| `Super + J` (à nouveau) | arrête l'écoute immédiatement |
+| `Super + J` | starts listening — the overlay appears |
+| a short pause (~0.6 s) | the sentence is transcribed and **inserted at the cursor**, listening continues |
+| 2 s of silence | end of dictation |
+| `Super + J` (again) | stops listening immediately |
 
-Le raccourci par défaut suit l'hôte : `Super + J` sous Linux et macOS (`Cmd + J`),
-`Ctrl + Alt + J` sous WSL — Windows se réservant la touche Windows.
+The default shortcut follows the host: `Super + J` on Linux and macOS (`Cmd + J`),
+`Ctrl + Alt + J` on WSL — Windows reserves the Windows key for itself.
 
-Le texte s'insère dans l'application qui a le focus : éditeur, navigateur, messagerie,
-champ de recherche. Votre presse-papiers est rendu intact à la fin de la dictée.
+The text is inserted into the focused application: editor, browser, chat client,
+search box. Your clipboard is handed back untouched at the end of the dictation.
 
-### En ligne de commande
+### From the command line
 
 ```sh
-whisper-desk record     # dicte et écrit le texte sur la sortie standard
-whisper-desk toggle     # équivalent du raccourci clavier
-whisper-desk status     # état du daemon, modèle chargé, GPU ou CPU
-whisper-desk doctor     # diagnostic complet
-whisper-desk config     # ouvre la configuration dans $EDITOR
-whisper-desk reload     # recharge la configuration sans redémarrer
-whisper-desk quit       # arrête le daemon
+whisper-desk record     # dictate and write the text to standard output
+whisper-desk toggle     # same as the keyboard shortcut
+whisper-desk status     # daemon state, loaded model, GPU or CPU
+whisper-desk doctor     # full diagnostic
+whisper-desk config     # open the configuration in $EDITOR
+whisper-desk reload     # reload the configuration without restarting
+whisper-desk quit       # stop the daemon
 ```
 
 ---
 
 ## Configuration
 
-Tout est paramétrable dans **`~/.config/whisper-desk/config.toml`** :
+Everything is configurable in **`~/.config/whisper-desk/config.toml`**:
 
 ```toml
 [hotkey]
-binding = "auto"              # "auto", ou <Ctrl>/<Alt>/<Shift>/<Super> + une touche
+binding = "auto"              # "auto", or <Ctrl>/<Alt>/<Shift>/<Super> + a key
 
 [model]
 name = "auto"                 # auto | tiny | base | small | medium | large-v3 | large-v3-turbo
 device = "auto"               # auto | cuda | cpu
-language = "fr"               # code ISO, ou "auto" pour la détection
-initial_prompt = ""           # vocabulaire à privilégier (noms propres, jargon)
+language = "fr"               # ISO code, or "auto" for detection
+initial_prompt = ""           # vocabulary to favour (proper nouns, jargon)
 
 [recording]
 backend = "auto"              # auto | arecord | parec | rec | sox | ffmpeg
-streaming = true              # insertion au fil de l'eau, phrase par phrase
-segment_silence_seconds = 0.6 # pause qui découpe une phrase
-silence_seconds = 2.0         # silence qui met fin à la dictée
+streaming = true              # insertion as you go, sentence by sentence
+segment_silence_seconds = 0.6 # pause that splits a sentence
+silence_seconds = 2.0         # silence that ends the dictation
 max_seconds = 120
 
 [output]
-mode = "cursor"               # cursor | clipboard | stdout — combinables : "cursor+stdout"
-paste_shortcut = "auto"       # "shift+insert" si vous dictez surtout en terminal
+mode = "cursor"               # cursor | clipboard | stdout — combinable: "cursor+stdout"
+paste_shortcut = "auto"       # "shift+insert" if you mostly dictate in a terminal
 keyboard = "auto"             # auto | uinput | windows | applescript | none
-restore_clipboard = true      # rend votre presse-papiers d'origine à la fin
+restore_clipboard = true      # hands your original clipboard back at the end
 notify = false
-history = true                # journal dans ~/.local/state/whisper-desk/history.log
+history = true                # log in ~/.local/state/whisper-desk/history.log
 
 [overlay]
 enabled = true
@@ -144,188 +144,188 @@ position = "bottom-center"    # bottom-center | top-center | center
 margin = 96
 ```
 
-Après modification :
+After a change:
 
 ```sh
-whisper-desk reload            # pour tout sauf le raccourci
-whisper-desk hotkey install    # pour appliquer un nouveau raccourci
+whisper-desk reload            # for everything but the shortcut
+whisper-desk hotkey install    # to apply a new shortcut
 ```
 
-### Choisir son modèle
+### Choosing a model
 
-| Modèle | VRAM | Vitesse | Qualité |
+| Model | VRAM | Speed | Quality |
 |---|---|---|---|
-| `small` | ~1 Go | très rapide | correcte — défaut sans GPU |
-| `medium` | ~2,5 Go | rapide | bonne |
-| `large-v3-turbo` | ~2 Go | rapide | excellente — **défaut avec GPU** |
-| `large-v3` | ~4,5 Go | plus lent | la meilleure |
+| `small` | ~1 GB | very fast | decent — default without a GPU |
+| `medium` | ~2.5 GB | fast | good |
+| `large-v3-turbo` | ~2 GB | fast | excellent — **default with a GPU** |
+| `large-v3` | ~4.5 GB | slower | the best |
 
-Pour raccourcir encore le délai entre la fin d'une phrase et son insertion, baissez
-`beam_size` à `1` dans `[model]`.
-
----
-
-## Comment ça marche
-
-```
-Super + J  ─→  whisper-desk toggle  ─→  socket Unix  ─→  daemon (modèle en mémoire)
-                                                              │
-                              overlay X11 ←── niveau audio ────┤
-                                                              │
- capture micro ─→ détection de silence ─→ phrase ─→ faster-whisper ─→ texte
-                                                              │
-                          presse-papiers + Ctrl+V (frappe simulée) ─→ curseur
-```
-
-Le daemon garde le modèle chargé en permanence, et transcrit une phrase pendant que le
-micro enregistre déjà la suivante. Seules les deux extrémités de cette chaîne — la capture
-et la frappe — changent d'un hôte à l'autre ; le reste est commun.
-
-Trois contraintes de Wayland ont façonné cette architecture :
-
-- **Un client ne peut pas taper dans la fenêtre d'un autre.** Le protocole
-  `virtual-keyboard` (celui de `wtype`) n'est pas implémenté par GNOME. On passe donc par
-  un clavier virtuel du noyau (`/dev/uinput`, accessible sans privilèges grâce à l'ACL
-  posée par systemd) qui envoie un simple raccourci de collage.
-- **Envoyer le texte touche par touche supposerait de connaître la carte XKB active.**
-  Sur un clavier AZERTY, les accents et la moitié des lettres tomberaient à côté ; le
-  raccourci de collage, lui, occupe la même touche physique partout. Le texte transite
-  donc par le presse-papiers, qui est restauré ensuite.
-- **Une fenêtre Wayland ne peut ni refuser le focus ni se positionner.** Un overlay
-  Wayland capterait le collage à la place de votre application. L'overlay est donc un
-  client X11 (via Xwayland) de type `NOTIFICATION` : jamais focalisé, et positionnable.
-
-Les deux autres hôtes reprennent la même idée avec leurs propres outils : sous WSL, la
-frappe part vers Windows par `SendKeys` (un clavier virtuel Linux ne toucherait que les
-fenêtres WSLg) ; sur macOS, elle passe par System Events, ce qui vaut au programme la
-demande d'autorisation d'accessibilité.
+To shorten the delay between the end of a sentence and its insertion even further, lower
+`beam_size` to `1` in `[model]`.
 
 ---
 
-## Dépannage
+## How it works
 
-`whisper-desk doctor` commence par nommer l'hôte détecté, puis vérifie une à une les
-briques qu'il utilise : c'est le premier réflexe pour tout ce qui suit.
-
-**Le raccourci ne fait rien**
-```sh
-whisper-desk status                      # le daemon répond-il ?
-whisper-desk hotkey show                 # le raccourci est-il enregistré ?
-journalctl --user -u whisper-desk -f     # les logs (systemd)
-tail -f ~/.local/state/whisper-desk/daemon.log   # les logs (launchd, ou daemon direct)
+```
+Super + J  ─→  whisper-desk toggle  ─→  Unix socket  ─→  daemon (model in memory)
+                                                              │
+                              X11 overlay ←── audio level ────┤
+                                                              │
+ mic capture ─→ silence detection ─→ sentence ─→ faster-whisper ─→ text
+                                                              │
+                          clipboard + Ctrl+V (simulated keystroke) ─→ cursor
 ```
 
-**Le texte n'est pas inséré mais reste dans le presse-papiers** — la frappe simulée n'a pas
-abouti. `whisper-desk doctor` dit laquelle est en cause :
+The daemon keeps the model loaded at all times, and transcribes one sentence while the
+microphone is already recording the next. Only the two ends of that chain — capture and
+keystroke — change from one host to another; the rest is shared.
 
-- **Linux** — `/dev/uinput` doit être accessible en écriture. Sur une session locale,
-  systemd vous en donne l'accès automatiquement ; en SSH ou en session distante, non.
-- **macOS** — autorisez l'accessibilité pour le terminal (ou pour `whisper-desk`) dans
-  Réglages Système → Confidentialité et sécurité → Accessibilité, puis relancez le daemon.
-- **WSL** — `powershell.exe` doit être joignable depuis WSL (interopérabilité active), et
-  la fenêtre visée doit être une fenêtre Windows au premier plan.
+Three Wayland constraints shaped this architecture:
 
-**Je dicte dans un terminal et j'obtiens `^V`** — `Ctrl+V` n'y est pas le collage. Mettez
-`paste_shortcut = "shift+insert"` dans `[output]`, puis `whisper-desk reload`.
+- **A client cannot type into another client's window.** The `virtual-keyboard`
+  protocol (the one `wtype` uses) is not implemented by GNOME. So we go through a
+  kernel virtual keyboard (`/dev/uinput`, reachable without privileges thanks to the ACL
+  set by systemd) that sends a plain paste shortcut.
+- **Sending the text key by key would mean knowing the active XKB layout.**
+  On an AZERTY keyboard, accents and half the letters would land on the wrong key; the
+  paste shortcut, on the other hand, sits on the same physical key everywhere. The text
+  therefore travels through the clipboard, which is restored afterwards.
+- **A Wayland window can neither refuse focus nor position itself.** A Wayland overlay
+  would catch the paste instead of your application. The overlay is therefore an X11
+  client (via Xwayland) of type `NOTIFICATION`: never focused, and positionable.
 
-**Les phrases se coupent trop tôt / trop tard** — ajustez `segment_silence_seconds`
-(découpage) et `silence_seconds` (fin de dictée) dans `[recording]`.
-
-**L'overlay s'ouvre mais rien ne s'écrit** — neuf fois sur dix, le micro par défaut n'est
-pas le bon (une prise jack vide reste souvent la source par défaut, et ne renvoie que du
-silence). `whisper-desk doctor` mesure le niveau réellement capté :
-
-```sh
-whisper-desk doctor          # « le micro capte du son » doit être coché
-wpctl status                  # liste les sources ; repérez le vrai micro
-wpctl set-default <id>        # bascule dessus
-```
-
-Le daemon vous prévient désormais par une notification quand une dictée n'a capté aucun
-son, et journalise le pic mesuré :
-
-```sh
-journalctl --user -u whisper-desk | grep "pic"
-```
-
-**Ma voix n'est pas assez forte** — montez le gain de la source (`wpctl set-volume <id> 1.0`),
-ou fixez le seuil à la main avec `threshold = 400` (au lieu de `"auto"`) dans `[recording]`.
-
-**WSL : aucun son n'arrive** — WSLg fournit l'audio par PulseAudio ; installez
-`pulseaudio-utils` (pour `parec`), vérifiez que le micro est autorisé côté Windows
-(Paramètres → Confidentialité → Microphone) et que `pactl list sources short` liste bien
-une source `RDPSource`.
-
-**macOS : aucun son n'arrive** — la première capture demande l'autorisation micro au
-terminal qui lance le daemon ; acceptez-la, puis vérifiez l'entrée par défaut dans
-Réglages Système → Son. Pour choisir une autre entrée avec `ffmpeg`, listez les index
-(`ffmpeg -f avfoundation -list_devices true -i ""`) et mettez le numéro dans
-`device` avec `backend = "ffmpeg"`.
-
-**macOS : je ne veux pas de skhd pour le raccourci** — créez une opération rapide
-(Automator → Exécuter un script shell, `~/.local/bin/whisper-desk toggle`) et attribuez-lui
-un raccourci dans Réglages Système → Clavier → Raccourcis clavier → Services.
-
-**La transcription tourne sur le CPU alors que j'ai un GPU** — `whisper-desk status`
-indique le périphérique retenu, et `journalctl --user -u whisper-desk` la raison du repli
-(souvent des bibliothèques CUDA absentes ou une VRAM insuffisante).
+The two other hosts follow the same idea with their own tools: on WSL, the keystroke goes
+to Windows through `SendKeys` (a Linux virtual keyboard would only reach WSLg windows);
+on macOS, it goes through System Events, which is what earns the program the accessibility
+permission prompt.
 
 ---
 
-## Désinstallation
+## Troubleshooting
+
+`whisper-desk doctor` starts by naming the detected host, then checks one by one the
+pieces it uses: it is the first thing to try for everything below.
+
+**The shortcut does nothing**
+```sh
+whisper-desk status                      # is the daemon answering?
+whisper-desk hotkey show                 # is the shortcut registered?
+journalctl --user -u whisper-desk -f     # the logs (systemd)
+tail -f ~/.local/state/whisper-desk/daemon.log   # the logs (launchd, or a direct daemon)
+```
+
+**The text is not inserted but stays in the clipboard** — the simulated keystroke did not
+get through. `whisper-desk doctor` says which one is at fault:
+
+- **Linux** — `/dev/uinput` must be writable. In a local session, systemd grants you
+  access automatically; over SSH or in a remote session, it does not.
+- **macOS** — allow accessibility for the terminal (or for `whisper-desk`) in
+  System Settings → Privacy & Security → Accessibility, then restart the daemon.
+- **WSL** — `powershell.exe` must be reachable from WSL (interoperability enabled), and
+  the target window must be a Windows window in the foreground.
+
+**I dictate in a terminal and get `^V`** — `Ctrl+V` is not paste there. Set
+`paste_shortcut = "shift+insert"` in `[output]`, then run `whisper-desk reload`.
+
+**Sentences are cut too early / too late** — adjust `segment_silence_seconds`
+(splitting) and `silence_seconds` (end of dictation) in `[recording]`.
+
+**The overlay opens but nothing is written** — nine times out of ten, the default
+microphone is the wrong one (an empty jack socket often stays the default source, and
+returns nothing but silence). `whisper-desk doctor` measures the level actually captured:
+
+```sh
+whisper-desk doctor          # "the microphone picks up sound" must be ticked
+wpctl status                  # lists the sources; spot the real microphone
+wpctl set-default <id>        # switch to it
+```
+
+The daemon now warns you with a notification when a dictation captured no sound at all,
+and logs the measured peak:
+
+```sh
+journalctl --user -u whisper-desk | grep "peak"
+```
+
+**My voice is not loud enough** — raise the source gain (`wpctl set-volume <id> 1.0`),
+or set the threshold by hand with `threshold = 400` (instead of `"auto"`) in `[recording]`.
+
+**WSL: no sound arrives** — WSLg provides audio through PulseAudio; install
+`pulseaudio-utils` (for `parec`), check that the microphone is allowed on the Windows side
+(Settings → Privacy → Microphone) and that `pactl list sources short` does list an
+`RDPSource` source.
+
+**macOS: no sound arrives** — the first capture asks for microphone permission for the
+terminal that starts the daemon; accept it, then check the default input in
+System Settings → Sound. To pick another input with `ffmpeg`, list the indexes
+(`ffmpeg -f avfoundation -list_devices true -i ""`) and put the number in
+`device` with `backend = "ffmpeg"`.
+
+**macOS: I don't want skhd for the shortcut** — create a Quick Action
+(Automator → Run Shell Script, `~/.local/bin/whisper-desk toggle`) and assign it
+a shortcut in System Settings → Keyboard → Keyboard Shortcuts → Services.
+
+**Transcription runs on the CPU even though I have a GPU** — `whisper-desk status`
+reports the selected device, and `journalctl --user -u whisper-desk` the reason for the
+fallback (often missing CUDA libraries or not enough VRAM).
+
+---
+
+## Uninstalling
 
 ```sh
 curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/uninstall.sh | sh
 ```
 
-Ajoutez `WD_PURGE=1` pour supprimer aussi la configuration et l'historique. Les modèles
-téléchargés restent dans `~/.cache/huggingface`.
+Add `WD_PURGE=1` to remove the configuration and the history as well. Downloaded models
+stay in `~/.cache/huggingface`.
 
 ---
 
-## Développement
+## Development
 
 ```sh
 git clone https://github.com/SalvadorCardona/whisper-desk
 cd whisper-desk
-WD_SRC="$PWD" sh install.sh     # installe depuis le clone local, sans réseau
+WD_SRC="$PWD" sh install.sh     # installs from the local clone, without network access
 ```
 
 ### Tests
 
-La suite ne dépend que de la bibliothèque standard — ni environnement virtuel, ni modèle
-à télécharger :
+The suite depends on the standard library alone — no virtual environment, no model
+to download:
 
 ```sh
 python3 -m unittest discover -s tests -t .
 ```
 
-Elle couvre ce qui se vérifie sans micro ni serveur graphique : mesure du niveau sonore,
-découpage des phrases, fin d'enregistrement, fusion de la configuration, modes de sortie,
-pilotage de la fenêtre d'écoute, et le choix des outils propres à chaque hôte — la
-variable `WD_HOST` (`linux`, `wsl`, `macos`) force la détection, ce qui permet de tester
-les trois depuis n'importe lequel.
+It covers what can be checked without a microphone or a display server: sound level
+measurement, sentence splitting, end of recording, configuration merging, output modes,
+driving the listening window, and the choice of host-specific tools — the `WD_HOST`
+environment variable (`linux`, `wsl`, `macos`) forces detection, which makes it possible
+to test all three from any of them.
 
-| Fichier | Rôle |
+| File | Role |
 |---|---|
-| `src/whisper_desk/daemon.py` | service, socket Unix, écoute et transcription en parallèle |
-| `src/whisper_desk/host.py` | détection de l'hôte, passerelle PowerShell sous WSL |
-| `src/whisper_desk/capture.py` | choix de l'outil de capture (`arecord`, `parec`, `rec`, `ffmpeg`) |
-| `src/whisper_desk/recorder.py` | détection de silence, découpage en phrases |
-| `src/whisper_desk/transcriber.py` | faster-whisper, choix GPU/CPU |
-| `src/whisper_desk/inject.py` | frappe simulée : `uinput`, SendKeys, System Events |
-| `src/whisper_desk/output.py` | insertion au curseur, presse-papiers, notifications |
-| `src/whisper_desk/overlay.py` | overlay X11 (processus séparé) |
-| `src/whisper_desk/hotkey.py` | raccourci global : GNOME, menu Démarrer, `skhd` |
-| `src/whisper_desk/service.py` | démarrage du daemon : systemd, launchd ou direct |
-| `tests/` | suite `unittest`, sans dépendance externe |
-| `install.sh` | installation et mise à jour |
+| `src/whisper_desk/daemon.py` | service, Unix socket, listening and transcription in parallel |
+| `src/whisper_desk/host.py` | host detection, PowerShell bridge under WSL |
+| `src/whisper_desk/capture.py` | choice of capture tool (`arecord`, `parec`, `rec`, `ffmpeg`) |
+| `src/whisper_desk/recorder.py` | silence detection, splitting into sentences |
+| `src/whisper_desk/transcriber.py` | faster-whisper, GPU/CPU selection |
+| `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, SendKeys, System Events |
+| `src/whisper_desk/output.py` | insertion at the cursor, clipboard, notifications |
+| `src/whisper_desk/overlay.py` | X11 overlay (separate process) |
+| `src/whisper_desk/hotkey.py` | global shortcut: GNOME, Start menu, `skhd` |
+| `src/whisper_desk/service.py` | daemon startup: systemd, launchd or direct |
+| `tests/` | `unittest` suite, no external dependency |
+| `install.sh` | installation and updates |
 
-## Licence
+## License
 
 MIT
 
-## Auteur
+## Author
 
-Écrit et maintenu par [Salvador Cardona, développeur](https://cardona.digital) — treize ans
-de développement web, et les autres projets à la même adresse.
+Written and maintained by [Salvador Cardona, developer](https://cardona.digital) — thirteen
+years of web development, and the other projects at the same address.

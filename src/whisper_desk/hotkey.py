@@ -1,9 +1,9 @@
-"""Enregistrement du raccourci global, chez le gestionnaire de l'hôte.
+"""Registering the global shortcut with the host's shortcut manager.
 
-Personne ne s'accorde sur la question : GNOME range les raccourcis dans
-gsettings, Windows les attache à un raccourci du menu Démarrer, macOS n'expose
-rien du tout — il faut y passer par un agent tiers (skhd) ou par la main de
-l'utilisateur. Chaque hôte a donc son greffon, derrière la même interface.
+Nobody agrees on the matter: GNOME stores shortcuts in gsettings, Windows
+attaches them to a Start menu shortcut, macOS exposes nothing at all — there
+you have to go through a third-party agent (skhd) or through the user's own
+hands. Each host therefore has its own plugin, behind the same interface.
 """
 
 from __future__ import annotations
@@ -27,10 +27,10 @@ SKHD_MARK = "# whisper-desk"
 
 
 class UnsupportedDesktop(RuntimeError):
-    """Aucun moyen automatique d'installer le raccourci ici."""
+    """No automatic way to install the shortcut here."""
 
 
-# -- syntaxe des raccourcis ---------------------------------------------------
+# -- shortcut syntax ----------------------------------------------------------
 
 MODIFIER_NAMES = {
     "super": "super", "cmd": "super", "command": "super", "meta": "super",
@@ -44,7 +44,7 @@ GTK_MODIFIERS = {"ctrl": "<Ctrl>", "alt": "<Alt>", "shift": "<Shift>", "super": 
 
 
 def parse_binding(binding: str) -> tuple[list[str], str]:
-    """« <Ctrl><Alt>j » ou « ctrl+alt+j » -> (["ctrl", "alt"], "j")."""
+    """Parses "<Ctrl><Alt>j" or "ctrl+alt+j" into (["ctrl", "alt"], "j")."""
     tokens: list[str] = []
     rest = binding.strip()
     while rest.startswith("<") and ">" in rest:
@@ -71,10 +71,10 @@ def format_gtk(modifiers: list[str], key: str) -> str:
 
 
 def default_binding() -> str:
-    """Le raccourci proposé quand la configuration dit « auto ».
+    """The shortcut proposed when the configuration says "auto".
 
-    Windows garde la touche Windows pour ses propres raccourcis, et n'accepte
-    d'ailleurs que des combinaisons à base de Ctrl+Alt.
+    Windows keeps the Windows key for its own shortcuts, and only accepts
+    combinations based on Ctrl+Alt anyway.
     """
     return "<Ctrl><Alt>j" if host.is_wsl() else "<Super>j"
 
@@ -111,16 +111,16 @@ def _write_bindings(paths: list[str]) -> None:
 
 
 class GnomeHotkey:
-    """Raccourci personnalisé de GNOME, posé dans gsettings."""
+    """GNOME custom shortcut, stored in gsettings."""
 
     name = "GNOME"
 
     def check(self) -> None:
         if not shutil.which("gsettings"):
-            raise UnsupportedDesktop("gsettings introuvable")
+            raise UnsupportedDesktop("gsettings not found")
         if not is_gnome():
             raise UnsupportedDesktop(
-                f"bureau non géré ({os.environ.get('XDG_CURRENT_DESKTOP', 'inconnu')})"
+                f"unsupported desktop ({os.environ.get('XDG_CURRENT_DESKTOP', 'unknown')})"
             )
 
     def install(self, binding: str, name: str, command: str) -> str:
@@ -153,26 +153,26 @@ class GnomeHotkey:
 
 # -- Windows (WSL) ------------------------------------------------------------
 
-# Windows n'accepte de raccourci global que sur un .lnk du menu Démarrer ou du
-# bureau, et seulement en Ctrl+Alt (éventuellement complété par Maj).
+# Windows only accepts a global shortcut on a .lnk in the Start menu or on the
+# desktop, and only with Ctrl+Alt (optionally completed by Shift).
 WINDOWS_KEYS = {"space": "SPACE", "enter": "ENTER", "insert": "INS"}
 LINK_NAME = "whisper-desk.lnk"
 START_MENU = "$env:APPDATA + '\\Microsoft\\Windows\\Start Menu\\Programs\\" + LINK_NAME + "'"
 
 
 def format_windows(modifiers: list[str], key: str) -> str:
-    """« CTRL+ALT+J », ou lève UnsupportedDesktop si Windows n'en veut pas."""
+    """Returns "CTRL+ALT+J", or raises UnsupportedDesktop if Windows refuses it."""
     if "super" in modifiers:
         raise UnsupportedDesktop(
-            "Windows se réserve la touche Windows : choisissez un raccourci "
-            "en Ctrl+Alt, par exemple « <Ctrl><Alt>j »"
+            "Windows reserves the Windows key for itself: choose a shortcut "
+            "based on Ctrl+Alt, for instance '<Ctrl><Alt>j'"
         )
     if "ctrl" not in modifiers or not ("alt" in modifiers or "shift" in modifiers):
         raise UnsupportedDesktop(
-            "Windows n'accepte que les raccourcis Ctrl+Alt+touche (ou Ctrl+Maj+touche)"
+            "Windows only accepts Ctrl+Alt+key (or Ctrl+Shift+key) shortcuts"
         )
     if not key:
-        raise UnsupportedDesktop("raccourci sans touche finale")
+        raise UnsupportedDesktop("shortcut without a final key")
     names = {"ctrl": "CTRL", "alt": "ALT", "shift": "SHIFT"}
     return "+".join(names[modifier] for modifier in modifiers) + "+" + WINDOWS_KEYS.get(
         key, key.upper()
@@ -180,16 +180,16 @@ def format_windows(modifiers: list[str], key: str) -> str:
 
 
 class WindowsHotkey:
-    """Raccourci Windows attaché à un .lnk du menu Démarrer, qui rappelle WSL."""
+    """Windows shortcut attached to a Start menu .lnk, which calls WSL back."""
 
     name = "Windows"
 
     def check(self) -> None:
         if not host.is_wsl():
-            raise UnsupportedDesktop("hôte non WSL")
+            raise UnsupportedDesktop("host is not WSL")
         if not host.has_windows_interop():
             raise UnsupportedDesktop(
-                "interopérabilité Windows indisponible (powershell.exe introuvable)"
+                "Windows interoperability unavailable (powershell.exe not found)"
             )
 
     def _script(self, body: str) -> str:
@@ -210,7 +210,7 @@ class WindowsHotkey:
             "$link.Save()"
         )
         if host.run_powershell(self._script(body)) is None:
-            raise UnsupportedDesktop("création du raccourci Windows impossible")
+            raise UnsupportedDesktop("cannot create the Windows shortcut")
         return hotkey
 
     def remove(self) -> None:
@@ -244,23 +244,23 @@ class WindowsHotkey:
 SKHD_MODIFIERS = {"super": "cmd", "ctrl": "ctrl", "alt": "alt", "shift": "shift"}
 
 MACOS_MANUAL = (
-    "macOS n'expose pas de raccourci global en ligne de commande. Deux voies : "
-    "« brew install skhd && skhd --start-service », puis relancer cette commande ; "
-    "ou créer une opération rapide (Automator → Exécuter un script shell) et lui "
-    "attribuer un raccourci dans Réglages Système → Clavier → Raccourcis clavier"
+    "macOS exposes no global shortcut on the command line. Two ways: "
+    "'brew install skhd && skhd --start-service', then run this command again; "
+    "or create a Quick Action (Automator → Run Shell Script) and assign it "
+    "a shortcut in System Settings → Keyboard → Keyboard Shortcuts"
 )
 
 
 def format_skhd(modifiers: list[str], key: str) -> str:
-    """« cmd - j », la syntaxe de skhd."""
+    """Returns "cmd - j", the skhd syntax."""
     if not key:
-        raise UnsupportedDesktop("raccourci sans touche finale")
+        raise UnsupportedDesktop("shortcut without a final key")
     names = [SKHD_MODIFIERS[modifier] for modifier in modifiers]
     return (" + ".join(names) + " - " if names else "") + key
 
 
 class SkhdHotkey:
-    """Raccourci macOS confié à skhd, le seul agent scriptable courant."""
+    """macOS shortcut entrusted to skhd, the only common scriptable agent."""
 
     name = "skhd"
 
@@ -276,7 +276,7 @@ class SkhdHotkey:
             return []
 
     def _without_ours(self) -> list[str]:
-        """Retire notre ligne et son commentaire, pour réécrire proprement."""
+        """Removes our line and its comment, so it can be rewritten cleanly."""
         kept, skip_next = [], False
         for line in self._lines():
             if line.strip() == SKHD_MARK:
@@ -331,12 +331,12 @@ BACKENDS = {
 
 
 def backend():
-    """Le greffon de raccourci de l'hôte courant."""
+    """The shortcut plugin of the current host."""
     return BACKENDS[host.name()]()
 
 
 def install(config: dict[str, Any], command: str) -> str:
-    """Crée ou met à jour le raccourci. Retourne la combinaison installée."""
+    """Creates or updates the shortcut. Returns the installed combination."""
     return backend().install(
         resolve_binding(config), str(config["hotkey"]["name"]), command
     )

@@ -1,4 +1,4 @@
-"""Interface en ligne de commande."""
+"""Command-line interface."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def cmd_toggle(_args: argparse.Namespace) -> int:
 
 
 def cmd_record(_args: argparse.Namespace) -> int:
-    """Dictée synchrone : le texte transcrit part sur stdout."""
+    """Synchronous dictation: the transcribed text goes to stdout."""
     from .client import DaemonUnavailable, send
 
     try:
@@ -60,7 +60,7 @@ def cmd_simple(command: str):
         from .client import DaemonUnavailable, send
 
         try:
-            # Interroger ou arrêter le daemon ne doit pas le faire naître.
+            # Querying or stopping the daemon must not bring it to life.
             reply = send(command, timeout=30, autostart=command not in ("status", "quit"))
         except DaemonUnavailable as error:
             return _print_error(str(error))
@@ -77,21 +77,21 @@ def cmd_hotkey(args: argparse.Namespace) -> int:
     try:
         if args.hotkey_action == "remove":
             hotkey.remove()
-            print("Raccourci supprimé.")
+            print("Shortcut removed.")
             return 0
         if args.hotkey_action == "show":
             current = hotkey.show()
-            print(json.dumps(current, ensure_ascii=False, indent=2) if current else "Aucun raccourci installé.")
+            print(json.dumps(current, ensure_ascii=False, indent=2) if current else "No shortcut installed.")
             return 0
         binding = hotkey.install(config, f"{BIN} toggle")
-        print(f"Raccourci installé : {binding} → {BIN} toggle")
+        print(f"Shortcut installed: {binding} → {BIN} toggle")
         return 0
     except hotkey.UnsupportedDesktop as error:
         return _print_error(
-            f"{error}. Créez le raccourci à la main sur la commande « {BIN} toggle »."
+            f"{error}. Create the shortcut by hand on the command '{BIN} toggle'."
         )
     except (OSError, subprocess.SubprocessError) as error:
-        return _print_error(f"l'installation du raccourci a échoué : {error}")
+        return _print_error(f"installing the shortcut failed: {error}")
 
 
 def cmd_config(args: argparse.Namespace) -> int:
@@ -103,18 +103,18 @@ def cmd_config(args: argparse.Namespace) -> int:
         print(json.dumps(config_module.load(), ensure_ascii=False, indent=2))
         return 0
     if not path.exists():
-        return _print_error(f"{path} est absent — relancez l'installation.")
+        return _print_error(f"{path} is missing — run the installation again.")
     editor = os.environ.get("EDITOR") or shutil.which("nano") or "vi"
     subprocess.run([editor, str(path)], check=False)
-    print("Pensez à « whisper-desk reload » pour appliquer.")
+    print("Remember to run 'whisper-desk reload' to apply the changes.")
     return 0
 
 
 def _measure_microphone(config: dict, seconds: int = 2) -> tuple[float, float]:
-    """Écoute brièvement le micro et retourne (niveau moyen, pic).
+    """Listens to the microphone briefly and returns (average level, peak).
 
-    Passe par le même backend de capture que la dictée : ce que mesure le
-    diagnostic est exactement ce qu'entendra le daemon.
+    It goes through the same capture backend as a dictation: what the
+    diagnostic measures is exactly what the daemon will hear.
     """
     import threading
 
@@ -140,7 +140,7 @@ def _measure_microphone(config: dict, seconds: int = 2) -> tuple[float, float]:
     except OSError:
         return 0.0, 0.0
 
-    # Un micro absent ne rend rien du tout : la lecture bloquerait sans ce garde-fou.
+    # A missing microphone returns nothing at all: the read would block without this guard.
     watchdog = threading.Timer(seconds + 5, process.kill)
     watchdog.start()
     wanted = int(RATE * SAMPLE_WIDTH * seconds)
@@ -186,31 +186,31 @@ def cmd_doctor(_args: argparse.Namespace) -> int:
     config = config_module.load()
     settings = config["recording"]
 
-    print(f"Système — {host.label()}")
+    print(f"System — {host.label()}")
     usable = capture.available()
     check(
-        "capture du micro",
+        "microphone capture",
         bool(usable),
         ", ".join(usable) if usable
-        else f"installez {capture.PACKAGES[capture.recommended()]}",
+        else f"install {capture.PACKAGES[capture.recommended()]}",
     )
     level, peak = _measure_microphone(config)
     audible = peak > SILENT_INPUT_PEAK
     check(
-        f"le micro capte du son (« {settings['device']} »)",
+        f"the microphone picks up sound ('{settings['device']}')",
         audible,
-        f"niveau moyen {level:.0f}, pic {peak:.0f}"
+        f"average level {level:.0f}, peak {peak:.0f}"
         + ("" if audible else f" — {_microphone_hint()}"),
     )
     tool = output.clipboard_tool()
     check(
-        "presse-papiers",
+        "clipboard",
         bool(tool),
-        tool or f"installez {' ou '.join(output.CLIPBOARD_TOOLS[host.name()])}",
+        tool or f"install {' or '.join(output.CLIPBOARD_TOOLS[host.name()])}",
     )
     keyboard = inject.keyboard(str(config["output"]["keyboard"]))
     check(
-        f"frappe du collage ({keyboard.name})",
+        f"paste keystroke ({keyboard.name})",
         keyboard.available,
         keyboard.hint if not keyboard.available else "",
     )
@@ -218,33 +218,33 @@ def cmd_doctor(_args: argparse.Namespace) -> int:
         "notifications",
         bool(shutil.which("notify-send"))
         or (host.is_macos() and bool(shutil.which("osascript"))),
-        "osascript" if host.is_macos() else "paquet libnotify-bin",
+        "osascript" if host.is_macos() else "libnotify-bin package",
     )
     if host.is_macos():
-        check("GPU NVIDIA", False, "transcription sur CPU (int8) — normal sur macOS")
+        check("NVIDIA GPU", False, "transcription on the CPU (int8) — normal on macOS")
     else:
-        check("GPU NVIDIA", has_nvidia_gpu(), "sinon transcription sur CPU")
+        check("NVIDIA GPU", has_nvidia_gpu(), "otherwise transcription on the CPU")
 
     if config["overlay"]["enabled"]:
         check(
-            "overlay sans vol de focus (X11/Xwayland)",
+            "overlay without focus stealing (X11/Xwayland)",
             bool(os.environ.get("DISPLAY")),
-            "sinon l'overlay capterait le collage",
+            "otherwise the overlay would catch the paste",
         )
         overlay_ok = subprocess.run(
             [system_python(), "-c",
              "import gi; gi.require_version('Gtk','3.0'); from gi.repository import Gtk"],
             capture_output=True,
         ).returncode == 0
-        check("overlay GTK3", overlay_ok, _overlay_hint())
+        check("GTK3 overlay", overlay_ok, _overlay_hint())
 
     print("Configuration")
-    check(f"fichier {config_module.CONFIG_PATH}", config_module.CONFIG_PATH.exists())
+    check(f"file {config_module.CONFIG_PATH}", config_module.CONFIG_PATH.exists())
     print(
-        f"    modèle={config['model']['name']} langue={config['model']['language']}"
-        f" sortie={config['output']['mode']}"
-        f" collage={'+'.join(inject.resolve_shortcut(str(config['output']['paste_shortcut'])))}"
-        f" flux={'oui' if settings['streaming'] else 'non'}"
+        f"    model={config['model']['name']} language={config['model']['language']}"
+        f" output={config['output']['mode']}"
+        f" paste={'+'.join(inject.resolve_shortcut(str(config['output']['paste_shortcut'])))}"
+        f" streaming={'yes' if settings['streaming'] else 'no'}"
     )
 
     print("Service")
@@ -252,60 +252,60 @@ def cmd_doctor(_args: argparse.Namespace) -> int:
     check(f"daemon ({service.manager()})", state == "active", state)
     check(f"socket {socket_path()}", socket_path().exists())
 
-    print("Raccourci")
+    print("Shortcut")
     try:
         current = hotkey.show()
         check(
-            f"raccourci {hotkey.backend().name}",
+            f"{hotkey.backend().name} shortcut",
             bool(current),
-            current.get("binding", "absent") if current else "absent",
+            current.get("binding", "missing") if current else "missing",
         )
     except hotkey.UnsupportedDesktop as error:
-        check("raccourci global", False, str(error))
+        check("global shortcut", False, str(error))
     return 0
 
 
 def _microphone_hint() -> str:
     if host.is_macos():
         return (
-            "vérifiez l'entrée par défaut (Réglages Système → Son) et "
-            "l'autorisation micro du terminal"
+            "check the default input (System Settings → Sound) and the "
+            "microphone permission of the terminal"
         )
     if host.is_wsl():
-        return "WSLg doit être à jour, et le micro autorisé côté Windows"
-    return "vérifiez la source par défaut : wpctl status"
+        return "WSLg must be up to date, and the microphone allowed on the Windows side"
+    return "check the default source: wpctl status"
 
 
 def _overlay_hint() -> str:
     if host.is_macos():
-        return "brew install pygobject3 gtk+3, ou overlay.enabled = false"
-    return "paquets python3-gi + gir1.2-gtk-3.0"
+        return "brew install pygobject3 gtk+3, or overlay.enabled = false"
+    return "python3-gi + gir1.2-gtk-3.0 packages"
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="whisper-desk",
-        description="Dictée vocale hors-ligne : un raccourci, vous parlez, le texte est copié.",
+        description="Offline voice dictation: one shortcut, you speak, the text is copied.",
     )
     parser.add_argument("--version", action="version", version=f"whisper-desk {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("daemon", help="lance le service (géré par systemd)").set_defaults(func=cmd_daemon)
-    sub.add_parser("toggle", help="démarre l'écoute, ou l'arrête si elle tourne").set_defaults(func=cmd_toggle)
-    sub.add_parser("record", help="dictée synchrone, texte sur stdout").set_defaults(func=cmd_record)
-    sub.add_parser("stop", help="arrête l'écoute en cours").set_defaults(func=cmd_simple("stop"))
-    sub.add_parser("status", help="état du daemon").set_defaults(func=cmd_simple("status"))
-    sub.add_parser("reload", help="recharge la configuration").set_defaults(func=cmd_simple("reload"))
-    sub.add_parser("quit", help="arrête le daemon").set_defaults(func=cmd_simple("quit"))
-    sub.add_parser("doctor", help="diagnostic de l'installation").set_defaults(func=cmd_doctor)
+    sub.add_parser("daemon", help="runs the service (managed by systemd)").set_defaults(func=cmd_daemon)
+    sub.add_parser("toggle", help="starts listening, or stops it if it is running").set_defaults(func=cmd_toggle)
+    sub.add_parser("record", help="synchronous dictation, text on stdout").set_defaults(func=cmd_record)
+    sub.add_parser("stop", help="stops the current listening").set_defaults(func=cmd_simple("stop"))
+    sub.add_parser("status", help="daemon state").set_defaults(func=cmd_simple("status"))
+    sub.add_parser("reload", help="reloads the configuration").set_defaults(func=cmd_simple("reload"))
+    sub.add_parser("quit", help="stops the daemon").set_defaults(func=cmd_simple("quit"))
+    sub.add_parser("doctor", help="diagnostic of the installation").set_defaults(func=cmd_doctor)
 
-    hotkey_parser = sub.add_parser("hotkey", help="gère le raccourci global")
+    hotkey_parser = sub.add_parser("hotkey", help="manages the global shortcut")
     hotkey_parser.add_argument(
         "hotkey_action", nargs="?", default="install", choices=("install", "remove", "show")
     )
     hotkey_parser.set_defaults(func=cmd_hotkey)
 
-    config_parser = sub.add_parser("config", help="configuration utilisateur")
+    config_parser = sub.add_parser("config", help="user configuration")
     config_parser.add_argument(
         "config_action", nargs="?", default="edit", choices=("edit", "path", "show")
     )

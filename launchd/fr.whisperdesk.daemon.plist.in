@@ -9,7 +9,7 @@
         <string>@BIN@</string>
         <string>daemon</string>
     </array>
-    <!-- Démarré à l'ouverture de session, et relancé s'il meurt. -->
+    <!-- Started at login, and restarted if it dies. -->
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
