@@ -87,6 +87,7 @@ whisper-desk doctor
 | a short pause (~0.6 s) | the sentence is transcribed and **inserted at the cursor**, listening continues |
 | 2 s of silence | end of dictation |
 | `Super + J` (again) | stops listening immediately |
+| `Super + J` (once more) | cuts the dictation off: what is left is neither transcribed nor inserted |
 
 The default shortcut follows the host: `Super + J` on Linux and macOS (`Cmd + J`),
 `Ctrl + Alt + J` on WSL — Windows reserves the Windows key for itself.
@@ -230,6 +231,12 @@ get through. `whisper-desk doctor` says which one is at fault:
 
 **Sentences are cut too early / too late** — adjust `segment_silence_seconds`
 (splitting) and `silence_seconds` (end of dictation) in `[recording]`.
+
+**Someone is talking next to me and the dictation never ends** — in a shared office, a
+nearby voice keeps the microphone busy: the silence that ends a dictation never comes.
+The shortcut is a toggle and answers whatever the state — one press stops the listening,
+the next one cuts the transcription off, and the conversation caught along the way is
+dropped instead of being typed at the cursor.
 
 **The overlay opens but nothing is written** — nine times out of ten, the default
 microphone is the wrong one (an empty jack socket often stays the default source, and

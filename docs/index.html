@@ -546,6 +546,7 @@
           <tr><td>a short pause (~0.6&nbsp;s)</td><td>the sentence is transcribed and <b>inserted at the cursor</b>, listening continues</td></tr>
           <tr><td>2&nbsp;s of silence</td><td>end of dictation</td></tr>
           <tr><td><kbd>Super</kbd> + <kbd>J</kbd> (again)</td><td>stops listening immediately</td></tr>
+          <tr><td><kbd>Super</kbd> + <kbd>J</kbd> (once more)</td><td>cuts the dictation off: what is left is neither transcribed nor inserted</td></tr>
         </tbody>
       </table>
     </div>
@@ -777,6 +778,18 @@ margin = <span class="n">96</span></pre>
       <summary>Sentences are cut too early, or too late</summary>
       <div class="details-body">
         <p>Adjust <code>segment_silence_seconds</code> (the splitting) and <code>silence_seconds</code> (the end of dictation) in <code>[recording]</code>.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Someone is talking next to me and the dictation never ends</summary>
+      <div class="details-body">
+        <p>
+          In a shared office, a nearby voice keeps the microphone busy: the silence that ends a
+          dictation never comes. The shortcut is a toggle and answers whatever the state — one press
+          stops the listening, the next one cuts the transcription off, and the conversation caught
+          along the way is dropped instead of being typed at the cursor.
+        </p>
       </div>
     </details>
 

@@ -51,6 +51,7 @@ class Session:
         self.capture = capture          # True -> the text is returned to the client
         self.done = threading.Event()
         self.recording_over = threading.Event()
+        self.cancelled = threading.Event()
         self.text = ""
         self.error: str | None = None
         self.parts: list[str] = []
@@ -87,7 +88,7 @@ class Session:
             self.overlay.set_state("working")
             worker.join()
             self.text = " ".join(self.parts)
-            if not self.parts:
+            if not self.parts and not self.cancelled.is_set():
                 self._report_silence()
         except CaptureUnavailable as error:
             # A tool to install, not a bug: no need to spread out a traceback.
@@ -128,7 +129,7 @@ class Session:
         """Transcribes the sentences in order, as they come in."""
         while True:
             segment = self.queue.get()
-            if segment is None:
+            if segment is None or self.cancelled.is_set():
                 return
             if not self.recording_over.is_set():
                 self.overlay.set_state("working")
@@ -141,6 +142,10 @@ class Session:
             finally:
                 if not self.recording_over.is_set():
                     self.overlay.set_state("listening")
+            if self.cancelled.is_set():
+                # The shortcut was pressed while this sentence was being
+                # transcribed: it goes no further than here.
+                return
             if not text:
                 continue
             # Later sentences are separated from the previous insertion by a space.
@@ -156,6 +161,20 @@ class Session:
     def stop(self) -> None:
         self.recorder.stop()
 
+    def cancel(self) -> None:
+        """Cuts the dictation short: nothing more is transcribed nor inserted.
+
+        The way out when the microphone has caught a neighbour's conversation:
+        the sentences already queued are dropped rather than typed at the cursor.
+        """
+        logger.info("Dictation cut short by the user.")
+        self.cancelled.set()
+        self.recorder.stop()
+        self.queue.put(None)      # wakes the transcription up at once
+        # The sentence in progress cannot be interrupted inside the model: the
+        # window is closed here so the shortcut is seen to have answered.
+        self.overlay.stop()
+
 
 class Service:
     def __init__(self, config: dict[str, Any]):
@@ -167,10 +186,18 @@ class Service:
 
     # -- commands ----------------------------------------------------------
     def toggle(self) -> dict[str, Any]:
+        """The shortcut answers in every state: it never leaves the user stuck.
+
+        Listening, it stops it; transcribing, it cuts the dictation off — the
+        only way to shut the microphone up when the room is the one talking.
+        """
         with self.lock:
             if self.state == "recording" and self.session:
                 self.session.stop()
                 return {"state": "working"}
+            if self.state == "working" and self.session:
+                self.session.cancel()
+                return {"state": "cancelled"}
             if self.state != "idle":
                 return {"state": self.state, "ignored": True}
             self._start(capture=False)

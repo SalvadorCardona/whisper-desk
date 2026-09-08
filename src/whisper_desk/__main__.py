@@ -291,7 +291,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("daemon", help="runs the service (managed by systemd)").set_defaults(func=cmd_daemon)
-    sub.add_parser("toggle", help="starts listening, or stops it if it is running").set_defaults(func=cmd_toggle)
+    sub.add_parser("toggle", help="starts listening, stops it, then cuts the dictation off").set_defaults(func=cmd_toggle)
     sub.add_parser("record", help="synchronous dictation, text on stdout").set_defaults(func=cmd_record)
     sub.add_parser("stop", help="stops the current listening").set_defaults(func=cmd_simple("stop"))
     sub.add_parser("status", help="daemon state").set_defaults(func=cmd_simple("status"))
