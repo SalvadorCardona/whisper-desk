@@ -1,3 +1,5 @@
+![whisper-desk](https://raw.githubusercontent.com/SalvadorCardona/brand-assets/main/projects/whisper-desk/banner.png)
+
 # whisper-desk
 
 **Offline voice dictation for Linux, WSL and macOS.** You press `Super + J`, a small overlay
