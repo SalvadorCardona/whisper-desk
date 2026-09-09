@@ -51,6 +51,9 @@ class Session:
         self.capture = capture          # True -> the text is returned to the client
         self.done = threading.Event()
         self.recording_over = threading.Event()
+        # The steps the shortcut goes through, in order: asked to stop, then
+        # cut off — after which only giving up is left.
+        self.stopping = threading.Event()
         self.cancelled = threading.Event()
         self.text = ""
         self.error: str | None = None
@@ -159,6 +162,7 @@ class Session:
                 )
 
     def stop(self) -> None:
+        self.stopping.set()
         self.recorder.stop()
 
     def cancel(self) -> None:
@@ -169,11 +173,43 @@ class Session:
         """
         logger.info("Dictation cut short by the user.")
         self.cancelled.set()
-        self.recorder.stop()
+        # Nothing more will be listened to: the tool is killed rather than
+        # asked politely, so that a capture gone quiet cannot hold on.
+        self.recorder.abort()
         self.queue.put(None)      # wakes the transcription up at once
         # The sentence in progress cannot be interrupted inside the model: the
         # window is closed here so the shortcut is seen to have answered.
         self.overlay.stop()
+
+    def give_up(self) -> None:
+        """Gives the dictation up for lost, wedged threads and all.
+
+        Cutting off is not always enough: a model stuck on a segment cannot be
+        interrupted from the outside, and the dictation would hold the daemon
+        for minutes. What it owns is released here — in the background, so the
+        shortcut answers at once — and the threads still hanging on are left to
+        finish into the void.
+        """
+        logger.warning("Dictation given up: the daemon takes the hand back by force.")
+        self.cancelled.set()
+        self.queue.put(None)
+        writer, self.writer = self.writer, None
+        threading.Thread(target=self._release, args=(writer,), daemon=True).start()
+        self.done.set()
+
+    def _release(self, writer: output.CursorWriter | None) -> None:
+        """Hands back the microphone, the window and the virtual keyboard.
+
+        Each of them may take its time, or never let go at all: this is why it
+        runs beside the shortcut rather than under it.
+        """
+        try:
+            self.recorder.abort()
+            self.overlay.stop()
+            if writer is not None:
+                writer.close()
+        except Exception:
+            logger.exception("The abandoned dictation could not be released")
 
 
 class Service:
@@ -188,20 +224,26 @@ class Service:
     def toggle(self) -> dict[str, Any]:
         """The shortcut answers in every state: it never leaves the user stuck.
 
-        Listening, it stops it; transcribing, it cuts the dictation off — the
-        only way to shut the microphone up when the room is the one talking.
+        Each press goes one step further than the one before: it stops the
+        listening, then it cuts the dictation off — the only way to shut the
+        microphone up when the room is the one talking — then, if what is left
+        still does not answer, it gives the dictation up altogether and hands
+        back a free daemon rather than a window that never closes.
         """
         with self.lock:
-            if self.state == "recording" and self.session:
-                self.session.stop()
+            session = self.session
+            if session is None:
+                self._start(capture=False)
+                return {"state": "recording"}
+            if self.state == "recording" and not session.stopping.is_set():
+                session.stop()
                 return {"state": "working"}
-            if self.state == "working" and self.session:
-                self.session.cancel()
+            if not session.cancelled.is_set():
+                session.cancel()
                 return {"state": "cancelled"}
-            if self.state != "idle":
-                return {"state": self.state, "ignored": True}
-            self._start(capture=False)
-            return {"state": "recording"}
+            session.give_up()
+            self._forget(session)
+            return {"state": "idle", "given_up": True}
 
     def record(self) -> dict[str, Any]:
         with self.lock:
@@ -251,8 +293,16 @@ class Service:
     def finish(self, session: Session) -> None:
         """Makes the service available again, under the same lock as the commands."""
         with self.lock:
-            if self.session is session:
-                self.session = None
+            self._forget(session)
+
+    def _forget(self, session: Session) -> None:
+        """Drops a finished dictation — the lock is already held.
+
+        A dictation given up may come back long afterwards, when a new one is
+        already under way: it must not take that one down with it.
+        """
+        if self.session is session:
+            self.session = None
             self.state = "idle"
 
     def _preload(self) -> None:
@@ -298,8 +348,12 @@ class Server(socketserver.ThreadingUnixStreamServer):
     allow_reuse_address = True
 
 
-def _is_alive(path: Path) -> bool:
-    """True if an existing socket still answers."""
+def is_alive(path: Path) -> bool:
+    """True if an existing socket still answers.
+
+    A socket file outlives a daemon that was killed: its mere presence proves
+    nothing, only an answer does.
+    """
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client.settimeout(1.0)
     try:
@@ -323,7 +377,7 @@ def serve() -> int:
     path = socket_path()
 
     if path.exists():
-        if _is_alive(path):
+        if is_alive(path):
             logger.error("A daemon is already running on %s", path)
             return 1
         path.unlink()
@@ -343,5 +397,10 @@ def serve() -> int:
         pass
     finally:
         server.server_close()
+        session = service.session
+        if session is not None:
+            # Leaving now would abandon the window on screen and the microphone
+            # open, with nothing left to close them.
+            session.cancel()
         path.unlink(missing_ok=True)
     return 0

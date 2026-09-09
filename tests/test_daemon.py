@@ -1,14 +1,19 @@
-"""The shortcut as a real toggle: it starts, it stops, and it cuts things off.
+"""The shortcut as a real toggle: it starts, it stops, it cuts off, it gives up.
 
 In a shared office, a neighbour's voice keeps the microphone busy: the silence
 that ends a dictation never comes. Pressing the shortcut again must always
 answer — first by stopping the listening, then by dropping what the model was
 still chewing on, rather than typing the room's conversation at the cursor.
+
+And when even that is not enough — a model stuck on a segment, a frozen window,
+a microphone that no longer sends anything — one more press gives the dictation
+up and hands back a daemon ready for the next one: no press may ever be lost.
 """
 
 from __future__ import annotations
 
 import contextlib
+import logging
 import threading
 import time
 import unittest
@@ -20,6 +25,9 @@ from whisper_desk import daemon
 
 # Long enough for a thread to get going, short enough for a stuck test to fail.
 TIMEOUT = 5.0
+
+# Giving a dictation up is worth a warning in a journal, not in a test report.
+logging.getLogger("whisper-desk.daemon").setLevel(logging.CRITICAL)
 
 CONFIG = {
     # "clipboard" keeps the virtual keyboard out of the way: what is under test
@@ -71,11 +79,16 @@ class FakeRecorder:
         self.on_segment = None
         self.listening = threading.Event()
         self.stopped = threading.Event()
+        self.aborted = threading.Event()
         self.peak = 1000.0
         self.reason = "stopped"
         self.backend = "fake"
 
     def stop(self) -> None:
+        self.stopped.set()
+
+    def abort(self) -> None:
+        self.aborted.set()
         self.stopped.set()
 
     def record(self) -> bytes:
@@ -84,6 +97,13 @@ class FakeRecorder:
         self.listening.set()
         self.stopped.wait(TIMEOUT)
         return self.tail
+
+
+class DeafRecorder(FakeRecorder):
+    """A capture gone quiet: it hears nothing but the killing of the tool."""
+
+    def stop(self) -> None:
+        pass
 
 
 class FakeTranscriber:
@@ -130,7 +150,7 @@ class ToggleTest(unittest.TestCase):
                 yield service
             finally:
                 # Whatever the test did, no thread is left hanging.
-                self.recorder.stop()
+                self.recorder.abort()
                 self.transcriber.release.set()
                 session = service.session
                 if session is not None:
@@ -209,6 +229,56 @@ class ToggleTest(unittest.TestCase):
             self.transcriber.release.set()
             self.assertTrue(wait_until(lambda: service.state == "idle"))
             self.assertEqual(service.toggle(), {"state": "recording"})
+
+    def test_a_capture_that_no_longer_answers_is_killed(self):
+        """Asking nicely is not enough when the microphone has gone quiet."""
+        self.recorder = DeafRecorder([b"a sentence"])
+        with self.service() as service:
+            self.listening(service)
+            service.toggle()            # asks the listening to stop: unheard
+            self.assertFalse(self.recorder.aborted.is_set())
+            service.toggle()            # cuts off: the tool is killed
+            self.assertTrue(self.recorder.aborted.is_set())
+            self.assertTrue(wait_until(lambda: service.session is None))
+
+    # -- the press that gives the dictation up -------------------------------
+    def test_a_press_on_a_wedged_dictation_gives_it_up(self):
+        """The model does not let go of its segment: nobody waits for it."""
+        with self.service() as service:
+            self.transcribing(service)
+            service.toggle()
+            self.assertEqual(service.toggle(), {"state": "idle", "given_up": True})
+            self.assertIsNone(service.session)
+            self.assertEqual(service.state, "idle")
+
+    def test_the_shortcut_stops_waiting_for_the_model(self):
+        with self.service() as service:
+            self.transcribing(service)
+            session = service.session
+            service.toggle()
+            service.toggle()
+            self.assertTrue(session.done.is_set())
+            # ... and the sentence is still inside the model.
+            self.assertFalse(self.transcriber.release.is_set())
+
+    def test_a_new_dictation_starts_over_a_wedged_one(self):
+        with self.service() as service:
+            self.transcribing(service)
+            service.toggle()
+            service.toggle()
+            self.assertEqual(service.toggle(), {"state": "recording"})
+
+    def test_a_dictation_given_up_does_not_take_the_next_one_down(self):
+        """It may come back long afterwards, when someone else has the microphone."""
+        with self.service() as service:
+            self.transcribing(service)
+            service.toggle()
+            abandoned = service.session
+            service.toggle()
+            service.toggle()
+            service.finish(abandoned)       # the abandoned dictation ends at last
+            self.assertIsNotNone(service.session)
+            self.assertNotEqual(service.state, "idle")
 
     def test_a_cut_dictation_says_nothing_about_the_microphone(self):
         """No sentence is not the same as no sound: no mute-microphone warning."""

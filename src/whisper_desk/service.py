@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
+import signal
 import subprocess
 import shutil
 import sys
@@ -26,6 +27,9 @@ DIRECT = "direct"
 
 UNIT = "whisper-desk.service"
 LAUNCH_LABEL = "fr.whisperdesk.daemon"
+
+# How a daemon started without a manager shows up in the process table.
+DAEMON_PATTERN = "whisper_desk daemon"
 
 UNIT_PATH = Path.home() / ".config/systemd/user" / UNIT
 AGENT_PATH = Path.home() / "Library/LaunchAgents" / f"{LAUNCH_LABEL}.plist"
@@ -104,6 +108,64 @@ def start_directly() -> bool:
     finally:
         if log is not None:
             log.close()
+
+
+def force_stop() -> bool:
+    """Puts the daemon down whatever it is doing, and with it the open dictation.
+
+    The way out when the daemon no longer answers on its socket: its window
+    would otherwise stay on screen and its microphone open, with no shortcut
+    left to close them. The next dictation starts a fresh daemon.
+    """
+    current = manager()
+    if current == SYSTEMD:
+        try:
+            # The whole unit, children included: the overlay is one of them.
+            subprocess.run(
+                ["systemctl", "--user", "kill", "--signal=SIGKILL", UNIT],
+                check=True, capture_output=True, timeout=15,
+            )
+            return True
+        except (OSError, subprocess.SubprocessError) as error:
+            logger.debug("systemd did not kill the service (%s) — killing directly.", error)
+    elif current == LAUNCHD and _launchctl("kill", "SIGKILL", _domain_target()):
+        return True
+    return kill_directly()
+
+
+def kill_directly() -> bool:
+    """Kills the running daemons, and the dictation their process group holds.
+
+    start_directly() gives the daemon a session of its own, so its group holds
+    the whole dictation — the overlay included, which would otherwise survive
+    its parent. A daemon started by hand shares the group of the current
+    shell: there, it alone is killed.
+    """
+    killed = False
+    for pid in _daemon_pids():
+        try:
+            group = os.getpgid(pid)
+            if group == os.getpgrp():
+                os.kill(pid, signal.SIGKILL)
+            else:
+                os.killpg(group, signal.SIGKILL)
+            killed = True
+        except OSError as error:
+            logger.debug("Cannot kill the daemon %d: %s", pid, error)
+    return killed
+
+
+def _daemon_pids() -> list[int]:
+    """The daemons of the current user, seen from the process table."""
+    try:
+        result = subprocess.run(
+            ["pgrep", "-u", str(os.getuid()), "-f", DAEMON_PATTERN],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        logger.debug("pgrep unavailable: %s", error)
+        return []
+    return [int(line) for line in result.stdout.split() if line.isdigit()]
 
 
 def status() -> str:

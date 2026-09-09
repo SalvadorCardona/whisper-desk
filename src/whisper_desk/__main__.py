@@ -15,6 +15,9 @@ from . import config as config_module
 from . import host
 
 BIN = str(Path.home() / ".local/bin/whisper-desk")
+# Beyond this, the daemon is considered lost: the longest a press may take is
+# the closing of the overlay, a couple of seconds at most.
+TOGGLE_TIMEOUT = 8.0
 
 
 def _print_error(message: str) -> int:
@@ -29,10 +32,23 @@ def cmd_daemon(_args: argparse.Namespace) -> int:
 
 
 def cmd_toggle(_args: argparse.Namespace) -> int:
-    from .client import DaemonUnavailable, send
+    """The shortcut. It answers whatever happens — by force if it has to.
+
+    A press left unanswered is the worst thing that can happen to the user:
+    the overlay stays on screen, the microphone stays open, and there is
+    nothing left to press. A daemon that no longer answers is therefore put
+    down, and the next press starts a fresh one.
+    """
+    from . import service
+    from .client import DaemonSilent, DaemonUnavailable, send
 
     try:
-        reply = send("toggle", timeout=20)
+        reply = send("toggle", timeout=TOGGLE_TIMEOUT)
+    except DaemonSilent as error:
+        if not service.force_stop():
+            return _print_error(f"{error} — stop it by hand: {service.hint()}")
+        print("killed")
+        return 0
     except DaemonUnavailable as error:
         return _print_error(str(error))
     print(reply.get("state", reply))
