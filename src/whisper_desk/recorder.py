@@ -71,6 +71,23 @@ class Recorder:
     def stop(self) -> None:
         self._stop.set()
 
+    def abort(self) -> None:
+        """Cuts the capture short, without waiting for the tool to say a word.
+
+        stop() is only seen between two reads: should the capture tool go quiet
+        without closing its pipe — a lost microphone, a suspended server — the
+        read never returns and listening never ends. Killing the tool makes it
+        return empty at once.
+        """
+        self._stop.set()
+        process = self._process
+        if process is None:
+            return
+        try:
+            process.kill()
+        except OSError:               # already gone: nothing left to kill
+            pass
+
     def record(self) -> bytes:
         """Blocks until capture ends and returns the raw PCM (s16le 16 kHz mono)."""
         source = capture.build(

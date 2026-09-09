@@ -8,11 +8,20 @@ import time
 from typing import Any
 
 from . import service
-from .daemon import socket_path
+from .daemon import is_alive, socket_path
 
 
 class DaemonUnavailable(RuntimeError):
     pass
+
+
+class DaemonSilent(DaemonUnavailable):
+    """The socket is there, the daemon is not: it took the order and said nothing.
+
+    Told apart from the rest because it is the only case where something is
+    left to put down: a daemon stuck on a dictation still holds the microphone
+    and keeps its window on screen.
+    """
 
 
 def _connect(timeout: float) -> socket.socket:
@@ -42,20 +51,26 @@ def send(command: str, timeout: float = 300.0, autostart: bool = True) -> dict[s
         client.sendall((json.dumps({"cmd": command}) + "\n").encode("utf-8"))
         with client.makefile("rb") as stream:
             raw = stream.readline()
+    except OSError as error:      # a timeout is one of these
+        raise DaemonSilent(f"the daemon is not answering ({error})") from None
     finally:
         client.close()
 
     if not raw:
-        raise DaemonUnavailable("the daemon did not answer")
+        raise DaemonSilent("the daemon did not answer")
     return json.loads(raw.decode("utf-8"))
 
 
 def _start_daemon() -> bool:
-    """Starts the daemon (systemd, launchd or a detached process) then waits for the socket."""
+    """Starts the daemon (systemd, launchd or a detached process) then waits for it.
+
+    The socket left behind by a daemon that was killed is still there: what is
+    waited for is an answer, not a file.
+    """
     if not service.start():
         return False
     for _ in range(40):
-        if socket_path().exists():
+        if socket_path().exists() and is_alive(socket_path()):
             return True
         time.sleep(0.25)
     return False

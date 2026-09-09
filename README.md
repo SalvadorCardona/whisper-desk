@@ -108,6 +108,7 @@ whisper-desk doctor
 | 2 s of silence | end of dictation |
 | `Super + J` (again) | stops listening immediately |
 | `Super + J` (once more) | cuts the dictation off: what is left is neither transcribed nor inserted |
+| `Super + J` (again and again) | gives up: the window closes, the microphone is released, the daemon is free |
 
 The default shortcut follows the host: `Super + J` on Linux and macOS (`Cmd + J`),
 `Ctrl + Alt + J` on WSL — Windows reserves the Windows key for itself.
@@ -257,6 +258,13 @@ nearby voice keeps the microphone busy: the silence that ends a dictation never 
 The shortcut is a toggle and answers whatever the state — one press stops the listening,
 the next one cuts the transcription off, and the conversation caught along the way is
 dropped instead of being typed at the cursor.
+
+**The overlay stays on screen and nothing responds any more** — a model stuck on a
+segment, a frozen window, a microphone that no longer sends anything: keep pressing the
+shortcut. Each press goes one step further, and the last one gives the dictation up
+altogether — the window closes, the microphone is released, and the next press starts a
+clean dictation. Should the daemon itself stop answering, the shortcut puts it down and
+the following one starts a fresh daemon.
 
 **The overlay opens but nothing is written** — nine times out of ten, the default
 microphone is the wrong one (an empty jack socket often stays the default source, and
