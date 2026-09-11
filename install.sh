@@ -15,6 +15,9 @@ WD_REPO="${WD_REPO:-SalvadorCardona/whisper-desk}"
 WD_REF="${WD_REF:-main}"
 
 APP_DIR="$HOME/.local/share/whisper-desk/app"
+# What "whisper-desk update" compares: the copy in APP_DIR has no .git, so
+# without this file nothing says which code runs here.
+VERSION_FILE="$APP_DIR/.whisper-desk-version"
 VENV_DIR="$HOME/.local/share/whisper-desk/venv"
 BIN_DIR="$HOME/.local/bin"
 BIN="$BIN_DIR/whisper-desk"
@@ -132,9 +135,21 @@ fi
 
 # --- 2. fetching the sources ------------------------------------------------
 mkdir -p "$APP_DIR" "$BIN_DIR" "$CONFIG_DIR"
+WD_COMMIT=""
+WD_DATE=""
+WD_ORIGIN=github
 if [ -n "${WD_SRC:-}" ]; then
     say "Copying the sources from $WD_SRC"
     [ -d "$WD_SRC/src/whisper_desk" ] || die "$WD_SRC does not contain src/whisper_desk"
+    WD_ORIGIN=local
+    # An absolute path: "whisper-desk update" will replay the installation from it.
+    WD_SRC=$(cd "$WD_SRC" && pwd)
+    if have git && git -C "$WD_SRC" rev-parse --git-dir >/dev/null 2>&1; then
+        WD_COMMIT=$(git -C "$WD_SRC" rev-parse HEAD 2>/dev/null || echo "")
+        WD_DATE=$(git -C "$WD_SRC" log -1 --format=%cI 2>/dev/null || echo "")
+        BRANCH=$(git -C "$WD_SRC" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+        [ "$BRANCH" = HEAD ] || [ -z "$BRANCH" ] || WD_REF="$BRANCH"
+    fi
     rm -rf "$APP_DIR"
     mkdir -p "$APP_DIR"
     tar -C "$WD_SRC" --exclude='.git' --exclude='__pycache__' -cf - . | tar -C "$APP_DIR" -xf -
@@ -144,13 +159,41 @@ else
     have tar  || die "tar is required"
     TMP=$(mktemp -d)
     trap 'rm -rf "$TMP"' EXIT INT TERM
+    # The tarball says nothing about the commit it was cut from: the API does.
+    if curl -fsSL -H 'Accept: application/vnd.github+json' \
+        "https://api.github.com/repos/$WD_REPO/commits/$WD_REF" -o "$TMP/commit.json" 2>/dev/null; then
+        # One field per line first: a greedy regex on compact JSON would
+        # otherwise catch the last "sha" of the payload instead of the commit's.
+        tr ',{' '\n\n' < "$TMP/commit.json" > "$TMP/commit.fields"
+        WD_COMMIT=$(sed -n 's/.*"sha"[[:space:]]*:[[:space:]]*"\([0-9a-f]\{7,40\}\)".*/\1/p' \
+            "$TMP/commit.fields" | head -1)
+        WD_DATE=$(sed -n 's/.*"date"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+            "$TMP/commit.fields" | head -1)
+    fi
     curl -fsSL "https://codeload.github.com/$WD_REPO/tar.gz/refs/heads/$WD_REF" -o "$TMP/src.tar.gz" \
         || die "download failed (private repository or nonexistent branch?)"
     rm -rf "$APP_DIR"
     mkdir -p "$APP_DIR"
     tar -xzf "$TMP/src.tar.gz" -C "$APP_DIR" --strip-components=1
 fi
-ok "sources in $APP_DIR"
+
+# The fingerprint is written last: APP_DIR was wiped just above.
+{
+    printf 'commit=%s\n' "${WD_COMMIT:-unknown}"
+    printf 'ref=%s\n' "$WD_REF"
+    printf 'date=%s\n' "${WD_DATE:-unknown}"
+    printf 'repo=%s\n' "$WD_REPO"
+    printf 'origin=%s\n' "$WD_ORIGIN"
+    if [ "$WD_ORIGIN" = local ]; then
+        printf 'src=%s\n' "$WD_SRC"
+    fi
+    printf 'installed=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+} > "$VERSION_FILE"
+if [ -n "$WD_COMMIT" ]; then
+    ok "sources in $APP_DIR ($WD_REF @ $(printf '%.7s' "$WD_COMMIT"))"
+else
+    ok "sources in $APP_DIR ($WD_REF, commit unknown)"
+fi
 
 # --- 3. isolated Python environment -----------------------------------------
 if ! have uv; then
@@ -253,7 +296,8 @@ printf '  Press %s%s%s, speak, then pause:\n' "$BOLD" "$BINDING" "$RESET"
 printf '  the text is transcribed offline and inserted at the cursor.\n\n'
 printf '  %sconfiguration%s  %s\n' "$DIM" "$RESET" "$CONFIG"
 printf '  %sdiagnostic%s     whisper-desk doctor\n' "$DIM" "$RESET"
-printf '  %sCLI dictation%s  whisper-desk record\n\n' "$DIM" "$RESET"
+printf '  %sCLI dictation%s  whisper-desk record\n' "$DIM" "$RESET"
+printf '  %supdate%s         whisper-desk update\n\n' "$DIM" "$RESET"
 if [ "$SERVICE_INSTALLED" = 0 ] && [ "${WD_NO_SERVICE:-0}" != "1" ]; then
     printf '  %s!%s no service manager: the daemon starts on the first call\n\n' "$YELLOW" "$RESET"
 fi

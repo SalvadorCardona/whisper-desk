@@ -18,6 +18,9 @@ BIN = str(Path.home() / ".local/bin/whisper-desk")
 # Beyond this, the daemon is considered lost: the longest a press may take is
 # the closing of the overlay, a couple of seconds at most.
 TOGGLE_TIMEOUT = 8.0
+# "update --check" is made to be hung on a cron or a status bar: 0 nothing to
+# do, 1 something new upstream, 2 the question could not be answered.
+CANNOT_TELL = 2
 
 
 def _print_error(message: str) -> int:
@@ -119,10 +122,111 @@ def cmd_config(args: argparse.Namespace) -> int:
         print(json.dumps(config_module.load(), ensure_ascii=False, indent=2))
         return 0
     if not path.exists():
-        return _print_error(f"{path} is missing — run the installation again.")
+        return _print_error(f"{path} is missing — run 'whisper-desk update' to put it back.")
     editor = os.environ.get("EDITOR") or shutil.which("nano") or "vi"
     subprocess.run([editor, str(path)], check=False)
     print("Remember to run 'whisper-desk reload' to apply the changes.")
+    return 0
+
+
+def _config_bytes() -> bytes | None:
+    try:
+        return config_module.CONFIG_PATH.read_bytes()
+    except OSError:
+        return None
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    """Brings the installation up to date by replaying install.sh.
+
+    The script is the one that knows how to install: it fetches the sources,
+    brings the environment up to date and rewrites the command and the
+    service. All that is done here is asking it, from a place it will not
+    delete, and saying what changed.
+    """
+    from . import service, update
+    from .client import DaemonUnavailable, send
+
+    fingerprint = update.read_fingerprint()
+    local = update.commit(fingerprint)
+    reference = update.ref(fingerprint)
+    source = update.local_source(fingerprint)
+
+    if args.check:
+        try:
+            latest = update.latest_commit(update.repo(fingerprint), reference)
+        except update.UpstreamUnreachable as error:
+            _print_error(str(error))
+            return CANNOT_TELL
+        if not local:
+            print(
+                "unknown version — this installation predates the version fingerprint;"
+                f" {reference} is at {update.short(latest['commit'])}: run 'whisper-desk update'"
+            )
+            return 1
+        if local == latest["commit"]:
+            print(f"up to date — {update.describe(fingerprint)}")
+            return 0
+        when = f" ({latest['date'][:10]})" if latest["date"] else ""
+        print(
+            f"an update is available — installed {update.short(local)},"
+            f" {reference} @ {update.short(latest['commit'])}{when}"
+        )
+        return 1
+
+    # Restarting the daemon under a dictation would cut someone off mid-sentence.
+    try:
+        state = str(send("status", timeout=10, autostart=False).get("state", "idle"))
+    except DaemonUnavailable:
+        state = "idle"      # no daemon answering: no dictation to interrupt
+    if state != "idle":
+        return _print_error(
+            f"a dictation is under way ({state}) — run the update once it is over"
+        )
+
+    try:
+        latest = update.latest_commit(update.repo(fingerprint), reference)
+    except update.UpstreamUnreachable as error:
+        if source is None:
+            _print_error(str(error))
+            return CANNOT_TELL
+        latest = None       # a local copy needs no network
+    target = update.source_commit(source) if source else (latest or {}).get("commit", "")
+    if local and target and local == target:
+        print(f"already up to date — {update.describe(fingerprint)}")
+        return 0
+
+    print(
+        f"Updating {update.repo(fingerprint)}@{reference}:"
+        f" {update.short(local) or 'unknown version'} → {update.short(target) or 'upstream'}"
+    )
+    if source is not None:
+        print(f"  from the local copy {source}")
+        if latest and target and latest["commit"] != target:
+            print(f"  (upstream is at {update.short(latest['commit'])} — 'git pull' there first)")
+
+    keep_hotkey = update.hotkey_installed()
+    config_before = _config_bytes()
+    try:
+        code = update.run_install(fingerprint, keep_hotkey)
+    except update.UpstreamUnreachable as error:
+        _print_error(str(error))
+        return CANNOT_TELL
+    if code != 0:
+        return _print_error(
+            f"install.sh failed (exit code {code}) — the service was left alone"
+        )
+
+    installed = update.read_fingerprint()
+    restarted = service.restart()
+    print("\nSummary")
+    print(f"  version   {update.short(local) or 'unknown'} → {update.describe(installed)}")
+    print(f"  service   {'restarted' if restarted else 'not restarted — ' + service.hint()}")
+    print(f"  shortcut  {'untouched' if keep_hotkey else 'installed'}")
+    print(
+        f"  config    {config_module.CONFIG_PATH}"
+        f" {'kept' if _config_bytes() == config_before else 'rewritten'}"
+    )
     return 0
 
 
@@ -190,7 +294,7 @@ def _measure_microphone(config: dict, seconds: int = 2) -> tuple[float, float]:
 
 
 def cmd_doctor(_args: argparse.Namespace) -> int:
-    from . import capture, hotkey, inject, output, service
+    from . import capture, hotkey, inject, output, service, update
     from .daemon import socket_path
     from .overlay_proc import system_python
     from .recorder import SILENT_INPUT_PEAK
@@ -201,6 +305,29 @@ def cmd_doctor(_args: argparse.Namespace) -> int:
 
     config = config_module.load()
     settings = config["recording"]
+
+    print("Version")
+    fingerprint = update.read_fingerprint()
+    local = update.commit(fingerprint)
+    check(
+        f"whisper-desk {__version__}",
+        bool(local),
+        update.describe(fingerprint) if local
+        else "unknown commit, installed before the fingerprint — 'whisper-desk update' records it",
+    )
+    # Asking upstream is a courtesy, never a condition: offline, the
+    # diagnostic goes on without a word about it.
+    try:
+        latest = update.latest_commit(
+            update.repo(fingerprint), update.ref(fingerprint), timeout=update.DOCTOR_TIMEOUT
+        )
+    except update.UpstreamUnreachable:
+        latest = None
+    if latest and local and latest["commit"] != local:
+        print(
+            f"  ⚠ {update.ref(fingerprint)} @ {update.short(latest['commit'])}"
+            " is newer — run 'whisper-desk update'"
+        )
 
     print(f"System — {host.label()}")
     usable = capture.available()
@@ -298,12 +425,41 @@ def _overlay_hint() -> str:
     return "python3-gi + gir1.2-gtk-3.0 packages"
 
 
+def _version_line() -> str:
+    """The version, with the commit that is actually running when it is known.
+
+    The program is distributed by `main`: the number alone would say nothing
+    about the code in place.
+    """
+    from . import update
+
+    fingerprint = update.read_fingerprint()
+    local = update.commit(fingerprint)
+    if not local:
+        return f"whisper-desk {__version__}"
+    return f"whisper-desk {__version__} ({update.ref(fingerprint)} @ {update.short(local)})"
+
+
+class _Version(argparse.Action):
+    """--version, read from the installation only when it is asked for.
+
+    Every press of the shortcut goes through this parser: the fingerprint is
+    not worth a file read on the way to a dictation.
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser.exit(message=_version_line() + "\n")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="whisper-desk",
         description="Offline voice dictation: one shortcut, you speak, the text is copied.",
     )
-    parser.add_argument("--version", action="version", version=f"whisper-desk {__version__}")
+    parser.add_argument(
+        "--version", action=_Version, nargs=0,
+        help="shows the version and the commit installed",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("daemon", help="runs the service (managed by systemd)").set_defaults(func=cmd_daemon)
@@ -314,6 +470,17 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("reload", help="reloads the configuration").set_defaults(func=cmd_simple("reload"))
     sub.add_parser("quit", help="stops the daemon").set_defaults(func=cmd_simple("quit"))
     sub.add_parser("doctor", help="diagnostic of the installation").set_defaults(func=cmd_doctor)
+
+    update_parser = sub.add_parser(
+        "update",
+        help="updates the installation from the source repository",
+        description="Updates whisper-desk: sources, environment, command, service.",
+    )
+    update_parser.add_argument(
+        "--check", action="store_true",
+        help="only compares the versions: exit 0 up to date, 1 something new, 2 cannot tell",
+    )
+    update_parser.set_defaults(func=cmd_update)
 
     hotkey_parser = sub.add_parser("hotkey", help="manages the global shortcut")
     hotkey_parser.add_argument(
