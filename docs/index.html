@@ -494,11 +494,17 @@
 
     <div class="note">
       <p><b>The Whisper model</b> (a few hundred MB) is downloaded the first time the service starts.</p>
-      <p>Running the same command again <b>updates</b> the installation: the code is replaced, the service restarted, and your configuration and models are kept.</p>
+      <p>Once installed, updates go through the command itself: <code>whisper-desk update</code>.</p>
     </div>
 
     <h3>Check that everything is in place</h3>
     <pre data-copy><span class="p">$ </span>whisper-desk doctor</pre>
+
+    <h3>Updating</h3>
+    <pre data-copy><span class="p">$ </span>whisper-desk update</pre>
+    <p>It says which version runs and what is available upstream, and stops there if there is nothing new. Otherwise it fetches the sources, brings the Python environment up to date, rewrites the command and the service, restarts the daemon, and hands back a summary of what changed. Your <b>configuration is kept</b>, and so is your <b>keyboard shortcut</b> — a binding you have made your own is never rewritten. A dictation under way is never cut off: the update refuses to run and asks you to come back once it is over.</p>
+    <pre data-copy><span class="p">$ </span>whisper-desk update --check     <span class="c"># compares the versions and writes nothing</span></pre>
+    <p><code>--check</code> prints one line and exits <b>0</b> if the machine is up to date, <b>1</b> if something newer exists upstream, and <b>2</b> if the question could not be answered (offline, private repository, nonexistent branch) — enough to hang it on a cron or a status bar. <code>whisper-desk --version</code> and the doctor both name the commit installed: the project is distributed by <code>main</code>, where the commit says more than the version number.</p>
 
     <h3>What each host uses</h3>
     <div class="tbl">
@@ -564,6 +570,7 @@
 <span class="p">$ </span>whisper-desk toggle     <span class="c"># same as the keyboard shortcut</span>
 <span class="p">$ </span>whisper-desk status     <span class="c"># daemon state, loaded model, GPU or CPU</span>
 <span class="p">$ </span>whisper-desk doctor     <span class="c"># full diagnostic</span>
+<span class="p">$ </span>whisper-desk update     <span class="c"># update the installation (--check to compare only)</span>
 <span class="p">$ </span>whisper-desk config     <span class="c"># open the configuration in $EDITOR</span>
 <span class="p">$ </span>whisper-desk reload     <span class="c"># reload the configuration without restarting</span>
 <span class="p">$ </span>whisper-desk quit       <span class="c"># stop the daemon</span></pre>

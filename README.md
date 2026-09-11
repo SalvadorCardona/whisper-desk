@@ -62,8 +62,7 @@ That's all. The script recognises the host — Linux, WSL or macOS — and adapt
 
 The Whisper model (a few hundred MB) is downloaded the first time the service starts.
 
-Running the same command again **updates** the installation: the code is replaced, the
-service restarted, and your configuration and models are kept.
+Once installed, updates go through the command itself: [`whisper-desk update`](#updating).
 
 ### What each host uses
 
@@ -99,6 +98,43 @@ whisper-desk doctor
 
 ---
 
+## Updating
+
+```sh
+whisper-desk update
+```
+
+It says which version runs and what is available upstream, and stops there if there is
+nothing new. Otherwise it fetches the sources, brings the Python environment up to date,
+rewrites the command and the service, restarts the daemon, and hands back a summary of
+what changed.
+
+Your **configuration is kept**, and so is your **keyboard shortcut**: a shortcut you have
+made your own is installed once, on the first installation, and never rewritten
+afterwards. A dictation under way is never cut off — the update refuses to run and asks
+you to come back once it is over.
+
+```sh
+whisper-desk update --check     # compares the versions and writes nothing
+```
+
+`--check` prints one line and exits **0** if the machine is up to date, **1** if something
+newer exists upstream, and **2** if the question could not be answered (offline, private
+repository, nonexistent branch). Enough to hang it on a cron or a status bar:
+
+```sh
+whisper-desk update --check
+[ $? = 1 ] && notify-send "whisper-desk: an update is available"
+```
+
+`whisper-desk --version` and `whisper-desk doctor` both name the commit installed —
+the project is distributed by `main`, so the commit says more than the version number.
+
+> An installation made before this existed has no version fingerprint: `update` says so
+> plainly and records one on the way through.
+
+---
+
 ## Usage
 
 | Gesture | Effect |
@@ -123,6 +159,7 @@ whisper-desk record     # dictate and write the text to standard output
 whisper-desk toggle     # same as the keyboard shortcut
 whisper-desk status     # daemon state, loaded model, GPU or CPU
 whisper-desk doctor     # full diagnostic
+whisper-desk update     # update the installation (--check to compare only)
 whisper-desk config     # open the configuration in $EDITOR
 whisper-desk reload     # reload the configuration without restarting
 whisper-desk quit       # stop the daemon
@@ -326,6 +363,9 @@ cd whisper-desk
 WD_SRC="$PWD" sh install.sh     # installs from the local clone, without network access
 ```
 
+An installation made this way remembers its clone: `whisper-desk update` replays it from
+there, so a `git pull` in the clone is all it takes to update the machine.
+
 ### Tests
 
 The suite depends on the standard library alone — no virtual environment, no model
@@ -353,6 +393,7 @@ to test all three from any of them.
 | `src/whisper_desk/overlay.py` | X11 overlay (separate process) |
 | `src/whisper_desk/hotkey.py` | global shortcut: GNOME, Start menu, `skhd` |
 | `src/whisper_desk/service.py` | daemon startup: systemd, launchd or direct |
+| `src/whisper_desk/update.py` | version fingerprint, comparison with upstream, update |
 | `tests/` | `unittest` suite, no external dependency |
 | `install.sh` | installation and updates |
 

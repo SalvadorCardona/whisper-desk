@@ -110,6 +110,30 @@ def start_directly() -> bool:
             log.close()
 
 
+def restart() -> bool:
+    """Restarts the daemon, so that it runs the code just installed.
+
+    A start would not be enough: the daemon already running holds the previous
+    version in memory, model included.
+    """
+    current = manager()
+    if current == SYSTEMD:
+        try:
+            subprocess.run(
+                ["systemctl", "--user", "restart", UNIT],
+                check=True, capture_output=True, timeout=30,
+            )
+            return True
+        except (OSError, subprocess.SubprocessError) as error:
+            logger.debug("systemd did not restart the service (%s) — restarting directly.", error)
+    elif current == LAUNCHD:
+        if _launchctl("kickstart", "-k", _domain_target()):
+            return True
+        logger.debug("launchd did not restart the agent — restarting directly.")
+    kill_directly()
+    return start_directly()
+
+
 def force_stop() -> bool:
     """Puts the daemon down whatever it is doing, and with it the open dictation.
 
