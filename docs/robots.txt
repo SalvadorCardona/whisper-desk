@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cardona.digital/whisper-desk/sitemap.xml
