@@ -1,0 +1,10 @@
+# whisper-desk
+
+> Offline voice dictation for Linux, WSL and macOS. A global shortcut opens an
+> overlay, and text transcribed locally with faster-whisper is typed at the
+> cursor, sentence after sentence. No data leaves the machine; transcription
+> runs on an NVIDIA GPU when available, otherwise on the CPU.
+
+- Source and issues: https://github.com/SalvadorCardona/whisper-desk
+- Install script: https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh
+- License: MIT

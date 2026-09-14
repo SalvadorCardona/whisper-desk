@@ -14,6 +14,30 @@
 <meta property="og:url" content="https://cardona.digital/whisper-desk/">
 <meta property="og:image" content="https://cardona.digital/whisper-desk/overlay-listening.png">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="whisper-desk — offline voice dictation">
+<meta name="twitter:image" content="https://cardona.digital/whisper-desk/overlay-listening.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "whisper-desk",
+  "description": "Press Super + J and speak: the text is typed straight where your cursor is. Local transcription with faster-whisper — no data leaves the machine.",
+  "url": "https://cardona.digital/whisper-desk/",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Linux, WSL, macOS",
+  "license": "https://github.com/SalvadorCardona/whisper-desk/blob/main/LICENSE",
+  "codeRepository": "https://github.com/SalvadorCardona/whisper-desk",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Salvador Cardona"
+  }
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -462,11 +486,17 @@
 
     <div class="shots">
       <div class="shot">
-        <img src="overlay-listening.png" alt="The whisper-desk overlay while listening" width="336" height="120" loading="lazy">
+        <picture>
+          <source srcset="overlay-listening.webp" type="image/webp">
+          <img src="overlay-listening.png" alt="The whisper-desk overlay while listening" width="336" height="120" loading="lazy">
+        </picture>
         <span>While listening</span>
       </div>
       <div class="shot">
-        <img src="overlay-working.png" alt="The whisper-desk overlay while transcribing" width="336" height="120" loading="lazy">
+        <picture>
+          <source srcset="overlay-working.webp" type="image/webp">
+          <img src="overlay-working.png" alt="The whisper-desk overlay while transcribing" width="336" height="120" loading="lazy">
+        </picture>
         <span>While transcribing</span>
       </div>
     </div>
