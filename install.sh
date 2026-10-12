@@ -144,7 +144,25 @@ raise SystemExit(1)" 2>/dev/null; then
 fi
 
 if [ "$HOST" = linux ] && [ ! -w /dev/uinput ]; then
-    warn "/dev/uinput is not writable: insertion at the cursor will stay unavailable"
+    UDEV_RULE=/etc/udev/rules.d/70-whisper-desk-uinput.rules
+    warn "/dev/uinput is not writable: outside GNOME, insertion at the cursor stays unavailable"
+    RULE_INSTALLED=0
+    if have sudo && have udevadm && (exec 3</dev/tty) 2>/dev/null; then
+        printf '    Install the udev rule %s with sudo? [Y/n] ' "$UDEV_RULE"
+        read -r answer </dev/tty || answer="n"
+        case "$answer" in
+            ""|y|Y|yes|Yes|YES)
+                if printf '%s\n' 'KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"' \
+                        | sudo tee "$UDEV_RULE" >/dev/null \
+                    && sudo udevadm control --reload \
+                    && sudo udevadm trigger --name-match=uinput; then
+                    RULE_INSTALLED=1
+                    ok "udev rule installed — /dev/uinput is granted to the session user"
+                fi
+                ;;
+        esac
+    fi
+    [ "$RULE_INSTALLED" = 1 ] || warn "to grant it yourself, see the udev rule in the README (uninstall removes $UDEV_RULE)"
 fi
 
 # --- 2. fetching the sources ------------------------------------------------

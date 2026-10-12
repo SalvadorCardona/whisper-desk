@@ -154,7 +154,11 @@ class UinputKeyboard(Keyboard):
     """Kernel virtual keyboard, created once and kept open as long as the daemon lives."""
 
     name = "uinput"
-    hint = f"{UINPUT_DEVICE} must be writable (input group)"
+    hint = (
+        f"{UINPUT_DEVICE} must be writable — install the udev rule "
+        '70-whisper-desk-uinput.rules: KERNEL=="uinput", SUBSYSTEM=="misc", '
+        'TAG+="uaccess", OPTIONS+="static_node=uinput" (re-run install.sh)'
+    )
 
     def __init__(self, name: str = "whisper-desk virtual keyboard"):
         self.device_name = name

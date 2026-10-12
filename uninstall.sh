@@ -30,6 +30,16 @@ if [ -x "$HOME/.local/bin/whisper-desk" ]; then
     pkill -f "whisper_desk tray" >/dev/null 2>&1 || true
 fi
 
+UDEV_RULE=/etc/udev/rules.d/70-whisper-desk-uinput.rules
+if [ -f "$UDEV_RULE" ]; then
+    say "Removing the udev rule for /dev/uinput (sudo)"
+    if sudo rm -f "$UDEV_RULE"; then
+        sudo udevadm control --reload >/dev/null 2>&1 || true
+    else
+        printf 'could not remove %s — run: sudo rm %s\n' "$UDEV_RULE" "$UDEV_RULE" >&2
+    fi
+fi
+
 say "Removing the menu entries and the tray icon"
 for entry in settings history; do
     rm -f "${XDG_DATA_HOME:-$HOME/.local/share}/applications/whisper-desk-$entry.desktop"

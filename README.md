@@ -416,7 +416,9 @@ get through. `whisper-desk doctor` says which one is at fault:
 
 - **Linux** — under GNOME, the keystroke goes through Mutter's remote desktop API and
   only needs `python3-gi`. Elsewhere, `/dev/uinput` must be writable: nothing grants it by
-  default — a udev rule `KERNEL=="uinput", TAG+="uaccess"` gives it to the session user.
+  default — `install.sh` offers (with sudo) to install `/etc/udev/rules.d/70-whisper-desk-uinput.rules`
+  (`KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"`), which
+  gives it to the session user without a reboot; `uninstall.sh` removes it.
 - **macOS** — allow accessibility for the terminal (or for `whisper-desk`) in
   System Settings → Privacy & Security → Accessibility, then restart the daemon.
 - **WSL** — `powershell.exe` must be reachable from WSL (interoperability enabled), and
