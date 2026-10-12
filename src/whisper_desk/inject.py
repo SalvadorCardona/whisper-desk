@@ -10,7 +10,9 @@ Three ways of sending that shortcut, one per host:
 * Linux — kernel virtual keyboard (/dev/uinput). Under Wayland, a client cannot
   "type" into another client's window: the virtual-keyboard protocol (the one
   wtype uses) is not implemented by GNOME; going through the kernel sidesteps
-  the question, and works just as well under X11.
+  the question, and works just as well under X11. Nothing grants that device
+  to the session user by default, though: when it stays closed, GNOME's own
+  remote desktop API (Mutter, over D-Bus) sends the keystroke instead.
 * WSL — Windows SendKeys, through PowerShell: the windows you dictate into are
   Windows ones, which a Linux virtual keyboard would never reach.
 * macOS — System Events "keystroke" (osascript), which asks the application for
@@ -20,16 +22,20 @@ Three ways of sending that shortcut, one per host:
 from __future__ import annotations
 
 import fcntl
+import functools
 import logging
 import os
+import select
 import shutil
 import struct
 import subprocess
 import threading
 import time
+from pathlib import Path
 from typing import Iterable
 
 from . import host
+from .overlay_proc import system_python
 
 logger = logging.getLogger("whisper-desk.inject")
 
@@ -98,8 +104,15 @@ def parse_shortcut(shortcut: str) -> list[str]:
 
 
 def default_shortcut() -> str:
-    """The host's paste shortcut, when the configuration says "auto"."""
-    return "super+v" if host.is_macos() else "ctrl+v"
+    """The host's paste shortcut, when the configuration says "auto".
+
+    On Linux, Ctrl+V types ^V in a terminal; Shift+Insert pastes everywhere —
+    the clipboard in browsers and editors, the primary selection in VTE
+    terminals — provided both selections hold the text.
+    """
+    if host.is_macos():
+        return "super+v"
+    return "shift+insert" if host.is_linux() else "ctrl+v"
 
 
 def resolve_shortcut(configured: str) -> list[str]:
@@ -224,6 +237,118 @@ class UinputKeyboard(Keyboard):
         return True
 
 
+MUTTER_HELPER = Path(__file__).with_name("mutter_keyboard.py")
+# Opening the session and the settle delay included: past that, the helper is stuck.
+MUTTER_REPLY_SECONDS = 10.0
+
+
+@functools.cache
+def gio_available() -> bool:
+    """Can the system Python reach D-Bus through PyGObject?"""
+    try:
+        return subprocess.run(
+            [system_python(), "-c",
+             "import gi; gi.require_version('Gio','2.0'); from gi.repository import Gio"],
+            capture_output=True,
+            timeout=20,
+        ).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+class MutterKeyboard(Keyboard):
+    """Keystrokes through GNOME's remote desktop API, held by a system-Python helper.
+
+    The helper keeps the remote desktop session open for as long as the
+    keyboard is, as UinputKeyboard keeps its device: opening it while the user
+    speaks spares the first sentence the settle delay.
+    """
+
+    name = "mutter"
+    hint = "a GNOME session, and PyGObject (python3-gi) for the system Python"
+
+    def __init__(self) -> None:
+        self._process: subprocess.Popen[str] | None = None
+        self._lock = threading.RLock()
+
+    @property
+    def available(self) -> bool:
+        desktops = os.environ.get("XDG_CURRENT_DESKTOP", "").upper().split(":")
+        return "GNOME" in desktops and gio_available()
+
+    def _reply(self, process: subprocess.Popen[str]) -> str:
+        assert process.stdout is not None
+        ready, _, _ = select.select([process.stdout], [], [], MUTTER_REPLY_SECONDS)
+        if not ready:
+            return "error no answer from the helper"
+        return process.stdout.readline().strip() or "error the helper quit"
+
+    def open(self) -> bool:
+        with self._lock:
+            if self._process is not None and self._process.poll() is None:
+                return True
+            if not self.available:
+                logger.warning("GNOME remote desktop unreachable: %s.", self.hint)
+                return False
+            try:
+                process = subprocess.Popen(
+                    [system_python(), str(MUTTER_HELPER)],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    text=True,
+                )
+            except OSError as error:
+                logger.warning("GNOME remote desktop helper unavailable: %s", error)
+                return False
+            reply = self._reply(process)
+            if reply != "ready":
+                logger.warning("GNOME remote desktop refused: %s", reply.removeprefix("error "))
+                self._terminate(process)
+                return False
+            self._process = process
+            return True
+
+    def close(self) -> None:
+        with self._lock:
+            process, self._process = self._process, None
+            if process is not None:
+                self._terminate(process)
+
+    @staticmethod
+    def _terminate(process: subprocess.Popen[str]) -> None:
+        try:
+            if process.stdin is not None:
+                process.stdin.close()   # end of stdin: the helper stops its session
+            process.wait(timeout=3)
+        except (OSError, subprocess.SubprocessError):
+            process.kill()
+        if process.stdout is not None:
+            process.stdout.close()
+
+    def press(self, keys: Iterable[str], hold: float = 0.02) -> bool:
+        codes = [KEY_CODES[key] for key in keys if key in KEY_CODES]
+        if not codes:
+            return False
+        with self._lock:
+            if not self.open():
+                return False
+            process = self._process
+            assert process is not None and process.stdin is not None
+            try:
+                process.stdin.write(" ".join(str(code) for code in codes) + "\n")
+                process.stdin.flush()
+            except OSError as error:
+                logger.warning("Cannot send keys to GNOME: %s", error)
+                self.close()
+                return False
+            reply = self._reply(process)
+            if reply != "ok":
+                logger.warning("Cannot send keys to GNOME: %s", reply.removeprefix("error "))
+                self.close()
+                return False
+        return True
+
+
 # SendKeys: "^" Ctrl, "%" Alt, "+" Shift. No Windows key — it is reserved by the
 # system, which is also why the global shortcut under WSL is taken on Ctrl+Alt.
 SENDKEYS_MODIFIERS = {"ctrl": "^", "alt": "%", "shift": "+"}
@@ -336,13 +461,14 @@ class NullKeyboard(Keyboard):
 
 BACKENDS: dict[str, type[Keyboard]] = {
     "uinput": UinputKeyboard,
+    "mutter": MutterKeyboard,
     "windows": SendKeysKeyboard,
     "applescript": AppleScriptKeyboard,
     "none": NullKeyboard,
 }
 
 PREFERENCES: dict[str, tuple[str, ...]] = {
-    host.LINUX: ("uinput",),
+    host.LINUX: ("uinput", "mutter"),
     # The target windows are Windows ones; uinput only serves WSLg.
     host.WSL: ("windows", "uinput"),
     host.MACOS: ("applescript",),

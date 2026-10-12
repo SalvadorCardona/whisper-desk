@@ -104,6 +104,11 @@ class Session:
                 self.writer = output.CursorWriter(self.service.config, self.overlay)
                 # While the user speaks, the virtual keyboard is being prepared.
                 threading.Thread(target=self.writer.prepare, daemon=True).start()
+            logger.info(
+                "Dictation started (output %s, %s keyboard).",
+                self.service.config["output"]["mode"],
+                self.writer.keyboard.name if self.writer else "no",
+            )
             if not ready and not self._wait_for_model():
                 return
             worker = threading.Thread(target=self._transcribe_loop, daemon=True)
@@ -113,6 +118,9 @@ class Session:
             tail = self.recorder.record()
             self.listened = time.monotonic() - started
             self.recording_over.set()
+            logger.info(
+                "Recording over after %.1f s (%s).", self.listened, self.recorder.reason
+            )
             if tail:
                 self.queue.put(tail)
             self.queue.put(None)
@@ -121,6 +129,9 @@ class Session:
             self.overlay.set_state("working")
             worker.join()
             self.text = " ".join(self.parts)
+            logger.info(
+                "Dictation over: %d sentence(s), %d characters.", len(self.parts), len(self.text)
+            )
             self._conclude()
         except CaptureUnavailable as error:
             # A tool to install, not a bug: no need to spread out a traceback.
@@ -211,9 +222,17 @@ class Session:
             paste = "+".join(key.capitalize() for key in inject.resolve_shortcut(
                 str(self.service.config["output"]["paste_shortcut"])
             ))
-            self._fail("The text could not be typed", f"It is in the clipboard: paste it with {paste}")
+            self._fail(
+                "The text could not be typed",
+                f"It is in the clipboard: paste it with {paste}",
+                notify=True,
+            )
         elif self.delivery_failure:
-            self._fail("The text could not be inserted", "No clipboard answered — see whisper-desk doctor")
+            self._fail(
+                "The text could not be inserted",
+                "No clipboard answered — see whisper-desk doctor",
+                notify=True,
+            )
         else:
             self.overlay.set_state("done", self.text, self._done_detail())
 
@@ -227,11 +246,15 @@ class Session:
             return "Copied to the clipboard"
         return "Transcribed"
 
-    def _fail(self, title: str, detail: str) -> None:
-        """An error the user reads on the window — or in a notification, without one."""
+    def _fail(self, title: str, detail: str, notify: bool = False) -> None:
+        """An error the user reads on the window — or in a notification, without one.
+
+        notify: a notification as well, for what outlives the window — a text
+        left in the clipboard is still waiting once the window has faded.
+        """
         if self.overlay.alive:
             self.overlay.set_state("error", title, detail)
-        else:
+        if notify or not self.overlay.alive:
             output.notify(f"whisper-desk: {title[0].lower()}{title[1:]}", detail)
 
     def _cancelled_display(self) -> None:
@@ -268,6 +291,7 @@ class Session:
                 return
             if not self.recording_over.is_set():
                 self.overlay.set_state("working")
+            started = time.monotonic()
             try:
                 text = self.service.transcriber.transcribe(segment, " ".join(self.parts))
             except Exception as error:
@@ -281,6 +305,11 @@ class Session:
                 # The shortcut was pressed while this sentence was being
                 # transcribed: it goes no further than here.
                 return
+            logger.info(
+                "Sentence transcribed in %.2f s: %d characters.",
+                time.monotonic() - started, len(text),
+            )
+            logger.debug("Transcribed: %r", text)
             if not text:
                 continue
             # Later sentences are separated from the previous insertion by a space.
@@ -372,6 +401,7 @@ class Service:
         """
         with self.lock:
             session = self.session
+            logger.info("Shortcut pressed (state: %s).", self.state)
             if session is None and self.paused:
                 threading.Thread(target=self._show_paused, daemon=True).start()
                 return {"state": "paused"}

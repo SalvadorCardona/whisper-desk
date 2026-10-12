@@ -119,7 +119,7 @@ Once installed, updates go through the command itself: [`whisper-desk update`](#
 |---|---|---|---|
 | **microphone capture** | `arecord` (ALSA) | `parec` (PulseAudio/WSLg) | `rec` (sox) or `ffmpeg` |
 | **clipboard** | `wl-copy` / `xclip` | `clip.exe` | `pbcopy` |
-| **paste keystroke** | `/dev/uinput` | SendKeys (PowerShell) | System Events (`osascript`) |
+| **paste keystroke** | `/dev/uinput`, else GNOME remote desktop (Mutter) | SendKeys (PowerShell) | System Events (`osascript`) |
 | **global shortcut** | GNOME (`gsettings`) | Start menu shortcut | `skhd`, or by hand |
 | **service** | systemd | systemd, otherwise on demand | launchd |
 | **notifications** | `notify-send` | `notify-send` (WSLg) | `osascript` |
@@ -325,8 +325,8 @@ max_seconds = 120
 
 [output]
 mode = "cursor"               # cursor | clipboard | stdout — combinable: "cursor+stdout"
-paste_shortcut = "auto"       # "shift+insert" if you mostly dictate in a terminal
-keyboard = "auto"             # auto | uinput | windows | applescript | none
+paste_shortcut = "auto"       # shift+insert on Linux, ctrl+v on WSL, cmd+v on macOS
+keyboard = "auto"             # auto | uinput | mutter | windows | applescript | none
 restore_clipboard = true      # hands your original clipboard back at the end
 notify = false
 history = true                # keeps every dictation: whisper-desk history
@@ -369,7 +369,7 @@ Super + J  ─→  whisper-desk toggle  ─→  Unix socket  ─→  daemon (mod
                                                               │
  mic capture ─→ silence detection ─→ sentence ─→ faster-whisper ─→ text
                                                               │
-                          clipboard + Ctrl+V (simulated keystroke) ─→ cursor
+                  clipboard + paste shortcut (simulated keystroke) ─→ cursor
 ```
 
 The daemon keeps the model loaded at all times, and transcribes one sentence while the
@@ -380,8 +380,9 @@ Three Wayland constraints shaped this architecture:
 
 - **A client cannot type into another client's window.** The `virtual-keyboard`
   protocol (the one `wtype` uses) is not implemented by GNOME. So we go through a
-  kernel virtual keyboard (`/dev/uinput`, reachable without privileges thanks to the ACL
-  set by systemd) that sends a plain paste shortcut.
+  kernel virtual keyboard (`/dev/uinput`) that sends a plain paste shortcut — or, when
+  that device is not writable (the default on Ubuntu), through GNOME's own remote
+  desktop API (`org.gnome.Mutter.RemoteDesktop`, over D-Bus), which needs no privilege.
 - **Sending the text key by key would mean knowing the active XKB layout.**
   On an AZERTY keyboard, accents and half the letters would land on the wrong key; the
   paste shortcut, on the other hand, sits on the same physical key everywhere. The text
@@ -413,15 +414,17 @@ tail -f ~/.local/state/whisper-desk/daemon.log   # the logs (launchd, or a direc
 **The text is not inserted but stays in the clipboard** — the simulated keystroke did not
 get through. `whisper-desk doctor` says which one is at fault:
 
-- **Linux** — `/dev/uinput` must be writable. In a local session, systemd grants you
-  access automatically; over SSH or in a remote session, it does not.
+- **Linux** — under GNOME, the keystroke goes through Mutter's remote desktop API and
+  only needs `python3-gi`. Elsewhere, `/dev/uinput` must be writable: nothing grants it by
+  default — a udev rule `KERNEL=="uinput", TAG+="uaccess"` gives it to the session user.
 - **macOS** — allow accessibility for the terminal (or for `whisper-desk`) in
   System Settings → Privacy & Security → Accessibility, then restart the daemon.
 - **WSL** — `powershell.exe` must be reachable from WSL (interoperability enabled), and
   the target window must be a Windows window in the foreground.
 
 **I dictate in a terminal and get `^V`** — `Ctrl+V` is not paste there. Set
-`paste_shortcut = "shift+insert"` in `[output]`, then run `whisper-desk reload`.
+`paste_shortcut = "auto"` (Shift+Insert on Linux, which pastes in a terminal too) in
+`[output]`, then run `whisper-desk reload`.
 
 **Sentences are cut too early / too late** — adjust `segment_silence_seconds`
 (splitting) and `silence_seconds` (end of dictation) in `[recording]`.
@@ -525,7 +528,8 @@ to test all three from any of them.
 | `src/whisper_desk/capture.py` | choice of capture tool (`arecord`, `parec`, `rec`, `ffmpeg`) |
 | `src/whisper_desk/recorder.py` | silence detection, splitting into sentences |
 | `src/whisper_desk/transcriber.py` | faster-whisper, GPU/CPU selection |
-| `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, SendKeys, System Events |
+| `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, Mutter, SendKeys, System Events |
+| `src/whisper_desk/mutter_keyboard.py` | GNOME remote desktop session (system Python) |
 | `src/whisper_desk/output.py` | insertion at the cursor, clipboard, notifications |
 | `src/whisper_desk/overlay.py` | X11 overlay (separate process) |
 | `src/whisper_desk/overlay_protocol.py` | the line protocol between the daemon and the overlay |

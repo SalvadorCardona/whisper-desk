@@ -57,7 +57,9 @@ def _capture(command: list[str]) -> str | None:
 
 
 def _set_wayland(text: str) -> bool:
-    return bool(shutil.which("wl-copy")) and _run(["wl-copy", "--", text])
+    # Through stdin rather than argv: a saved clipboard may hold a NUL byte,
+    # which no command line can carry.
+    return bool(shutil.which("wl-copy")) and _run(["wl-copy"], text.encode())
 
 
 def _set_xclip(text: str) -> bool:
@@ -94,7 +96,10 @@ def _set_windows(text: str) -> bool:
 
 
 def _get_wayland() -> str | None:
-    return _capture(["wl-paste", "--no-newline"]) if shutil.which("wl-paste") else None
+    # Text only: an image would come back as mangled bytes, then be "restored" as such.
+    if not shutil.which("wl-paste"):
+        return None
+    return _capture(["wl-paste", "--no-newline", "--type", "text"])
 
 
 def _get_xclip() -> str | None:
@@ -115,6 +120,17 @@ def _get_windows() -> str | None:
         return None
     # Get-Clipboard adds a line ending, and Windows separates lines with CRLF.
     return text.replace("\r\n", "\n").rstrip("\n")
+
+
+def set_primary(text: str) -> bool:
+    """The primary selection, the one a terminal pastes with Shift+Insert."""
+    if shutil.which("wl-copy"):
+        return _run(["wl-copy", "--primary"], text.encode())
+    if shutil.which("xclip"):
+        return _run(["xclip", "-selection", "primary"], text.encode())
+    if shutil.which("xsel"):
+        return _run(["xsel", "--primary", "--input"], text.encode())
+    return False
 
 
 SETTERS: dict[str, tuple[Callable[[str], bool], ...]] = {
@@ -207,6 +223,8 @@ class CursorWriter:
         self.shortcut = resolve_shortcut(str(self.settings["paste_shortcut"]))
         # Why the last insertion failed: "clipboard", "keyboard", or "" if it did not.
         self.failure = ""
+        # The text the keystroke could not paste, left in the clipboard for the user.
+        self.stranded = ""
 
     def prepare(self) -> None:
         """Creates the virtual keyboard ahead of time: the compositor takes ~0.6 s to see it."""
@@ -217,26 +235,42 @@ class CursorWriter:
     def write(self, text: str) -> bool:
         if self.settings["restore_clipboard"]:
             self.clipboard.save()
+        # A sentence that could not be pasted waits in the clipboard: the next
+        # one joins it there instead of pushing it out.
+        text = self.stranded + text
         if not self.clipboard.set(text):
             logger.warning("Text not copied: insertion impossible.")
             self.failure = "clipboard"
             return False
+        if host.is_linux() and "insert" in self.shortcut:
+            set_primary(text)
         # wl-copy takes ownership of the selection in a detached process:
         # pasting too early would paste the previous content.
         time.sleep(CLIPBOARD_SETTLE_SECONDS)
         if not self.keyboard.press(self.shortcut):
             logger.warning(
-                "Virtual keyboard unavailable: the text stays in the clipboard."
+                "Paste keystroke failed (%s keyboard): the text stays in the clipboard.",
+                self.keyboard.name,
             )
+            self.stranded = text
             self.failure = "keyboard"
             return False
         time.sleep(PASTE_SETTLE_SECONDS)
+        logger.info(
+            "Inserted %d characters at the cursor (%s keyboard, %s).",
+            len(text), self.keyboard.name, "+".join(self.shortcut),
+        )
+        self.stranded = ""
         self.failure = ""
         return True
 
     def close(self) -> None:
         if self.settings["restore_clipboard"]:
-            self.clipboard.restore()
+            if self.stranded:
+                # Handing the old clipboard back would throw the dictation away.
+                logger.info("Clipboard not restored: it holds the text that was not pasted.")
+            else:
+                self.clipboard.restore()
         self.keyboard.close()
 
 
