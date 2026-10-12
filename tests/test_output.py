@@ -79,9 +79,73 @@ class DeliverTest(unittest.TestCase):
         writer.keyboard = mock.Mock(press=lambda shortcut: False)
         writer.shortcut = ["ctrl", "v"]
         writer.failure = ""
-        with mock.patch.object(output.time, "sleep"):
+        writer.stranded = ""
+        with mock.patch.object(output.time, "sleep"), self.assertLogs(output.logger, "WARNING"):
             self.assertFalse(writer.write("text"))
         self.assertEqual(writer.failure, "keyboard")
+
+
+class CursorWriterTest(unittest.TestCase):
+    """A text the keystroke could not paste is never lost: it waits in the clipboard."""
+
+    def writer(self, pastes: bool, shortcut: str = "ctrl+v") -> output.CursorWriter:
+        config = {"output": {"keyboard": "none", "paste_shortcut": shortcut,
+                             "restore_clipboard": True}}
+        writer = output.CursorWriter(config)
+        writer.clipboard = mock.Mock(set=mock.Mock(return_value=True))
+        writer.keyboard = mock.Mock(press=mock.Mock(return_value=pastes))
+        writer.keyboard.name = "test"
+        self.enterContext(mock.patch.object(output.time, "sleep"))
+        self.enterContext(mock.patch.object(output, "set_primary"))
+        return writer
+
+    def test_a_pasted_text_hands_the_clipboard_back(self):
+        writer = self.writer(pastes=True)
+        with self.assertLogs(output.logger, "INFO"):
+            self.assertTrue(writer.write("hello"))
+        writer.close()
+        writer.clipboard.restore.assert_called_once()
+
+    def test_a_text_not_pasted_stays_in_the_clipboard(self):
+        writer = self.writer(pastes=False)
+        with self.assertLogs(output.logger, "WARNING"):
+            self.assertFalse(writer.write("hello"))
+        writer.clipboard.set.assert_called_with("hello")
+        writer.close()
+        writer.clipboard.restore.assert_not_called()
+
+    def test_the_next_sentence_joins_the_one_left_behind(self):
+        writer = self.writer(pastes=False)
+        with self.assertLogs(output.logger, "WARNING"):
+            writer.write("Hello.")
+            writer.write(" World.")
+        writer.clipboard.set.assert_called_with("Hello. World.")
+
+    def test_a_paste_that_works_again_inserts_what_was_left_behind(self):
+        writer = self.writer(pastes=False)
+        with self.assertLogs(output.logger, "WARNING"):
+            writer.write("Hello.")
+        writer.keyboard.press.return_value = True
+        with self.assertLogs(output.logger, "INFO"):
+            self.assertTrue(writer.write(" World."))
+        writer.clipboard.set.assert_called_with("Hello. World.")
+        writer.close()
+        writer.clipboard.restore.assert_called_once()
+
+    def test_shift_insert_fills_the_primary_selection_too(self):
+        """A VTE terminal pastes the primary selection on Shift+Insert."""
+        with forced_host(host.LINUX):
+            writer = self.writer(pastes=True, shortcut="shift+insert")
+            with self.assertLogs(output.logger, "INFO"):
+                writer.write("hello")
+        output.set_primary.assert_called_once_with("hello")
+
+    def test_ctrl_v_leaves_the_primary_selection_alone(self):
+        with forced_host(host.LINUX):
+            writer = self.writer(pastes=True)
+            with self.assertLogs(output.logger, "INFO"):
+                writer.write("hello")
+        output.set_primary.assert_not_called()
 
 
 class ClipboardTest(unittest.TestCase):
@@ -103,6 +167,11 @@ class ClipboardTest(unittest.TestCase):
         _, calls = self.copy_with(host.LINUX, ("wl-copy", "xclip"))
         self.assertEqual(len(calls), 1)
         self.assertIn("wl-copy", calls[0][0][0])
+
+    def test_wl_copy_reads_the_text_on_stdin(self):
+        """A saved clipboard may hold a NUL byte, which no command line can carry."""
+        _, calls = self.copy_with(host.LINUX, ("wl-copy",), text="a\x00b")
+        self.assertEqual(calls[0], (["wl-copy"], b"a\x00b"))
 
     def test_x11_when_wayland_is_missing(self):
         _, calls = self.copy_with(host.LINUX, ("xclip",))

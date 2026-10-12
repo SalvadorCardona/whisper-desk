@@ -79,11 +79,11 @@ DEFAULTS: dict[str, Any] = {
         # cursor | clipboard | stdout | none  (combinable: "cursor+stdout")
         "mode": "cursor",
         # Paste shortcut sent to the virtual keyboard to insert the text.
-        # "auto" -> cmd+v on macOS, ctrl+v elsewhere; "shift+insert" if you
-        # mostly dictate in a terminal.
+        # "auto" -> cmd+v on macOS, shift+insert on Linux (it also pastes in a
+        # terminal), ctrl+v on WSL.
         "paste_shortcut": "auto",
         # How the paste shortcut keystroke is sent.
-        # auto | uinput (Linux) | windows (WSL) | applescript (macOS) | none
+        # auto | uinput, mutter (Linux) | windows (WSL) | applescript (macOS) | none
         "keyboard": "auto",
         # Hands your original clipboard back at the end of the dictation.
         "restore_clipboard": True,

@@ -50,11 +50,12 @@ threshold = "auto"              # "auto" or an integer (RMS 0-32767)
 # Combinable with "+", e.g. "cursor+stdout".
 mode = "cursor"
 # Shortcut sent to the virtual keyboard to insert the text.
-# "auto": cmd+v on macOS, ctrl+v elsewhere.
-# "shift+insert" if you mostly dictate in a terminal (Ctrl+V means something else there).
+# "auto": cmd+v on macOS, shift+insert on Linux (it also pastes in a terminal,
+# where Ctrl+V means something else), ctrl+v on WSL.
 paste_shortcut = "auto"
 # How that keystroke is sent. "auto" follows the host:
-# uinput (Linux), windows/SendKeys (WSL), applescript (macOS). "none" disables it.
+# uinput then mutter — GNOME's remote desktop API — (Linux), windows/SendKeys (WSL),
+# applescript (macOS). "none" disables it.
 keyboard = "auto"
 # Hands your original clipboard back at the end of the dictation.
 restore_clipboard = true

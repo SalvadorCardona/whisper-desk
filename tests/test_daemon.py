@@ -404,6 +404,15 @@ class FeedbackTest(DictationCase):
             overlay = self.finished(service)
         self.assertEqual(overlay.final[:2], ("error", "The text could not be inserted"))
 
+    def test_a_failed_insertion_is_notified_beyond_the_window(self):
+        """The window fades; the text waiting in the clipboard does not."""
+        self.delivery_works = False
+        with self.service() as service, \
+                mock.patch.object(daemon.output, "notify") as notify:
+            self.finished(service)
+        notify.assert_called_once()
+        self.assertIn("could not be inserted", notify.call_args.args[0])
+
     def test_without_a_window_the_error_becomes_a_notification(self):
         self.recorder.segments[:] = []
         with self.service() as service, \
