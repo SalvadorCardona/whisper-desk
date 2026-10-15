@@ -34,6 +34,7 @@ def settings(**overrides):
         "initial_prompt": "",
         "vocabulary": "",
         "context": True,
+        "corrections": True,
         "preload": False,
     }
     model.update(overrides)
@@ -117,6 +118,18 @@ class TranscribeTest(unittest.TestCase):
             Segment("Merci.", no_speech_prob=0.95),
         ])
         self.assertEqual(text, "we should add")
+
+    @requires_numpy
+    def test_a_correction_said_aloud_is_carried_out(self):
+        text, _ = self.transcribe([Segment("On se voit mardi, non, plutôt mercredi.")])
+        self.assertEqual(text, "On se voit mercredi.")
+
+    @requires_numpy
+    def test_the_corrections_can_be_turned_off(self):
+        text, _ = self.transcribe(
+            [Segment("On se voit mardi, non, plutôt mercredi.")], corrections=False
+        )
+        self.assertEqual(text, "On se voit mardi, non, plutôt mercredi.")
 
     @requires_numpy
     def test_the_vocabulary_goes_out_as_hotwords(self):

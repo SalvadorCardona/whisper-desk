@@ -26,6 +26,9 @@ vocabulary = ""
 # Feeds the end of what was just dictated back to the model: a sentence isolated
 # by the as-you-go splitting gets its context back.
 context = true
+# Carries out the corrections you say aloud: "on Tuesday, no wait, on Wednesday"
+# is written "on Wednesday" ("mardi, non, plutôt mercredi" -> "mercredi").
+corrections = true
 # Loads the model when the service starts: the first dictation is instant.
 preload = true
 

@@ -10,6 +10,8 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from . import backtrack
+
 logger = logging.getLogger("whisper-desk.transcriber")
 
 GPU_MODEL = "large-v3-turbo"
@@ -264,4 +266,7 @@ class Transcriber:
                              text, segment.no_speech_prob)
                 continue
             kept.append(text)
-        return " ".join(kept).strip()
+        text = " ".join(kept).strip()
+        if self.config.get("corrections", True):
+            text = backtrack.apply(text)
+        return text

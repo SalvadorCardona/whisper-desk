@@ -56,6 +56,9 @@ DEFAULTS: dict[str, Any] = {
         # Feeds the end of what was just dictated back to the model: a sentence
         # isolated by the as-you-go splitting gets its context back.
         "context": True,
+        # Carries out the corrections said aloud: "mardi, non, plutôt
+        # mercredi" is written "mercredi".
+        "corrections": True,
         # Loaded when the daemon starts: the first dictation is instant.
         "preload": True,
     },

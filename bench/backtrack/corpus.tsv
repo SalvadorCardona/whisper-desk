@@ -1,0 +1,47 @@
+id	lang	spoken	expected
+fr01	fr	On se voit mardi, non, plutôt mercredi.	On se voit mercredi.
+fr02	fr	Le rendez-vous est à 14 heures, non, plutôt 15 heures.	Le rendez-vous est à 15 heures.
+fr03	fr	Envoie le dossier à Paul, non, je veux dire à Marie.	Envoie le dossier à Marie.
+fr04	fr	Achète du lait, non, plutôt du pain.	Achète du pain.
+fr05	fr	Il faut livrer la version deux, ou plutôt la version trois.	Il faut livrer la version trois.
+fr06	fr	Le budget est de 500 euros, non pardon, 600 euros.	Le budget est de 600 euros.
+fr07	fr	Je pars lundi, enfin non, mardi matin.	Je pars mardi matin.
+fr08	fr	Réserve une table pour quatre, non, plutôt pour six personnes.	Réserve une table pour six personnes.
+fr09	fr	Appelle le client demain matin, non, plutôt demain soir.	Appelle le client demain soir.
+fr10	fr	La réunion est en salle B, pardon, en salle C.	La réunion est en salle C.
+fr11	fr	Mets le titre en rouge, non, plutôt en bleu.	Mets le titre en bleu.
+fr12	fr	On commence le 3 mars, non, le 5 mars.	On commence le 5 mars.
+fr13	fr	Le fichier est dans le dossier documents, non attends, dans le dossier téléchargements.	Le fichier est dans le dossier téléchargements.
+fr14	fr	Dis à Julie que c'est validé, non, plutôt que c'est en attente.	Dis à Julie que c'est en attente.
+fr15	fr	Prends le train de 8 heures, ou plutôt celui de 9 heures.	Prends celui de 9 heures.
+fr16	fr	Il y a trois bugs, non, quatre bugs à corriger.	Il y a quatre bugs à corriger.
+fr17	fr	On déploie en production ce soir, non, plutôt demain.	On déploie en production demain.
+fr18	fr	Merci de répondre avant vendredi, pardon, avant jeudi.	Merci de répondre avant jeudi.
+fr19	fr	Ajoute une ligne au tableau, non, je veux dire une colonne.	Ajoute une colonne au tableau.
+fr20	fr	Le chat est noir, non, plutôt gris.	Le chat est gris.
+en01	en	Let's meet at 2, actually 3.	Let's meet at 3.
+en02	en	Send it to John, no wait, to Sarah.	Send it to Sarah.
+en03	en	The deadline is Monday, I mean Tuesday.	The deadline is Tuesday.
+en04	en	Book a table for four, or rather for six.	Book a table for six.
+en05	en	We need the blue version, no, actually the green version.	We need the green version.
+en06	en	Call me tomorrow morning, sorry, tomorrow evening.	Call me tomorrow evening.
+en07	en	The meeting is in room 12, no, room 14.	The meeting is in room 14.
+en08	en	Buy some milk, or rather some bread.	Buy some bread.
+en09	en	Ship it on Friday, actually on Thursday.	Ship it on Thursday.
+en10	en	It costs 20 dollars, no wait, 30 dollars.	It costs 30 dollars.
+ctl01	fr	Je préfère plutôt le thé que le café.	Je préfère plutôt le thé que le café.
+ctl02	fr	Non, je ne viendrai pas demain.	Non, je ne viendrai pas demain.
+ctl03	fr	Je veux dire à Paul qu'il a fait du bon travail.	Je veux dire à Paul qu'il a fait du bon travail.
+ctl04	fr	Pardon, je n'avais pas vu ton message.	Pardon, je n'avais pas vu ton message.
+ctl05	fr	C'est plutôt une bonne nouvelle pour l'équipe.	C'est plutôt une bonne nouvelle pour l'équipe.
+ctl06	fr	Il a dit non, et il est parti.	Il a dit non, et il est parti.
+ctl07	fr	La réunion de lundi est déplacée à mardi.	La réunion de lundi est déplacée à mardi.
+ctl08	fr	Ce n'est pas rouge, c'est bleu.	Ce n'est pas rouge, c'est bleu.
+ctl09	en	I actually think this is a good idea.	I actually think this is a good idea.
+ctl10	en	No, I don't want to go there.	No, I don't want to go there.
+ctl11	en	I mean what I say.	I mean what I say.
+ctl12	en	Sorry for the late reply.	Sorry for the late reply.
+ctl13	en	It is actually faster than the old version.	It is actually faster than the old version.
+ctl14	en	The meeting moved from Monday to Tuesday.	The meeting moved from Monday to Tuesday.
+ctl15	fr	J'ai fini, enfin presque.	J'ai fini, enfin presque.
+ctl16	fr	Oui, non, je ne sais pas encore.	Oui, non, je ne sais pas encore.

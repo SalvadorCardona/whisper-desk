@@ -221,6 +221,27 @@ search box. Your clipboard is handed back untouched at the end of the dictation.
 server: under a Wayland session it only reaches whisper-desk while an X11 (Xwayland)
 window has the focus. The shortcut and the click work everywhere.
 
+### Correcting yourself as you speak
+
+Change your mind in the middle of a sentence and say so: only the corrected version is
+written.
+
+| You say | whisper-desk writes |
+|---|---|
+| *On se voit mardi, non, plutôt mercredi.* | On se voit mercredi. |
+| *Envoie le dossier à Paul, non, je veux dire à Marie.* | Envoie le dossier à Marie. |
+| *Let's meet at 2, actually 3.* | Let's meet at 3. |
+| *Send it to John, no wait, to Sarah.* | Send it to Sarah. |
+
+The markers understood: *non plutôt*, *ou plutôt*, *non pardon*, *non attends*, *enfin non*,
+*je veux dire*, *pardon* — and *no wait*, *actually*, *I mean*, *sorry*, *or rather*,
+*make that*, *scratch that*. They only count after a short pause (a comma in the
+transcription): *c'est plutôt bien* or *I actually think* stay as they are. The correction
+works within what is transcribed in one go: if your pause before *non, plutôt* is long
+enough to split the sentence (`segment_silence_seconds`), the first part is already typed.
+Rules run on your machine, no language model involved; `corrections = false` in `[model]`
+turns them off. `bench/backtrack/` measures them on recordings (see Development).
+
 ### From the command line
 
 ```sh
@@ -315,6 +336,7 @@ name = "auto"                 # auto | tiny | base | small | medium | large-v3 |
 device = "auto"               # auto | cuda | cpu
 language = "fr"               # ISO code, or "auto" for detection
 initial_prompt = ""           # vocabulary to favour (proper nouns, jargon)
+corrections = true            # "mardi, non, plutôt mercredi" is written "mercredi"
 
 [recording]
 backend = "auto"              # auto | arecord | parec | rec | sox | ffmpeg
@@ -530,6 +552,7 @@ to test all three from any of them.
 | `src/whisper_desk/capture.py` | choice of capture tool (`arecord`, `parec`, `rec`, `ffmpeg`) |
 | `src/whisper_desk/recorder.py` | silence detection, splitting into sentences |
 | `src/whisper_desk/transcriber.py` | faster-whisper, GPU/CPU selection |
+| `src/whisper_desk/backtrack.py` | corrections said aloud ("non, plutôt…") carried out |
 | `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, Mutter, SendKeys, System Events |
 | `src/whisper_desk/mutter_keyboard.py` | GNOME remote desktop session (system Python) |
 | `src/whisper_desk/output.py` | insertion at the cursor, clipboard, notifications |
@@ -548,6 +571,28 @@ to test all three from any of them.
 | `src/whisper_desk/update.py` | version fingerprint, comparison with upstream, update |
 | `tests/` | `unittest` suite, no external dependency |
 | `install.sh` | installation and updates |
+
+### Measuring the transcription
+
+`bench/` holds reproducible before/after measures of what changes the text. The first,
+`bench/backtrack/`, is a corpus of 46 sentences (30 corrections said aloud, French and
+English, 16 control sentences where *plutôt*, *non* or *actually* are no correction),
+with their expected text and synthetic recordings made by `bench/backtrack/synthesize.py`
+with two [Piper](https://github.com/rhasspy/piper) voices: `fr_FR-siwis-medium`, trained on
+the [SIWIS corpus](https://datashare.is.ed.ac.uk/handle/10283/2353) (CC BY 4.0), and
+`en_US-ljspeech-medium`, trained on [LJ Speech](https://keithito.com/LJ-Speech-Dataset/)
+(public domain):
+
+```sh
+python3 bench/backtrack/measure.py -v                 # on the written sentences
+~/.local/share/whisper-desk/venv/bin/python bench/backtrack/measure.py --audio -v
+```
+
+It prints the word error rate against the expected text, before and after the
+corrections, and how many sentences come out exact. `--audio` runs the recordings through
+faster-whisper with the models already downloaded (`--models small:cpu,large-v3-turbo:cuda`;
+for CUDA, put the venv's `nvidia/*/lib` directories in `LD_LIBRARY_PATH`, as the
+`whisper-desk` launcher does).
 
 ## License
 
