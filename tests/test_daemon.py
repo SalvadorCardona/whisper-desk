@@ -380,7 +380,8 @@ class FeedbackTest(DictationCase):
         self.assertEqual(overlay.texts, ["first", "second"])
 
     def test_the_window_says_how_to_stop(self):
-        with self.service() as service:
+        # The shortcut is named after the host's keyboard: Cmd on macOS.
+        with context.forced_host("linux"), self.service() as service:
             self.listening(service)
             self.assertEqual(service.session.overlay.hint, "Super+J to finish")
 
