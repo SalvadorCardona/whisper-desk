@@ -39,6 +39,7 @@ CONFIG = {
     "overlay": {"enabled": False},
     "hotkey": {"binding": "<Super>j"},
     "model": {},
+    "snippets": {},
 }
 
 
@@ -146,9 +147,11 @@ class FakeTranscriber:
         self.release = threading.Event()    # ... and may leave it
         self.release.set()
         self.seen: list[bytes] = []
+        self.contexts: list[str] = []
 
     def transcribe(self, pcm: bytes, context: str = "") -> str:
         self.seen.append(pcm)
+        self.contexts.append(context)
         self.entered.set()
         self.release.wait(TIMEOUT)
         return pcm.decode()
@@ -436,6 +439,39 @@ class FeedbackTest(DictationCase):
             self.assertTrue(wait_until(lambda: service.session is None))
         self.assertEqual(overlay.final[0], "cancelled")
         self.assertEqual(self.delivered, [])
+
+
+class SnippetsTest(DictationCase):
+    """A cue said aloud reaches the cursor as the text saved for it."""
+
+    def setUp(self):
+        super().setUp()
+        patcher = mock.patch.dict(CONFIG, {"snippets": {"my address": "12 Elm Street"}})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def dictate(self) -> None:
+        with self.service() as service:
+            self.listening(service)
+            service.toggle()
+            self.assertTrue(wait_until(lambda: service.session is None))
+
+    def test_the_cue_is_inserted_as_its_snippet(self):
+        self.recorder.segments[:] = [b"Send it to my address.", b"Thanks."]
+        self.dictate()
+        self.assertEqual(self.delivered, ["Send it to 12 Elm Street.", " Thanks."])
+
+    def test_the_model_keeps_the_words_that_were_said(self):
+        # The address was never heard: the next sentence's context is the cue.
+        self.recorder.segments[:] = [b"My address.", b"Thanks."]
+        self.dictate()
+        self.assertEqual(self.transcriber.contexts, ["", "My address."])
+
+    def test_no_snippet_leaves_the_text_alone(self):
+        with mock.patch.dict(CONFIG, {"snippets": {}}):
+            self.recorder.segments[:] = [b"Send it to my address."]
+            self.dictate()
+        self.assertEqual(self.delivered, ["Send it to my address."])
 
 
 class HistoryTest(DictationCase):
