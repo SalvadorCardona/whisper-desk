@@ -20,7 +20,7 @@ from typing import Any
 
 from . import config as config_module
 from . import history, host, hotkey, inject
-from . import output
+from . import output, snippets
 from .capture import CaptureUnavailable
 from .overlay_proc import OverlayProcess
 from .recorder import SILENT_INPUT_PEAK, Recorder
@@ -72,6 +72,9 @@ class Session:
         # Why the text did not reach the cursor: CursorWriter.failure.
         self.delivery_failure = ""
         self.parts: list[str] = []
+        # What was said, before the snippets: the model's context is the voice,
+        # not a signature it never heard.
+        self.heard: list[str] = []
         self.listened = 0.0             # seconds the microphone stayed open
         self.queue: queue.Queue[bytes | None] = queue.Queue()
         self.overlay = OverlayProcess(service.config, on_event=self._on_overlay_event)
@@ -293,7 +296,7 @@ class Session:
                 self.overlay.set_state("working")
             started = time.monotonic()
             try:
-                text = self.service.transcriber.transcribe(segment, " ".join(self.parts))
+                text = self.service.transcriber.transcribe(segment, " ".join(self.heard))
             except Exception as error:
                 self.error = str(error)
                 logger.exception("Transcription failed")
@@ -312,6 +315,8 @@ class Session:
             logger.debug("Transcribed: %r", text)
             if not text:
                 continue
+            self.heard.append(text)
+            text = snippets.expand(text, self.service.config["snippets"])
             # Later sentences are separated from the previous insertion by a space.
             self.parts.append(text)
             self.overlay.set_text(text)

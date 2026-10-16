@@ -39,6 +39,7 @@ CONFIG = {
     "overlay": {"enabled": False},
     "hotkey": {"binding": "<Super>j"},
     "model": {},
+    "snippets": {},
 }
 
 
@@ -146,9 +147,11 @@ class FakeTranscriber:
         self.release = threading.Event()    # ... and may leave it
         self.release.set()
         self.seen: list[bytes] = []
+        self.contexts: list[str] = []
 
     def transcribe(self, pcm: bytes, context: str = "") -> str:
         self.seen.append(pcm)
+        self.contexts.append(context)
         self.entered.set()
         self.release.wait(TIMEOUT)
         return pcm.decode()
@@ -476,6 +479,43 @@ class HistoryTest(DictationCase):
         self.recorder.segments[:] = []
         self.dictate()
         self.assertEqual(self.recorded, [])
+
+
+class SnippetTest(DictationCase):
+    """A spoken cue reaches the cursor as the text saved for it."""
+
+    def setUp(self):
+        super().setUp()
+        self.recorded: list[str] = []
+        patcher = mock.patch.object(
+            daemon.history, "append", lambda text, **_kwargs: self.recorded.append(text)
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch.dict(CONFIG, {
+            "output": {**CONFIG["output"], "history": True, "history_days": 0},
+            "snippets": {"my signature": "Best,\nSalva"},
+        })
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def dictate(self) -> None:
+        with self.service() as service:
+            self.listening(service)
+            service.toggle()
+            self.assertTrue(wait_until(lambda: service.session is None))
+
+    def test_the_cue_is_inserted_as_its_text(self):
+        self.recorder.segments[:] = [b"Thanks.", b"My signature."]
+        self.dictate()
+        self.assertEqual(self.delivered, ["Thanks.", " Best,\nSalva"])
+        self.assertEqual(self.recorded, ["Thanks. Best,\nSalva"])
+
+    def test_the_model_hears_the_cue_not_its_text(self):
+        """The context fed back is what was said: a signature never was."""
+        self.recorder.segments[:] = [b"My signature.", b"Bye."]
+        self.dictate()
+        self.assertEqual(self.transcriber.contexts, ["", "My signature."])
 
 
 class InsertTest(DictationCase):

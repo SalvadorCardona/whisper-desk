@@ -803,6 +803,15 @@
       <code>corrections = false</code> turns them off.
     </p>
 
+    <h3>Snippets: a spoken cue, a saved text</h3>
+    <p>
+      Save the texts you type all the time under <code>[snippets]</code> in
+      <code>config.toml</code>, and say their cue: <em>“Écris-moi à mon adresse mail”</em> is
+      written <strong>Écris-moi à salva@example.com</strong>, <em>“Ma signature.”</em> inserts
+      your whole signature, line breaks included. Case, accents and hyphens of the cue do not
+      count; it stays on your machine, nothing is synced.
+    </p>
+
     <h3>From the command line</h3>
     <pre data-copy><span class="p">$ </span>whisper-desk record     <span class="c"># dictate and write the text to standard output</span>
 <span class="p">$ </span>whisper-desk toggle     <span class="c"># same as the keyboard shortcut</span>
@@ -935,7 +944,10 @@ history_days = <span class="n">0</span>             <span class="c"># dictations
 enabled = <span class="n">true</span>
 accent = <span class="s">"#e46212"</span>
 position = <span class="s">"bottom-center"</span>    <span class="c"># bottom-center | top-center | center</span>
-margin = <span class="n">96</span></pre>
+margin = <span class="n">96</span>
+
+<span class="k">[snippets]</span>
+<span class="s">"ma signature"</span> = <span class="s">"Bien à vous,\nSalva"</span>   <span class="c"># spoken cue = text inserted in its place</span></pre>
 
     <p>After a change:</p>
     <pre data-copy><span class="p">$ </span>whisper-desk reload            <span class="c"># for everything but the shortcut</span>
@@ -1071,6 +1083,7 @@ margin = <span class="n">96</span></pre>
           <tr><td><code>recorder.py</code></td><td>silence detection, splitting into sentences</td></tr>
           <tr><td><code>transcriber.py</code></td><td>faster-whisper, GPU/CPU selection</td></tr>
           <tr><td><code>backtrack.py</code></td><td>corrections said aloud (“non, plutôt…”) carried out</td></tr>
+          <tr><td><code>snippets.py</code></td><td>spoken cues replaced by their saved text</td></tr>
           <tr><td><code>inject.py</code></td><td>simulated keystroke: <code>uinput</code>, SendKeys, System Events</td></tr>
           <tr><td><code>output.py</code></td><td>insertion at the cursor, clipboard, notifications</td></tr>
           <tr><td><code>overlay.py</code></td><td>X11 overlay (separate process)</td></tr>

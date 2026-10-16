@@ -1,0 +1,27 @@
+id	lang	spoken	expected
+fr01	fr	Ma signature.	Bien à vous,\nSalvador Cardona
+fr02	fr	Mon adresse mail.	salva@example.com
+fr03	fr	Mon adresse postale.	12 rue des Lilas, 34000 Montpellier
+fr04	fr	Mon lien de rendez-vous.	https://cal.example.com/salva
+fr05	fr	Tu peux m'écrire à mon adresse mail quand tu veux.	Tu peux m'écrire à salva@example.com quand tu veux.
+fr06	fr	Le colis part à mon adresse postale demain matin.	Le colis part à 12 rue des Lilas, 34000 Montpellier demain matin.
+fr07	fr	Réserve un créneau sur mon lien de rendez-vous.	Réserve un créneau sur https://cal.example.com/salva.
+fr08	fr	Merci pour ton retour. Ma signature.	Merci pour ton retour. Bien à vous,\nSalvador Cardona
+fr09	fr	Envoie la facture à mon adresse mail, s'il te plaît.	Envoie la facture à salva@example.com, s'il te plaît.
+fr10	fr	Je t'envoie mon lien de rendez-vous pour jeudi.	Je t'envoie https://cal.example.com/salva pour jeudi.
+en01	en	My signature.	Best regards,\nSalvador Cardona
+en02	en	My email address.	salva@example.com
+en03	en	My calendar link.	https://cal.example.com/salva
+en04	en	My standup update.	Yesterday: reviews.\nToday: snippets.\nBlockers: none.
+en05	en	You can reach me at my email address any time.	You can reach me at salva@example.com any time.
+en06	en	Pick a slot on my calendar link before Friday.	Pick a slot on https://cal.example.com/salva before Friday.
+en07	en	Thanks for the review. My signature.	Thanks for the review. Best regards,\nSalvador Cardona
+en08	en	Please send the invoice to my email address.	Please send the invoice to salva@example.com.
+ctl01	fr	J'ai changé d'adresse mail la semaine dernière.	J'ai changé d'adresse mail la semaine dernière.
+ctl02	fr	La signature du contrat est prévue lundi.	La signature du contrat est prévue lundi.
+ctl03	fr	Quelle est ton adresse postale ?	Quelle est ton adresse postale ?
+ctl04	fr	Ce lien ne marche plus depuis hier.	Ce lien ne marche plus depuis hier.
+ctl05	en	Send me your email address, please.	Send me your email address, please.
+ctl06	en	The link to my calendar is broken.	The link to my calendar is broken.
+ctl07	en	Her signature was hard to read.	Her signature was hard to read.
+ctl08	en	I will post a standup update later.	I will post a standup update later.

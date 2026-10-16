@@ -32,7 +32,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 |---|---|---|---|---|
 | **Works in any app** | insertion at the cursor through the clipboard and a paste shortcut (uinput, Mutter, SendKeys, System Events) | done | — | — |
 | **Personal dictionary**, fed by the words you correct | `vocabulary` in the settings window, filled by hand; no learning from corrections | partial | high | M |
-| **Snippets** — a spoken cue inserts a longer text | — | missing | high | S |
+| **Snippets** — a spoken cue inserts a longer text | `snippets.py`: `[snippets]` in `config.toml`, cue said alone or inside a sentence, case/accents/hyphens ignored, multi-line texts; measured in `bench/snippets/`. No editor in the settings window, plain text only (Wispr Flow keeps bold, links) | partial | high | S |
 | **Styles** — tone adapted to the app (formal in docs, casual in chat) | — | missing | medium | L |
 | **Command Mode** — select text, say how to rewrite it | — (would need a local model, e.g. Ollama) | missing | high | L |
 | **Developer syntax** — camelCase, snake_case, CLI commands, file tagging in Cursor | — | missing | medium | M |
@@ -53,3 +53,14 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   sentence changed. Known limits: a correction split from its sentence by a long
   pause is not seen; replacing a phrase longer than three words without a repeated word
   to line up with is not attempted.
+- 2026-10-16 — **Snippets** (partial): `[snippets]` in `config.toml`, a spoken cue is
+  replaced by its saved text at insertion; the model's context and the history are kept
+  straight (the context is what was said, the history what was typed). Measure
+  (`bench/snippets/`, 18 cues + 8 close control sentences): written sentences 18/18
+  expanded, WER 71.3 % → 0.0 %; faster-whisper `small` (CPU) 18/18 expanded, WER
+  72.3 % → 2.0 % (17/18 exact, the 18th is "anytime" for "any time"); `large-v3-turbo`
+  (GPU) 16/18 expanded, WER 71.3 % → 8.9 % — "My signature." heard "by signature.",
+  "Mon lien de rendez-vous." heard "Moyen de rendez-vous"; no control sentence changed
+  on any of them. Pushing the cues into the decoder as hotwords was tried and gained
+  nothing (same two misses), so it was left out. Still missing: an editor in
+  `whisper-desk settings`, rich text.

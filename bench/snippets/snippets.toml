@@ -1,0 +1,16 @@
+# The snippets of the measure, as they would sit in config.toml under [snippets].
+"mon adresse mail" = "salva@example.com"
+"mon adresse postale" = "12 rue des Lilas, 34000 Montpellier"
+"mon lien de rendez-vous" = "https://cal.example.com/salva"
+"ma signature" = """
+Bien à vous,
+Salvador Cardona"""
+"my email address" = "salva@example.com"
+"my calendar link" = "https://cal.example.com/salva"
+"my signature" = """
+Best regards,
+Salvador Cardona"""
+"my standup update" = """
+Yesterday: reviews.
+Today: snippets.
+Blockers: none."""

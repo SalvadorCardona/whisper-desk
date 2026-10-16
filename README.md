@@ -242,6 +242,36 @@ enough to split the sentence (`segment_silence_seconds`), the first part is alre
 Rules run on your machine, no language model involved; `corrections = false` in `[model]`
 turns them off. `bench/backtrack/` measures them on recordings (see Development).
 
+### Snippets: a spoken cue, a saved text
+
+Say a cue, and the text you saved for it is inserted instead — Wispr Flow's *snippets*,
+kept in your `config.toml`, nothing synced anywhere:
+
+```toml
+[snippets]
+"mon adresse mail" = "salva@example.com"
+"my calendar link" = "https://cal.example.com/salva"
+"ma signature" = """
+Bien à vous,
+Salvador Cardona"""
+```
+
+| You say | Typed at the cursor |
+|---|---|
+| *Écris-moi à mon adresse mail, je réponds vite.* | Écris-moi à salva@example.com, je réponds vite. |
+| *Merci pour ton retour. Ma signature.* | Merci pour ton retour. Bien à vous,<br>Salvador Cardona |
+| *Pick a slot on my calendar link.* | Pick a slot on https://cal.example.com/salva. |
+
+A cue said on its own is replaced by the text exactly as saved, without the full stop
+Whisper puts after it; in the middle of a sentence, the punctuation around it stays. Case,
+accents, punctuation and hyphens do not count: *Ma Signature*, *e-mail* for *email*,
+*stand-up* for *standup* all match. Whole words only, the longest cue first, and a saved
+text is never expanded again. Pick a cue you would not say otherwise (*ma signature*, not
+*merci*); a very short cue said alone is easier to mishear — *my signature* comes back
+*by signature* now and then with `large-v3-turbo` — than one said inside a sentence.
+`whisper-desk reload` after editing; the history keeps the expanded text.
+`bench/snippets/` measures it on recordings (see Development).
+
 ### From the command line
 
 ```sh
@@ -359,6 +389,9 @@ enabled = true
 accent = "#e46212"
 position = "bottom-center"    # bottom-center | top-center | center
 margin = 96
+
+[snippets]
+"ma signature" = "Bien à vous,\nSalva"   # spoken cue = text inserted in its place
 ```
 
 After a change by hand (the settings window does both for you):
@@ -553,6 +586,7 @@ to test all three from any of them.
 | `src/whisper_desk/recorder.py` | silence detection, splitting into sentences |
 | `src/whisper_desk/transcriber.py` | faster-whisper, GPU/CPU selection |
 | `src/whisper_desk/backtrack.py` | corrections said aloud ("non, plutôt…") carried out |
+| `src/whisper_desk/snippets.py` | spoken cues replaced by their saved text |
 | `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, Mutter, SendKeys, System Events |
 | `src/whisper_desk/mutter_keyboard.py` | GNOME remote desktop session (system Python) |
 | `src/whisper_desk/output.py` | insertion at the cursor, clipboard, notifications |
@@ -593,6 +627,16 @@ corrections, and how many sentences come out exact. `--audio` runs the recording
 faster-whisper with the models already downloaded (`--models small:cpu,large-v3-turbo:cuda`;
 for CUDA, put the venv's `nvidia/*/lib` directories in `LD_LIBRARY_PATH`, as the
 `whisper-desk` launcher does).
+
+`bench/snippets/` does the same for snippets: 26 sentences (18 cues said alone or inside
+a sentence, French and English, 8 control sentences that come close — *ton adresse
+postale*, *the link to my calendar*), the snippets of `snippets.toml`, and recordings made
+with the same voices by `bench/snippets/synthesize.py`:
+
+```sh
+python3 bench/snippets/measure.py
+~/.local/share/whisper-desk/venv/bin/python bench/snippets/measure.py --audio --model small --device cpu
+```
 
 ## License
 
