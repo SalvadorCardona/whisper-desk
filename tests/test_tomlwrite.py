@@ -97,6 +97,16 @@ class ApplyTest(unittest.TestCase):
         self.assertEqual(tomllib.loads(edited)["model"],
                          {"initial_prompt": "one line", "name": "auto"})
 
+    def test_a_clean_rewrite_keeps_the_snippets(self):
+        """Their cues are quoted keys: written bare, the file would no longer load."""
+        document = (
+            '[model]\ninitial_prompt = """\nline\n"""\n\n'
+            '[snippets]\n"ma signature" = """\nBien à vous,\nSalva"""\n'
+        )
+        edited = tomlwrite.apply(document, {"model": {"initial_prompt": "one line"}})
+        self.assertEqual(tomllib.loads(edited)["snippets"],
+                         {"ma signature": "Bien à vous,\nSalva"})
+
     def test_an_unreadable_file_is_replaced_by_the_values(self):
         edited = tomlwrite.apply("this is [not toml", {"model": {"name": "small"}})
         self.assertEqual(tomllib.loads(edited), {"model": {"name": "small"}})

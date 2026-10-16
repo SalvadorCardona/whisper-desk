@@ -50,6 +50,11 @@ def format_value(value: Any) -> str:
     raise TypeError(f"cannot write {type(value).__name__} to TOML")
 
 
+def format_key(key: str) -> str:
+    """A key as TOML wants it: quoted unless bare ("ma signature" has a space)."""
+    return key if re.fullmatch(r"[A-Za-z0-9_-]+", key) else format_value(key)
+
+
 def _value_end(rest: str) -> int:
     """Where the value at the start of `rest` ends, before its comment."""
     if rest.startswith(('"""', "'''", "[", "{")):
@@ -136,13 +141,15 @@ def dumps(document: dict[str, Any]) -> str:
     """A clean document, without comments: the fallback when editing is impossible."""
     blocks = [
         "\n".join(
-            f"{key} = {format_value(value)}"
+            f"{format_key(key)} = {format_value(value)}"
             for key, value in document.items() if not isinstance(value, dict)
         )
     ]
     for section, values in document.items():
         if isinstance(values, dict):
-            body = "\n".join(f"{key} = {format_value(value)}" for key, value in values.items())
+            body = "\n".join(
+                f"{format_key(key)} = {format_value(value)}" for key, value in values.items()
+            )
             blocks.append(f"[{section}]\n{body}")
     return "\n\n".join(block for block in blocks if block) + "\n"
 
