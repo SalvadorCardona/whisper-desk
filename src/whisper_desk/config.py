@@ -109,6 +109,8 @@ DEFAULTS: dict[str, Any] = {
         # Distance to the screen edge, in pixels.
         "margin": 96,
     },
+    # Spoken cue -> text inserted in its place: "mon adresse" types the address.
+    "snippets": {},
 }
 
 

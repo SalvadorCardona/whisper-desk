@@ -1,0 +1,31 @@
+id	lang	spoken	expected
+fr01	fr	Mon adresse perso.	12 rue des Lilas, 75011 Paris
+fr02	fr	Mon adresse pro.	4 place Bellecour, 69002 Lyon
+fr03	fr	Ma signature.	Bien à vous, Salvador Cardona
+fr04	fr	Mon lien agenda.	https://cal.com/salva/30min
+fr05	fr	Mon numéro de téléphone.	06 12 34 56 78
+fr06	fr	Tu peux m'envoyer le colis à mon adresse perso.	Tu peux m'envoyer le colis à 12 rue des Lilas, 75011 Paris.
+fr07	fr	La facture doit partir à mon adresse pro, pas chez moi.	La facture doit partir à 4 place Bellecour, 69002 Lyon, pas chez moi.
+fr08	fr	Pour réserver un créneau, passe par mon lien agenda.	Pour réserver un créneau, passe par https://cal.com/salva/30min.
+fr09	fr	Si tu as besoin de me joindre, voici mon numéro de téléphone.	Si tu as besoin de me joindre, voici 06 12 34 56 78.
+fr10	fr	Merci pour ton retour, ma signature.	Merci pour ton retour, Bien à vous, Salvador Cardona.
+fr11	fr	Je change de bureau : note mon adresse pro et oublie l'ancienne.	Je change de bureau : note 4 place Bellecour, 69002 Lyon et oublie l'ancienne.
+fr12	fr	Le livreur a mon adresse perso et mon numéro de téléphone.	Le livreur a 12 rue des Lilas, 75011 Paris et 06 12 34 56 78.
+en01	en	My home address.	221B Baker Street, London
+en02	en	My calendar link.	https://cal.com/salva/30min
+en03	en	My phone number.	+33 6 12 34 56 78
+en04	en	My email signature.	Best regards, Salvador Cardona
+en05	en	Please ship the parcel to my home address.	Please ship the parcel to 221B Baker Street, London.
+en06	en	You can book a slot with my calendar link.	You can book a slot with https://cal.com/salva/30min.
+en07	en	Call me any time on my phone number.	Call me any time on +33 6 12 34 56 78.
+en08	en	Thanks again for your help, my email signature.	Thanks again for your help, Best regards, Salvador Cardona.
+ctl01	fr	Quelle est l'adresse de ton frère ?	Quelle est l'adresse de ton frère ?
+ctl02	fr	J'ai changé d'adresse le mois dernier.	J'ai changé d'adresse le mois dernier.
+ctl03	fr	Sa signature est illisible sur le contrat.	Sa signature est illisible sur le contrat.
+ctl04	fr	Le numéro de téléphone du cabinet a changé.	Le numéro de téléphone du cabinet a changé.
+ctl05	fr	Mets le lien vers l'agenda partagé dans le message.	Mets le lien vers l'agenda partagé dans le message.
+ctl06	fr	Mon adresse e-mail a été piratée hier.	Mon adresse e-mail a été piratée hier.
+ctl07	en	What is your home address?	What is your home address?
+ctl08	en	The calendar is full this week.	The calendar is full this week.
+ctl09	en	Her phone number is on the card.	Her phone number is on the card.
+ctl10	en	The signature on the email looks fake.	The signature on the email looks fake.

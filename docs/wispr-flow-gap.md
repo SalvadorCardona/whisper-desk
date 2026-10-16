@@ -7,7 +7,9 @@ a Wispr Flow feature that relies on the cloud is rebuilt locally (faster-whisper
 a local model through Ollama) or marked *out of scope*. No telemetry, no account.
 
 Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
-[Wispr Flow help center](https://docs.wisprflow.ai/) (read on 2026-10-15).
+[Wispr Flow help center](https://docs.wisprflow.ai/) (read on 2026-10-15),
+[Create and use snippets](https://docs.wisprflow.ai/articles/5784437944-create-and-use-snippets)
+(read on 2026-10-16).
 
 **Status**: done · partial · missing · out of scope.
 **Effort**: S (a session) · M (a few sessions) · L (to split into several gaps).
@@ -32,7 +34,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 |---|---|---|---|---|
 | **Works in any app** | insertion at the cursor through the clipboard and a paste shortcut (uinput, Mutter, SendKeys, System Events) | done | — | — |
 | **Personal dictionary**, fed by the words you correct | `vocabulary` in the settings window, filled by hand; no learning from corrections | partial | high | M |
-| **Snippets** — a spoken cue inserts a longer text | — | missing | high | S |
+| **Snippets** — a spoken cue inserts a longer text | `[snippets]` in `config.toml`, `snippets.py`: alone or inside a sentence, case and punctuation ignored, longest cue wins, multi-line texts; measured in `bench/snippets/`. No editor in the settings window, no rich text (bold, links) | partial | high | S |
 | **Styles** — tone adapted to the app (formal in docs, casual in chat) | — | missing | medium | L |
 | **Command Mode** — select text, say how to rewrite it | — (would need a local model, e.g. Ollama) | missing | high | L |
 | **Developer syntax** — camelCase, snake_case, CLI commands, file tagging in Cursor | — | missing | medium | M |
@@ -53,3 +55,10 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   sentence changed. Known limits: a correction split from its sentence by a long
   pause is not seen; replacing a phrase longer than three words without a repeated word
   to line up with is not attempted.
+- 2026-10-16 — **Snippets** (partial): a cue said aloud is replaced by its text,
+  `[snippets]` in `config.toml`, with Wispr Flow's matching rules (cue alone → the text
+  as saved; inside a sentence: case and adjacent punctuation ignored, word boundaries,
+  longest cue wins). Measure (`bench/snippets/`, 20 sentences with a cue + 10 controls),
+  sentences whose snippets all reach the text: written 20/20; `small` (CPU) 18/20;
+  `large-v3-turbo` (GPU) 18/20, 20/20 with the cues pushed into the decoder; 0/10
+  control changed. Left to do: an editor in the settings window, rich-text snippets.

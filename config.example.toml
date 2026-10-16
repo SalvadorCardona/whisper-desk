@@ -75,3 +75,14 @@ height = 64
 bars = 15                       # number of equalizer bars
 position = "bottom-center"      # bottom-center | top-center | center
 margin = 96                     # distance to the screen edge, in pixels
+
+
+[snippets]
+# A cue you say -> the text typed in its place, alone or inside a sentence.
+# Case, punctuation and spacing do not matter; the longest cue wins.
+# Pick cues you would not say otherwise ("mon adresse perso", not "merci").
+# "mon adresse perso" = "12 rue des Lilas, 75011 Paris"
+# "my calendar link" = "https://cal.com/me/30min"
+# "ma signature" = """
+# Bien à vous,
+# Salvador"""
