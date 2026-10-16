@@ -59,6 +59,8 @@ DEFAULTS: dict[str, Any] = {
         # Carries out the corrections said aloud: "mardi, non, plutôt
         # mercredi" is written "mercredi".
         "corrections": True,
+        # Leaves the hesitations out: "euh", "um", a word said twice.
+        "hesitations": True,
         # Loaded when the daemon starts: the first dictation is instant.
         "preload": True,
     },

@@ -242,6 +242,25 @@ enough to split the sentence (`segment_silence_seconds`), the first part is alre
 Rules run on your machine, no language model involved; `corrections = false` in `[model]`
 turns them off. `bench/backtrack/` measures them on recordings (see Development).
 
+### Hesitations left out
+
+The *euh*, *hum*, *um* and *uh* Whisper writes down, and the words you stumble over, do not
+reach the text:
+
+| You say | whisper-desk writes |
+|---|---|
+| *Je pense, euh, qu'on devrait livrer vendredi.* | Je pense qu'on devrait livrer vendredi. |
+| *Je je voulais te demander un service.* | Je voulais te demander un service. |
+| *We could, we could meet next week.* | We could meet next week. |
+| *Uh, did you get my message?* | Did you get my message? |
+
+Only sounds that are never words go (*eu*, *ah*, *oh*, *Ben* stay), with the commas of the
+pause around them. A word or a run of up to three words said twice in a row is written
+once, except the doubles the language means: *nous nous voyons*, *vous vous trompez*,
+*très très bien*, *that that is*, *had had*, *bye bye*, numbers. Rules run on your machine;
+`hesitations = false` in `[model]` keeps everything Whisper wrote. `bench/hesitations/`
+measures them on recordings (see Development).
+
 ### Snippets: say a cue, get the text you keep retyping
 
 Save the texts you type over and over — an address, a calendar link, a signature — under
@@ -366,6 +385,7 @@ device = "auto"               # auto | cuda | cpu
 language = "fr"               # ISO code, or "auto" for detection
 initial_prompt = ""           # vocabulary to favour (proper nouns, jargon)
 corrections = true            # "mardi, non, plutôt mercredi" is written "mercredi"
+hesitations = true            # "euh", "um" and stuttered words left out
 
 [recording]
 backend = "auto"              # auto | arecord | parec | rec | sox | ffmpeg
@@ -585,6 +605,7 @@ to test all three from any of them.
 | `src/whisper_desk/recorder.py` | silence detection, splitting into sentences |
 | `src/whisper_desk/transcriber.py` | faster-whisper, GPU/CPU selection |
 | `src/whisper_desk/backtrack.py` | corrections said aloud ("non, plutôt…") carried out |
+| `src/whisper_desk/hesitations.py` | hesitations ("euh", "um") and stuttered words left out |
 | `src/whisper_desk/snippets.py` | spoken cues replaced by the text saved for them |
 | `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, Mutter, SendKeys, System Events |
 | `src/whisper_desk/mutter_keyboard.py` | GNOME remote desktop session (system Python) |
@@ -637,6 +658,16 @@ snippet changed for nothing; `--hotwords` also pushes the cues into the decoder,
 ```sh
 python3 bench/snippets/measure.py -v
 ~/.local/share/whisper-desk/venv/bin/python bench/snippets/measure.py --audio -v
+```
+
+`bench/hesitations/` measures the hesitations: 26 sentences with an *euh*, a *hum*, an *um*
+or a stuttered word, French and English, and 14 control sentences whose doubles or
+look-alikes must stay (*nous nous voyons*, *had had*, *J'ai eu*, *Ben arrive*). It prints
+the word error rate before and after, and how many sentences come out exact:
+
+```sh
+python3 bench/hesitations/measure.py -v
+~/.local/share/whisper-desk/venv/bin/python bench/hesitations/measure.py --audio -v
 ```
 
 ## License
