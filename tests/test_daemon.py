@@ -20,8 +20,9 @@ import unittest
 from unittest import mock
 
 from . import context  # noqa: F401  (adds src/ to the import path)
+from .context import forced_host
 
-from whisper_desk import daemon
+from whisper_desk import daemon, host
 
 # Long enough for a thread to get going, short enough for a stuck test to fail.
 TIMEOUT = 5.0
@@ -380,7 +381,7 @@ class FeedbackTest(DictationCase):
         self.assertEqual(overlay.texts, ["first", "second"])
 
     def test_the_window_says_how_to_stop(self):
-        with self.service() as service:
+        with forced_host(host.LINUX), self.service() as service:
             self.listening(service)
             self.assertEqual(service.session.overlay.hint, "Super+J to finish")
 
