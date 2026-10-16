@@ -555,5 +555,4 @@ MIT
 
 ## Author
 
-Written and maintained by [Salvador Cardona, developer](https://cardona.digital) — thirteen
-years of web development, and the other projects at the same address.
+A Hermez product.
