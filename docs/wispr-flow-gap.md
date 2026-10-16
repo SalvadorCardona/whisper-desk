@@ -9,7 +9,8 @@ a local model through Ollama) or marked *out of scope*. No telemetry, no account
 Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 [Wispr Flow help center](https://docs.wisprflow.ai/) (read on 2026-10-15),
 [Create and use snippets](https://docs.wisprflow.ai/articles/5784437944-create-and-use-snippets)
-(read on 2026-10-16).
+(read on 2026-10-16); filler removal, "Remove fillers" on the features page (read on
+2026-10-16).
 
 **Status**: done · partial · missing · out of scope.
 **Effort**: S (a session) · M (a few sessions) · L (to split into several gaps).
@@ -19,7 +20,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 | Wispr Flow | whisper-desk | Status | Value | Effort |
 |---|---|---|---|---|
 | **Backtrack** — a correction said mid-sentence keeps only the corrected version | `backtrack.py`: "non, plutôt", "ou plutôt", "je veux dire", "no wait", "actually", "I mean", "or rather"… carried out by local rules; measured in `bench/backtrack/` | partial | high | S |
-| **Filler removal** — "um", "uh", pauses | Whisper drops most hesitations by itself; nothing removes those it writes ("euh", "hum", repeated words) | partial | high | S |
+| **Filler removal** — "um", "uh", pauses | Whisper drops most hesitations by itself; `hesitations.py` removes those it writes ("euh", "hum", "um", "uh", "erm") and words or runs of up to three words said twice in a row, keeping intended doubles; measured in `bench/hesitations/`. A hesitation Whisper mishears as a word ("A", "« E »") stays | done | high | S |
 | **Auto punctuation** — inferred from pauses and tone, spoken marks ("comma") | Whisper's own punctuation and capitals; spoken marks ("virgule", "à la ligne") not interpreted | partial | medium | S |
 | **Numbered lists** — spoken enumerations become a formatted list | — | missing | medium | M |
 | **Name spelling from context** | `vocabulary` (hotwords) and the context of the dictation fed back to the model | partial | high | — |
@@ -62,3 +63,10 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   sentences whose snippets all reach the text: written 20/20; `small` (CPU) 18/20;
   `large-v3-turbo` (GPU) 18/20, 20/20 with the cues pushed into the decoder; 0/10
   control changed. Left to do: an editor in the settings window, rich-text snippets.
+- 2026-10-16 — **Filler removal** (done): hesitations Whisper writes ("euh", "hum", "um",
+  "uh", "erm") and stuttered words or restarts ("je je", "we could, we could") left out by
+  local rules, `model.hesitations = true`; intended doubles kept ("nous nous", "had had",
+  "très très", numbers). Measure (`bench/hesitations/`, 26 sentences + 14 controls): written
+  sentences WER 19.7 % → 0.0 % (26/26 exact); `small` (CPU) 15.7 % → 5.6 % (17/26);
+  `large-v3-turbo` (GPU) 13.5 % → 3.4 % (20/26); no control sentence changed. What remains
+  comes from the synthetic voice, whose "euh" Whisper hears as "A" or "« E »".

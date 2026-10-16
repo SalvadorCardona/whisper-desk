@@ -4,6 +4,24 @@
 
 ### Added
 
+- **Hesitations left out** (Wispr Flow's *filler removal*): the *euh*, *heu*, *hum*,
+  *hmm*, *um*, *uh*, *erm* Whisper writes down go, with the commas of the pause around
+  them, and a word or a run of up to three words said twice in a row is written once —
+  "Je je pense, euh, qu'on devrait" is written "Je pense qu'on devrait", "We could, we
+  could meet" is written "We could meet". Words that only look like hesitations (*eu*,
+  *ah*, *Ben*, *err*) and the doubles the language means (*nous nous*, *très très*,
+  *that that*, *had had*, numbers) stay. Local rules (`hesitations.py`), applied after
+  the corrections said aloud; `hesitations = false` in `[model]` turns them off.
+- `bench/hesitations/`: 26 sentences with a hesitation or a stuttered word and 14 control
+  sentences, with synthetic recordings. Word error rate against the expected text,
+  before → after:
+  - written sentences: 19.7 % → 0.0 %, 26/26 exact; controls 0 % → 0 %;
+  - faster-whisper `small` (CPU, int8): 15.7 % → 5.6 %, 17/26 exact; controls
+    unchanged (5.9 %, transcription slips);
+  - faster-whisper `large-v3-turbo` (CUDA, float16): 13.5 % → 3.4 %, 20/26 exact;
+    controls unchanged (3.5 %).
+  What remains is mostly the synthetic voice: its *euh* comes back as "A", "« E »" or
+  "O", which no rule can tell from a word.
 - **Snippets** (Wispr Flow's *snippets*): a cue said aloud is replaced by the text saved
   for it in the `[snippets]` section of `config.toml` — "mon adresse perso" types the
   address, "ma signature" a signature on several lines. Alone, the cue gives the text
