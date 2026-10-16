@@ -221,6 +221,75 @@ search box. Your clipboard is handed back untouched at the end of the dictation.
 server: under a Wayland session it only reaches whisper-desk while an X11 (Xwayland)
 window has the focus. The shortcut and the click work everywhere.
 
+### Correcting yourself as you speak
+
+Change your mind in the middle of a sentence and say so: only the corrected version is
+written.
+
+| You say | whisper-desk writes |
+|---|---|
+| *On se voit mardi, non, plutôt mercredi.* | On se voit mercredi. |
+| *Envoie le dossier à Paul, non, je veux dire à Marie.* | Envoie le dossier à Marie. |
+| *Let's meet at 2, actually 3.* | Let's meet at 3. |
+| *Send it to John, no wait, to Sarah.* | Send it to Sarah. |
+
+The markers understood: *non plutôt*, *ou plutôt*, *non pardon*, *non attends*, *enfin non*,
+*je veux dire*, *pardon* — and *no wait*, *actually*, *I mean*, *sorry*, *or rather*,
+*make that*, *scratch that*. They only count after a short pause (a comma in the
+transcription): *c'est plutôt bien* or *I actually think* stay as they are. The correction
+works within what is transcribed in one go: if your pause before *non, plutôt* is long
+enough to split the sentence (`segment_silence_seconds`), the first part is already typed.
+Rules run on your machine, no language model involved; `corrections = false` in `[model]`
+turns them off. `bench/backtrack/` measures them on recordings (see Development).
+
+### Hesitations left out
+
+The *euh*, *hum*, *um* and *uh* Whisper writes down, and the words you stumble over, do not
+reach the text:
+
+| You say | whisper-desk writes |
+|---|---|
+| *Je pense, euh, qu'on devrait livrer vendredi.* | Je pense qu'on devrait livrer vendredi. |
+| *Je je voulais te demander un service.* | Je voulais te demander un service. |
+| *We could, we could meet next week.* | We could meet next week. |
+| *Uh, did you get my message?* | Did you get my message? |
+
+Only sounds that are never words go (*eu*, *ah*, *oh*, *Ben* stay), with the commas of the
+pause around them. A word or a run of up to three words said twice in a row is written
+once, except the doubles the language means: *nous nous voyons*, *vous vous trompez*,
+*très très bien*, *that that is*, *had had*, *bye bye*, numbers. Rules run on your machine;
+`hesitations = false` in `[model]` keeps everything Whisper wrote. `bench/hesitations/`
+measures them on recordings (see Development).
+
+### Snippets: say a cue, get the text you keep retyping
+
+Save the texts you type over and over — an address, a calendar link, a signature — under
+a cue in the `[snippets]` section of `config.toml`, then say the cue while you dictate:
+
+```toml
+[snippets]
+"mon adresse perso" = "12 rue des Lilas, 75011 Paris"
+"my calendar link" = "https://cal.com/me/30min"
+"ma signature" = """
+Bien à vous,
+Salvador"""
+```
+
+| You say | whisper-desk writes |
+|---|---|
+| *Mon adresse perso.* | 12 rue des Lilas, 75011 Paris |
+| *Tu peux m'envoyer le colis à mon adresse perso.* | Tu peux m'envoyer le colis à 12 rue des Lilas, 75011 Paris. |
+| *You can book a slot with my calendar link.* | You can book a slot with https://cal.com/me/30min. |
+
+Said on its own, the cue gives the text exactly as saved — Whisper's capital and full stop
+dropped; inside a sentence, only the cue is replaced. Case, punctuation and spacing between
+the words of the cue do not matter, a cue never matches inside a longer word, and when two
+cues overlap the longest wins (*mon adresse pro* over *mon adresse*). An empty text turns a
+snippet off. Pick cues you would not say otherwise (*mon adresse perso*, not *merci*), and
+check that Whisper writes them as you saved them: if it does not (*mon lien d'agenda* for
+*mon lien agenda*), add the cue to `vocabulary` as well. Snippets are applied on your
+machine, after the transcription; `whisper-desk reload` takes a change into account.
+
 ### From the command line
 
 ```sh
@@ -315,6 +384,8 @@ name = "auto"                 # auto | tiny | base | small | medium | large-v3 |
 device = "auto"               # auto | cuda | cpu
 language = "fr"               # ISO code, or "auto" for detection
 initial_prompt = ""           # vocabulary to favour (proper nouns, jargon)
+corrections = true            # "mardi, non, plutôt mercredi" is written "mercredi"
+hesitations = true            # "euh", "um" and stuttered words left out
 
 [recording]
 backend = "auto"              # auto | arecord | parec | rec | sox | ffmpeg
@@ -337,6 +408,9 @@ enabled = true
 accent = "#e46212"
 position = "bottom-center"    # bottom-center | top-center | center
 margin = 96
+
+[snippets]
+"mon adresse perso" = "12 rue des Lilas, 75011 Paris"   # cue said -> text typed
 ```
 
 After a change by hand (the settings window does both for you):
@@ -530,6 +604,9 @@ to test all three from any of them.
 | `src/whisper_desk/capture.py` | choice of capture tool (`arecord`, `parec`, `rec`, `ffmpeg`) |
 | `src/whisper_desk/recorder.py` | silence detection, splitting into sentences |
 | `src/whisper_desk/transcriber.py` | faster-whisper, GPU/CPU selection |
+| `src/whisper_desk/backtrack.py` | corrections said aloud ("non, plutôt…") carried out |
+| `src/whisper_desk/hesitations.py` | hesitations ("euh", "um") and stuttered words left out |
+| `src/whisper_desk/snippets.py` | spoken cues replaced by the text saved for them |
 | `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, Mutter, SendKeys, System Events |
 | `src/whisper_desk/mutter_keyboard.py` | GNOME remote desktop session (system Python) |
 | `src/whisper_desk/output.py` | insertion at the cursor, clipboard, notifications |
@@ -548,6 +625,50 @@ to test all three from any of them.
 | `src/whisper_desk/update.py` | version fingerprint, comparison with upstream, update |
 | `tests/` | `unittest` suite, no external dependency |
 | `install.sh` | installation and updates |
+
+### Measuring the transcription
+
+`bench/` holds reproducible before/after measures of what changes the text. The first,
+`bench/backtrack/`, is a corpus of 46 sentences (30 corrections said aloud, French and
+English, 16 control sentences where *plutôt*, *non* or *actually* are no correction),
+with their expected text and synthetic recordings made by `bench/backtrack/synthesize.py`
+with two [Piper](https://github.com/rhasspy/piper) voices: `fr_FR-siwis-medium`, trained on
+the [SIWIS corpus](https://datashare.is.ed.ac.uk/handle/10283/2353) (CC BY 4.0), and
+`en_US-ljspeech-medium`, trained on [LJ Speech](https://keithito.com/LJ-Speech-Dataset/)
+(public domain):
+
+```sh
+python3 bench/backtrack/measure.py -v                 # on the written sentences
+~/.local/share/whisper-desk/venv/bin/python bench/backtrack/measure.py --audio -v
+```
+
+It prints the word error rate against the expected text, before and after the
+corrections, and how many sentences come out exact. `--audio` runs the recordings through
+faster-whisper with the models already downloaded (`--models small:cpu,large-v3-turbo:cuda`;
+for CUDA, put the venv's `nvidia/*/lib` directories in `LD_LIBRARY_PATH`, as the
+`whisper-desk` launcher does).
+
+`bench/snippets/` does the same for snippets: 20 sentences that say one of the cues of
+`bench/snippets/snippets.toml` — alone or inside a sentence, French and English — and 10
+control sentences that come close without saying one (*l'adresse de ton frère*, *her phone
+number*). It counts the sentences whose snippets all reach the text, and the controls a
+snippet changed for nothing; `--hotwords` also pushes the cues into the decoder, as
+`vocabulary` does:
+
+```sh
+python3 bench/snippets/measure.py -v
+~/.local/share/whisper-desk/venv/bin/python bench/snippets/measure.py --audio -v
+```
+
+`bench/hesitations/` measures the hesitations: 26 sentences with an *euh*, a *hum*, an *um*
+or a stuttered word, French and English, and 14 control sentences whose doubles or
+look-alikes must stay (*nous nous voyons*, *had had*, *J'ai eu*, *Ben arrive*). It prints
+the word error rate before and after, and how many sentences come out exact:
+
+```sh
+python3 bench/hesitations/measure.py -v
+~/.local/share/whisper-desk/venv/bin/python bench/hesitations/measure.py --audio -v
+```
 
 ## License
 

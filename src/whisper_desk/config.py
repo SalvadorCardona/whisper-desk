@@ -56,6 +56,11 @@ DEFAULTS: dict[str, Any] = {
         # Feeds the end of what was just dictated back to the model: a sentence
         # isolated by the as-you-go splitting gets its context back.
         "context": True,
+        # Carries out the corrections said aloud: "mardi, non, plutôt
+        # mercredi" is written "mercredi".
+        "corrections": True,
+        # Leaves the hesitations out: "euh", "um", a word said twice.
+        "hesitations": True,
         # Loaded when the daemon starts: the first dictation is instant.
         "preload": True,
     },
@@ -106,6 +111,8 @@ DEFAULTS: dict[str, Any] = {
         # Distance to the screen edge, in pixels.
         "margin": 96,
     },
+    # Spoken cue -> text inserted in its place: "mon adresse" types the address.
+    "snippets": {},
 }
 
 

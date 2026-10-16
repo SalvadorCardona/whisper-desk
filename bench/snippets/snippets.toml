@@ -1,0 +1,15 @@
+# The snippets the corpus is measured with — a [snippets] section as in config.toml.
+[snippets]
+"mon adresse perso" = "12 rue des Lilas, 75011 Paris"
+"mon adresse pro" = "4 place Bellecour, 69002 Lyon"
+"mon lien agenda" = "https://cal.com/salva/30min"
+"mon numéro de téléphone" = "06 12 34 56 78"
+"ma signature" = """
+Bien à vous,
+Salvador Cardona"""
+"my home address" = "221B Baker Street, London"
+"my calendar link" = "https://cal.com/salva/30min"
+"my phone number" = "+33 6 12 34 56 78"
+"my email signature" = """
+Best regards,
+Salvador Cardona"""

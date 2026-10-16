@@ -1,0 +1,41 @@
+id	lang	spoken	expected
+fr01	fr	Euh, je pense qu'on devrait livrer vendredi.	Je pense qu'on devrait livrer vendredi.
+fr02	fr	Il faut, euh, vérifier les logs du serveur.	Il faut vérifier les logs du serveur.
+fr03	fr	Je je voulais te demander un service.	Je voulais te demander un service.
+fr04	fr	Le le rapport est prêt pour demain.	Le rapport est prêt pour demain.
+fr05	fr	On va, on va faire une pause après le déjeuner.	On va faire une pause après le déjeuner.
+fr06	fr	Hum, je ne suis pas sûr que ce soit une bonne idée.	Je ne suis pas sûr que ce soit une bonne idée.
+fr07	fr	C'est, euh, c'est un peu compliqué à expliquer.	C'est un peu compliqué à expliquer.
+fr08	fr	Envoie-moi le fichier, euh, avant midi si possible.	Envoie-moi le fichier avant midi si possible.
+fr09	fr	Il faudrait que que tu relises la proposition.	Il faudrait que tu relises la proposition.
+fr10	fr	Euh, est-ce que tu as reçu mon message ?	Est-ce que tu as reçu mon message ?
+fr11	fr	La réunion est, euh, déplacée à jeudi.	La réunion est déplacée à jeudi.
+fr12	fr	Nous avons, hum, trois problèmes à régler.	Nous avons trois problèmes à régler.
+fr13	fr	Je crois que, je crois que le test échoue.	Je crois que le test échoue.
+fr14	fr	Il y a un, euh, un souci avec la base de données.	Il y a un souci avec la base de données.
+fr15	fr	Bon, euh, on se retrouve devant la salle.	Bon on se retrouve devant la salle.
+fr16	fr	Tu peux, tu peux m'appeler ce soir ?	Tu peux m'appeler ce soir ?
+en01	en	Um, I think we should ship on Friday.	I think we should ship on Friday.
+en02	en	We need to, uh, check the server logs.	We need to check the server logs.
+en03	en	I I wanted to ask you something.	I wanted to ask you something.
+en04	en	The the report is ready for tomorrow.	The report is ready for tomorrow.
+en05	en	We could, we could meet next week.	We could meet next week.
+en06	en	Hmm, I'm not sure that's a good idea.	I'm not sure that's a good idea.
+en07	en	It's, uh, it's a bit hard to explain.	It's a bit hard to explain.
+en08	en	Send me the file, um, before noon if you can.	Send me the file before noon if you can.
+en09	en	Uh, did you get my message?	Did you get my message?
+en10	en	There is a, um, a problem with the database.	There is a problem with the database.
+ctl01	fr	Nous nous voyons demain matin.	Nous nous voyons demain matin.
+ctl02	fr	Vous vous trompez de salle.	Vous vous trompez de salle.
+ctl03	fr	C'est très très bien fait.	C'est très très bien fait.
+ctl04	fr	J'ai eu un appel du client.	J'ai eu un appel du client.
+ctl05	fr	Ah, je vois ce que tu veux dire.	Ah, je vois ce que tu veux dire.
+ctl06	fr	Il parle souvent de De Gaulle.	Il parle souvent de De Gaulle.
+ctl07	fr	Oui oui, c'est noté.	Oui oui, c'est noté.
+ctl08	fr	Ben arrive à la gare demain.	Ben arrive à la gare demain.
+ctl09	en	I think that that is the right answer.	I think that that is the right answer.
+ctl10	en	He had had enough of the meetings.	He had had enough of the meetings.
+ctl11	en	Oh, I see what you mean.	Oh, I see what you mean.
+ctl12	en	Always err on the side of caution.	Always err on the side of caution.
+ctl13	en	What it is is a timing bug.	What it is is a timing bug.
+ctl14	en	Bye bye, see you tomorrow.	Bye bye, see you tomorrow.

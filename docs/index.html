@@ -795,6 +795,32 @@
       Windows reserves the Windows key for itself.
     </p>
 
+    <h3>Correcting yourself as you speak</h3>
+    <p>
+      Change your mind mid-sentence and say so: <em>“On se voit mardi, non, plutôt mercredi”</em>
+      is written <strong>On se voit mercredi.</strong>, <em>“Let’s meet at 2, actually 3”</em>
+      is written <strong>Let’s meet at 3.</strong> Local rules, no language model:
+      <code>corrections = false</code> turns them off.
+    </p>
+
+    <h3>Hesitations left out</h3>
+    <p>
+      The <em>euh</em>, <em>hum</em> and <em>um</em> Whisper writes down and the words you
+      stumble over stay out of the text: <em>“Je je pense, euh, qu’on devrait livrer”</em> is
+      written <strong>Je pense qu’on devrait livrer</strong>, <em>“We could, we could meet”</em>
+      is written <strong>We could meet</strong>. <em>Nous nous voyons</em> or <em>had had</em>
+      stay as they are. <code>hesitations = false</code> keeps everything.
+    </p>
+
+    <h3>Snippets</h3>
+    <p>
+      Save the texts you keep retyping under a cue, in the <code>[snippets]</code> section of
+      <code>config.toml</code>: say <em>“Tu peux m’envoyer le colis à mon adresse perso”</em>
+      and <strong>Tu peux m’envoyer le colis à 12 rue des Lilas, 75011 Paris.</strong> is
+      typed. Alone or inside a sentence, whatever the case or punctuation Whisper gives the
+      cue; the longest cue wins. Applied on your machine, after the transcription.
+    </p>
+
     <h3>From the command line</h3>
     <pre data-copy><span class="p">$ </span>whisper-desk record     <span class="c"># dictate and write the text to standard output</span>
 <span class="p">$ </span>whisper-desk toggle     <span class="c"># same as the keyboard shortcut</span>
@@ -905,6 +931,8 @@ name = <span class="s">"auto"</span>                 <span class="c"># auto | ti
 device = <span class="s">"auto"</span>               <span class="c"># auto | cuda | cpu</span>
 language = <span class="s">"fr"</span>               <span class="c"># ISO code, or "auto" for detection</span>
 initial_prompt = <span class="s">""</span>           <span class="c"># vocabulary to favour (proper nouns, jargon)</span>
+corrections = <span class="n">true</span>            <span class="c"># "mardi, non, plutôt mercredi" is written "mercredi"</span>
+hesitations = <span class="n">true</span>            <span class="c"># "euh", "um" and stuttered words left out</span>
 
 <span class="k">[recording]</span>
 backend = <span class="s">"auto"</span>              <span class="c"># auto | arecord | parec | rec | sox | ffmpeg</span>
@@ -926,7 +954,10 @@ history_days = <span class="n">0</span>             <span class="c"># dictations
 enabled = <span class="n">true</span>
 accent = <span class="s">"#e46212"</span>
 position = <span class="s">"bottom-center"</span>    <span class="c"># bottom-center | top-center | center</span>
-margin = <span class="n">96</span></pre>
+margin = <span class="n">96</span>
+
+<span class="k">[snippets]</span>
+<span class="s">"mon adresse perso"</span> = <span class="s">"12 rue des Lilas, 75011 Paris"</span>   <span class="c"># cue said -> text typed</span></pre>
 
     <p>After a change:</p>
     <pre data-copy><span class="p">$ </span>whisper-desk reload            <span class="c"># for everything but the shortcut</span>
@@ -1061,6 +1092,9 @@ margin = <span class="n">96</span></pre>
           <tr><td><code>capture.py</code></td><td>choice of capture tool (<code>arecord</code>, <code>parec</code>, <code>rec</code>, <code>ffmpeg</code>)</td></tr>
           <tr><td><code>recorder.py</code></td><td>silence detection, splitting into sentences</td></tr>
           <tr><td><code>transcriber.py</code></td><td>faster-whisper, GPU/CPU selection</td></tr>
+          <tr><td><code>backtrack.py</code></td><td>corrections said aloud (“non, plutôt…”) carried out</td></tr>
+          <tr><td><code>hesitations.py</code></td><td>hesitations (“euh”, “um”) and stuttered words left out</td></tr>
+          <tr><td><code>snippets.py</code></td><td>spoken cues replaced by the text saved for them</td></tr>
           <tr><td><code>inject.py</code></td><td>simulated keystroke: <code>uinput</code>, SendKeys, System Events</td></tr>
           <tr><td><code>output.py</code></td><td>insertion at the cursor, clipboard, notifications</td></tr>
           <tr><td><code>overlay.py</code></td><td>X11 overlay (separate process)</td></tr>

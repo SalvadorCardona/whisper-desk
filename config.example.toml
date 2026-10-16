@@ -26,6 +26,12 @@ vocabulary = ""
 # Feeds the end of what was just dictated back to the model: a sentence isolated
 # by the as-you-go splitting gets its context back.
 context = true
+# Carries out the corrections you say aloud: "on Tuesday, no wait, on Wednesday"
+# is written "on Wednesday" ("mardi, non, plutôt mercredi" -> "mercredi").
+corrections = true
+# Leaves the hesitations out of the text: "euh", "hum", "um", "uh" and the words you
+# stumble over ("je je pense" -> "je pense", "we could, we could meet" -> "we could meet").
+hesitations = true
 # Loads the model when the service starts: the first dictation is instant.
 preload = true
 
@@ -72,3 +78,14 @@ height = 64
 bars = 15                       # number of equalizer bars
 position = "bottom-center"      # bottom-center | top-center | center
 margin = 96                     # distance to the screen edge, in pixels
+
+
+[snippets]
+# A cue you say -> the text typed in its place, alone or inside a sentence.
+# Case, punctuation and spacing do not matter; the longest cue wins.
+# Pick cues you would not say otherwise ("mon adresse perso", not "merci").
+# "mon adresse perso" = "12 rue des Lilas, 75011 Paris"
+# "my calendar link" = "https://cal.com/me/30min"
+# "ma signature" = """
+# Bien à vous,
+# Salvador"""

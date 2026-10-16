@@ -10,6 +10,8 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from . import backtrack, hesitations
+
 logger = logging.getLogger("whisper-desk.transcriber")
 
 GPU_MODEL = "large-v3-turbo"
@@ -264,4 +266,11 @@ class Transcriber:
                              text, segment.no_speech_prob)
                 continue
             kept.append(text)
-        return " ".join(kept).strip()
+        text = " ".join(kept).strip()
+        if self.config.get("corrections", True):
+            text = backtrack.apply(text)
+        # After the corrections: the commas around a hesitation may be the
+        # very pause that tells a correction from an ordinary "non".
+        if self.config.get("hesitations", True):
+            text = hesitations.apply(text)
+        return text
