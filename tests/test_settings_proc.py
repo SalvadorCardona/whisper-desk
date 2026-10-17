@@ -130,6 +130,56 @@ class SaveTest(ControllerCase):
         self.assertIs(config_module.load(self.path)["overlay"]["enabled"], False)
 
 
+class SnippetsTest(ControllerCase):
+    def test_the_window_gets_the_snippets_in_their_order(self):
+        self.controller.config["snippets"] = {"mon adresse": "ici", "ma signature": "Salva"}
+        self.assertEqual(self.controller.snapshot()["values"]["snippets"],
+                         [["mon adresse", "ici"], ["ma signature", "Salva"]])
+
+    def test_snippets_are_written_and_the_daemon_reloads(self):
+        reply = self.save(snippets=[["mon adresse", " 12 rue des Lilas "],
+                                    ["ma signature", "Bien à vous,\nSalva\n"]])
+        self.assertTrue(reply["saved"])
+        self.assertEqual(self.sent, ["reload"])
+        self.assertEqual(config_module.load(self.path)["snippets"],
+                         {"mon adresse": "12 rue des Lilas", "ma signature": "Bien à vous,\nSalva"})
+        self.assertIn("# my own comment", self.path.read_text(encoding="utf-8"))
+        self.assertEqual(reply["values"]["snippets"][0], ["mon adresse", "12 rue des Lilas"])
+
+    def test_a_removed_snippet_leaves_the_file(self):
+        self.save(snippets=[["mon adresse", "ici"], ["ma signature", "Salva"]])
+        self.save(snippets=[["ma signature", "Salva"]])
+        self.assertEqual(config_module.load(self.path)["snippets"], {"ma signature": "Salva"})
+
+    def test_unchanged_snippets_write_nothing(self):
+        self.save(snippets=[["mon adresse", "ici"]])
+        before = self.path.read_text(encoding="utf-8")
+        self.assertEqual(self.save()["status"], "Nothing to change")
+        self.assertEqual(self.path.read_text(encoding="utf-8"), before)
+
+    def test_blank_rows_are_dropped(self):
+        self.save(snippets=[["", ""], ["mon adresse", "ici"]])
+        self.assertEqual(config_module.load(self.path)["snippets"], {"mon adresse": "ici"})
+
+    def test_the_same_cue_twice_is_refused(self):
+        reply = self.save(snippets=[["mon adresse", "ici"], ["Mon adresse.", "là"]])
+        self.assertFalse(reply["saved"])
+        self.assertEqual(reply["status"], "“mon adresse” and “Mon adresse.” are the same cue")
+        self.assertEqual(config_module.load(self.path)["snippets"], {})
+
+    def test_a_text_without_a_cue_is_refused(self):
+        self.assertEqual(self.save(snippets=[["", "12 rue des Lilas"]])["status"],
+                         "The snippet “12 rue des Lilas” has no cue")
+        self.assertEqual(self.save(snippets=[["...", "x"]])["status"],
+                         "The cue “...” has no word to say")
+
+    def test_a_value_the_window_cannot_show_is_kept(self):
+        self.controller.config["snippets"] = {"broken": 3, "mon adresse": "ici"}
+        self.assertEqual(self.controller.values()["snippets"], [["mon adresse", "ici"]])
+        self.assertEqual(self.controller.snippet_table([["ma signature", "Salva"]]),
+                         {"broken": 3, "ma signature": "Salva"})
+
+
 class ShortcutTest(ControllerCase):
     def test_the_gtk_accelerator_becomes_the_configuration_syntax(self):
         with forced_host(host.LINUX):

@@ -264,7 +264,9 @@ measures them on recordings (see Development).
 ### Snippets: say a cue, get the text you keep retyping
 
 Save the texts you type over and over — an address, a calendar link, a signature — under
-a cue in the `[snippets]` section of `config.toml`, then say the cue while you dictate:
+a cue, in the **Snippets** list of `whisper-desk settings` (**Add…**, **Edit…**,
+**Remove**; the text may hold several lines) or by hand in the `[snippets]` section of
+`config.toml`, then say the cue while you dictate:
 
 ```toml
 [snippets]
@@ -288,7 +290,8 @@ cues overlap the longest wins (*mon adresse pro* over *mon adresse*). An empty t
 snippet off. Pick cues you would not say otherwise (*mon adresse perso*, not *merci*), and
 check that Whisper writes them as you saved them: if it does not (*mon lien d'agenda* for
 *mon lien agenda*), add the cue to `vocabulary` as well. Snippets are applied on your
-machine, after the transcription; `whisper-desk reload` takes a change into account.
+machine, after the transcription; **Save** in the settings window, or `whisper-desk
+reload` after editing the file, takes a change into account.
 
 ### From the command line
 
@@ -369,9 +372,10 @@ whisper-desk settings
 Language; model, with its download size and an indication of its speed (and whether it is
 already on disk); microphone, from the list of the capture tool's own sources, with a
 **Test** gauge; shortcut, captured by pressing the new combination; output mode;
-domain vocabulary; overlay position and colour. **Save** writes `config.toml` — only the
-values that changed, your comments kept — reloads the daemon and, for a new shortcut,
-installs it. Like the overlay, the window needs GTK3 for the system Python.
+domain vocabulary; snippets, each cue with its text; overlay position and colour.
+**Save** writes `config.toml` — only the values that changed, your comments kept —
+reloads the daemon and, for a new shortcut, installs it. Two snippets with the same cue
+(*Mon adresse.* and *mon adresse*) are refused: whisper-desk would not know which to type. Like the overlay, the window needs GTK3 for the system Python.
 
 Everything, the rest included, is configurable in **`~/.config/whisper-desk/config.toml`**:
 

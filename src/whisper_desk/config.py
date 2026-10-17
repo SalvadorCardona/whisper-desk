@@ -136,8 +136,11 @@ def load(path: Path | None = None) -> dict[str, Any]:
     return _merge(DEFAULTS, user)
 
 
-def update(changes: dict[str, dict[str, Any]], path: Path | None = None) -> None:
+def update(changes: dict[str, dict[str, Any]], path: Path | None = None,
+           tables: dict[str, dict[str, Any]] | None = None) -> None:
     """Writes values into config.toml, its comments and layout kept.
+
+    `tables` replaces whole sections — [snippets], whose cues come and go.
 
     A missing file starts from the commented example rather than from an
     empty page: the user who opens it later still finds the explanations.
@@ -150,7 +153,7 @@ def update(changes: dict[str, dict[str, Any]], path: Path | None = None) -> None
             text = EXAMPLE_PATH.read_text(encoding="utf-8")
         except OSError:
             text = ""
-    edited = tomlwrite.apply(text, changes)
+    edited = tomlwrite.apply(text, changes, tables)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".toml.tmp")
     temporary.write_text(edited, encoding="utf-8")

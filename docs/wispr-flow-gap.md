@@ -35,12 +35,12 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 |---|---|---|---|---|
 | **Works in any app** | insertion at the cursor through the clipboard and a paste shortcut (uinput, Mutter, SendKeys, System Events) | done | — | — |
 | **Personal dictionary**, fed by the words you correct | `vocabulary` in the settings window, filled by hand; no learning from corrections | partial | high | M |
-| **Snippets** — a spoken cue inserts a longer text | `[snippets]` in `config.toml`, `snippets.py`: alone or inside a sentence, case and punctuation ignored, longest cue wins, multi-line texts; measured in `bench/snippets/`. No editor in the settings window, no rich text (bold, links) | partial | high | S |
+| **Snippets** — a spoken cue inserts a longer text | `[snippets]` in `config.toml`, `snippets.py`: alone or inside a sentence, case and punctuation ignored, longest cue wins, multi-line texts; measured in `bench/snippets/`; edited in the settings window too (in PR). No rich text (bold, links) | partial | high | S |
 | **Styles** — tone adapted to the app (formal in docs, casual in chat) | — | missing | medium | L |
 | **Command Mode** — select text, say how to rewrite it | — (would need a local model, e.g. Ollama) | missing | high | L |
 | **Developer syntax** — camelCase, snake_case, CLI commands, file tagging in Cursor | — | missing | medium | M |
 | **History** of dictations | `whisper-desk history` and its window: search, copy, insert again, purge | done | — | — |
-| **Settings** | `whisper-desk settings`: language, model, microphone, shortcut, output, vocabulary, overlay | done | — | — |
+| **Settings** | `whisper-desk settings`: language, model, microphone, shortcut, output, vocabulary, snippets, overlay | done | — | — |
 | **Overlay** | X11 overlay: live level, sentence transcribed, states, cancel | done | — | — |
 | **Usage dashboard** — words dictated, top apps | the history holds the data; no local statistics shown | missing | low | S |
 | **Mobile apps, cross-device sync** | — | out of scope (account, cloud) | — | — |
@@ -70,3 +70,9 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   sentences WER 19.7 % → 0.0 % (26/26 exact); `small` (CPU) 15.7 % → 5.6 % (17/26);
   `large-v3-turbo` (GPU) 13.5 % → 3.4 % (20/26); no control sentence changed. What remains
   comes from the synthetic voice, whose "euh" Whisper hears as "A" or "« E »".
+- 2026-10-17 — **Snippets in the settings window** (in PR): a Snippets list in
+  `whisper-desk settings`, with Add…, Edit… (multi-line text) and Remove. Save rewrites
+  only the `[snippets]` section — the cues that went are removed from the file, its
+  comments kept — and reloads the daemon; two cues heard the same, a text without a cue
+  or a cue without a word are refused. A feature, no quality measure: 25 new tests
+  (TOML section rewrite, settings controller). Left to do on snippets: rich text.

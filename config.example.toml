@@ -82,6 +82,7 @@ margin = 96                     # distance to the screen edge, in pixels
 
 [snippets]
 # A cue you say -> the text typed in its place, alone or inside a sentence.
+# Also edited in the settings window: whisper-desk settings, Snippets.
 # Case, punctuation and spacing do not matter; the longest cue wins.
 # Pick cues you would not say otherwise ("mon adresse perso", not "merci").
 # "mon adresse perso" = "12 rue des Lilas, 75011 Paris"

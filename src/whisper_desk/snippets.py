@@ -18,7 +18,8 @@ def _words(text: str) -> list[str]:
     return [word.lower() for word in _WORD.findall(text)]
 
 
-def _key(text: str) -> str:
+def cue_key(text: str) -> str:
+    """What a cue comes down to: two cues with the same key are the same cue."""
     return " ".join(_words(text))
 
 
@@ -31,7 +32,7 @@ class Snippets:
             if not isinstance(expansion, str):
                 logger.warning("Snippet %r ignored: its text is not a string.", cue)
                 continue
-            key, expansion = _key(cue), expansion.strip()
+            key, expansion = cue_key(cue), expansion.strip()
             # A cue made of punctuation alone would match everywhere; an empty
             # text is how a snippet is switched off without losing its cue.
             if key and expansion:
@@ -52,14 +53,14 @@ class Snippets:
             return text
         # Said on its own, the cue is the whole sentence: its capital and its
         # final full stop are Whisper's, the snippet is written as saved.
-        alone = self.expansions.get(_key(text))
+        alone = self.expansions.get(cue_key(text))
         if alone is not None:
             return alone
 
         out, last = [], 0
         for match in self.pattern.finditer(text):
             out.append(text[last:match.start()])
-            expansion = self.expansions[_key(match.group())]
+            expansion = self.expansions[cue_key(match.group())]
             rest = text[match.end():]
             # "à mon adresse." with a snippet that already ends on a full stop
             # would end on two.

@@ -14,6 +14,7 @@ from typing import Any
 
 SECTION = re.compile(r"^\s*\[\s*([A-Za-z0-9_.-]+)\s*\]\s*(#.*)?$")
 KEY = re.compile(r"^(\s*)([A-Za-z0-9_-]+)(\s*=\s*)(.*)$")
+BARE_KEY = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 class CannotEdit(ValueError):
@@ -48,6 +49,11 @@ def format_value(value: Any) -> str:
     if isinstance(value, (list, tuple)):
         return "[" + ", ".join(format_value(item) for item in value) + "]"
     raise TypeError(f"cannot write {type(value).__name__} to TOML")
+
+
+def format_key(key: str) -> str:
+    """A key as TOML writes it: bare when it can be, quoted otherwise."""
+    return key if BARE_KEY.match(key) else format_value(key)
 
 
 def _value_end(rest: str) -> int:
@@ -132,32 +138,98 @@ def update(text: str, changes: dict[str, dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _entries(lines: list[str]) -> list[tuple[int, int]]:
+    """Where each key = value of a section body starts and ends, multi-line ones included.
+
+    A line that does not parse alone is the start of a longer value: lines
+    are added until tomllib reads the whole as one entry.
+    """
+    spans = []
+    index = 0
+    while index < len(lines):
+        stripped = lines[index].strip()
+        if not stripped or stripped.startswith("#"):
+            index += 1
+            continue
+        end = index + 1
+        while True:
+            try:
+                tomllib.loads("\n".join(lines[index:end]))
+                break
+            except tomllib.TOMLDecodeError:
+                if end >= len(lines):
+                    raise CannotEdit(lines[index]) from None
+                end += 1
+        spans.append((index, end))
+        index = end
+    return spans
+
+
+def replace_table(text: str, name: str, table: dict[str, Any]) -> str:
+    """The section `name` holding exactly `table`, its comments kept.
+
+    The entries are written after the section's comments — which are its
+    explanations —, in the order of `table`; the blank lines that close the
+    section stay where they were.
+    """
+    lines = text.splitlines()
+    start = next((index for index, line in enumerate(lines)
+                  if (match := SECTION.match(line)) and match.group(1) == name), None)
+    entries = [f"{format_key(key)} = {format_value(value)}" for key, value in table.items()]
+    if start is None:
+        if not entries:
+            return text if text.endswith("\n") or not text else text + "\n"
+        if lines and lines[-1].strip():
+            lines.append("")
+        return "\n".join([*lines, f"[{name}]", *entries]) + "\n"
+
+    end = next((index for index in range(start + 1, len(lines))
+                if lines[index].lstrip().startswith("[")), len(lines))
+    body = lines[start + 1:end]
+    dropped = {index for first, last in _entries(body) for index in range(first, last)}
+    kept = [line for index, line in enumerate(body) if index not in dropped]
+    closing = len(kept)
+    while closing and not kept[closing - 1].strip():
+        closing -= 1
+    body = kept[:closing] + entries + kept[closing:]
+    return "\n".join(lines[:start + 1] + body + lines[end:]) + "\n"
+
+
 def dumps(document: dict[str, Any]) -> str:
     """A clean document, without comments: the fallback when editing is impossible."""
     blocks = [
         "\n".join(
-            f"{key} = {format_value(value)}"
+            f"{format_key(key)} = {format_value(value)}"
             for key, value in document.items() if not isinstance(value, dict)
         )
     ]
     for section, values in document.items():
         if isinstance(values, dict):
-            body = "\n".join(f"{key} = {format_value(value)}" for key, value in values.items())
+            body = "\n".join(
+                f"{format_key(key)} = {format_value(value)}" for key, value in values.items()
+            )
             blocks.append(f"[{section}]\n{body}")
     return "\n\n".join(block for block in blocks if block) + "\n"
 
 
-def apply(text: str, changes: dict[str, dict[str, Any]]) -> str:
-    """update() when it can be trusted, a clean rewrite otherwise.
+def apply(text: str, changes: dict[str, dict[str, Any]],
+          tables: dict[str, dict[str, Any]] | None = None) -> str:
+    """update() and replace_table() when they can be trusted, a clean rewrite otherwise.
 
-    The edited text is read back: if it does not parse, or does not say
-    what was asked, the whole document is rewritten from its values.
+    `changes` sets some keys of a section; `tables` replaces a whole section,
+    the keys it no longer holds included. The edited text is read back: if
+    it does not parse, or does not say what was asked, the whole document
+    is rewritten from its values.
     """
+    tables = tables or {}
     try:
         edited = update(text, changes)
+        for name, table in tables.items():
+            edited = replace_table(edited, name, table)
         parsed = tomllib.loads(edited)
         if all(parsed.get(section, {}).get(key) == value
-               for section, values in changes.items() for key, value in values.items()):
+               for section, values in changes.items() for key, value in values.items()) \
+                and all(parsed.get(name, {}) == table for name, table in tables.items()):
             return edited
     except (CannotEdit, tomllib.TOMLDecodeError):
         pass
@@ -167,4 +239,6 @@ def apply(text: str, changes: dict[str, dict[str, Any]]) -> str:
         document = {}
     for section, values in changes.items():
         document.setdefault(section, {}).update(values)
+    for name, table in tables.items():
+        document[name] = dict(table)
     return dumps(document)
