@@ -102,6 +102,70 @@ class ApplyTest(unittest.TestCase):
         self.assertEqual(tomllib.loads(edited), {"model": {"name": "small"}})
 
 
+SNIPPETS = '''\
+[output]
+mode = "cursor"
+
+[snippets]
+# A cue you say -> the text typed in its place.
+"mon adresse" = "12 rue des Lilas"   # at home
+signature = """
+Bien à vous,
+Salva"""
+
+[overlay]
+enabled = true
+'''
+
+
+class ReplaceTableTest(unittest.TestCase):
+    def test_the_section_holds_exactly_the_table_and_keeps_its_comments(self):
+        table = {"mon adresse": "3 place du Marché", "my link": "https://cal.com/me"}
+        edited = tomlwrite.replace_table(SNIPPETS, "snippets", table)
+        self.assertEqual(tomllib.loads(edited)["snippets"], table)
+        self.assertIn("# A cue you say -> the text typed in its place.", edited)
+        self.assertIn('[snippets]\n# A cue you say -> the text typed in its place.\n'
+                      '"mon adresse" = "3 place du Marché"\n"my link" = "https://cal.com/me"\n'
+                      '\n[overlay]', edited)
+
+    def test_the_other_sections_are_left_as_written(self):
+        edited = tomlwrite.replace_table(SNIPPETS, "snippets", {})
+        self.assertTrue(edited.startswith('[output]\nmode = "cursor"\n\n[snippets]\n'))
+        self.assertTrue(edited.endswith("[overlay]\nenabled = true\n"))
+        self.assertEqual(tomllib.loads(edited)["snippets"], {})
+
+    def test_a_multi_line_text_is_written_back_whole(self):
+        table = {"signature": "Bien à vous,\nSalva", "c'est \"moi\"": "x"}
+        edited = tomlwrite.replace_table(SNIPPETS, "snippets", table)
+        self.assertEqual(tomllib.loads(edited)["snippets"], table)
+
+    def test_a_missing_section_is_added_at_the_end(self):
+        edited = tomlwrite.replace_table(DOCUMENT, "snippets", {"mon adresse": "ici"})
+        self.assertTrue(edited.startswith(DOCUMENT))
+        self.assertEqual(tomllib.loads(edited)["snippets"], {"mon adresse": "ici"})
+
+    def test_an_empty_table_does_not_add_a_section(self):
+        self.assertEqual(tomlwrite.replace_table(DOCUMENT, "snippets", {}), DOCUMENT)
+
+    def test_an_entry_that_never_parses_is_beyond_this_editor(self):
+        with self.assertRaises(tomlwrite.CannotEdit):
+            tomlwrite.replace_table('[snippets]\n"open = """\n', "snippets", {})
+
+
+class ApplyTablesTest(unittest.TestCase):
+    def test_keys_and_tables_in_one_edit(self):
+        edited = tomlwrite.apply(SNIPPETS, {"output": {"mode": "clipboard"}},
+                                 {"snippets": {"a b": "c"}})
+        parsed = tomllib.loads(edited)
+        self.assertEqual(parsed["output"]["mode"], "clipboard")
+        self.assertEqual(parsed["snippets"], {"a b": "c"})
+        self.assertIn("# A cue you say", edited)
+
+    def test_the_clean_rewrite_quotes_the_cues(self):
+        edited = tomlwrite.apply("this is [not toml", {}, {"snippets": {"mon adresse": "ici"}})
+        self.assertEqual(tomllib.loads(edited), {"snippets": {"mon adresse": "ici"}})
+
+
 class ConfigUpdateTest(unittest.TestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
@@ -118,6 +182,14 @@ class ConfigUpdateTest(unittest.TestCase):
         with mock.patch.object(config_module, "EXAMPLE_PATH", Path("/nonexistent")):
             config_module.update({"model": {"language": "en"}}, self.path)
         self.assertEqual(tomllib.loads(self.path.read_text()), {"model": {"language": "en"}})
+
+    def test_snippets_written_into_the_commented_example(self):
+        table = {"mon adresse perso": "12 rue des Lilas", "ma signature": "Bien à vous,\nSalva"}
+        config_module.update({}, self.path, tables={"snippets": table})
+        text = self.path.read_text(encoding="utf-8")
+        self.assertIn("# Pick cues you would not say otherwise", text)
+        self.assertIn("# whisper-desk configuration", text)
+        self.assertEqual(config_module.load(self.path)["snippets"], table)
 
     def test_every_default_value_can_be_written_back(self):
         """What the settings window writes, the loader must read back unchanged."""

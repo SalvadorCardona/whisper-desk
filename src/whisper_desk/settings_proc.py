@@ -17,7 +17,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from . import capture, hotkey, window_proc
+from . import capture, hotkey, snippets, window_proc
 from . import config as config_module
 from .recorder import CHANNELS, CHUNK_BYTES, MIN_THRESHOLD, RATE, _rms
 from .spectrum import visual_level
@@ -179,9 +179,13 @@ class SettingsController:
         self.meter = LevelMeter(emit)
 
     def values(self) -> dict[str, Any]:
-        return {
+        values: dict[str, Any] = {
             field: self.config[section][key] for field, (section, key) in FIELDS.items()
         }
+        values["snippets"] = [
+            [cue, text] for cue, text in self.config["snippets"].items() if isinstance(text, str)
+        ]
+        return values
 
     def snapshot(self) -> dict[str, Any]:
         values = self.values()
@@ -247,16 +251,45 @@ class SettingsController:
                 changes.setdefault(section, {})[key] = value
         return changes
 
+    def snippet_table(self, rows: list[Any]) -> dict[str, Any]:
+        """The [snippets] section the window's rows make; ValueError says what is wrong."""
+        current = self.config["snippets"]
+        # A value the window cannot show is not the window's to drop.
+        table = {cue: text for cue, text in current.items() if not isinstance(text, str)}
+        seen: dict[str, str] = {}
+        for row in rows:
+            cue, text = (str(part).strip() for part in (list(row) + ["", ""])[:2])
+            if not cue and not text:
+                continue
+            if not cue:
+                raise ValueError(f"The snippet “{text[:30]}” has no cue")
+            key = snippets.cue_key(cue)
+            if not key:
+                raise ValueError(f"The cue “{cue}” has no word to say")
+            if key in seen:
+                raise ValueError(f"“{seen[key]}” and “{cue}” are the same cue")
+            seen[key] = cue
+            table[cue] = text
+        return table
+
     def save(self, values: dict[str, Any]) -> dict[str, Any]:
         accent = values.get("accent", self.config["overlay"]["accent"])
         if not COLOUR.match(str(accent)):
             return {"status": f"The colour {accent} is not of the form #rrggbb", "saved": False}
         changes = self.changes(values)
-        if not changes:
+        tables = {}
+        if "snippets" in values:
+            try:
+                table = self.snippet_table(values["snippets"] or [])
+            except ValueError as error:
+                return {"status": str(error), "saved": False}
+            if table != self.config["snippets"]:
+                tables["snippets"] = table
+        if not changes and not tables:
             return {"status": "Nothing to change", "saved": True}
         self.meter.stop()
         try:
-            config_module.update(changes)
+            config_module.update(changes, tables=tables)
         except OSError as error:
             return {"status": f"Could not write the configuration: {error}", "saved": False}
         self.config = config_module.load()

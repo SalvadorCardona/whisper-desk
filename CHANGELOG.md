@@ -4,6 +4,14 @@
 
 ### Added
 
+- **Snippets in the settings window** (Wispr Flow edits its snippets in the app): a
+  **Snippets** list in `whisper-desk settings` shows each cue with its text, and
+  **Add…**, **Edit…** and **Remove** change them without opening `config.toml` — the text
+  may hold several lines. **Save** rewrites only the `[snippets]` section, its comments
+  and the rest of the file kept, and the daemon takes the change at once. Two cues
+  whisper-desk would hear the same (*Mon adresse.* and *mon adresse*), a text without a
+  cue, or a cue made of punctuation alone are refused with a message, and nothing is
+  written.
 - **Hesitations left out** (Wispr Flow's *filler removal*): the *euh*, *heu*, *hum*,
   *hmm*, *um*, *uh*, *erm* Whisper writes down go, with the commas of the pause around
   them, and a word or a run of up to three words said twice in a row is written once —

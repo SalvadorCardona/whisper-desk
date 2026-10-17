@@ -5,7 +5,8 @@ A view launched with the system Python, like the overlay and the history:
 settings_proc.py sends it the values and the choices on stdin, and receives
 on stdout what the user asks for, one JSON object per line:
 
-    stdin   {"values": {...}, "choices": {...}, "hotkey": {"binding", "label"}}
+    stdin   {"values": {..., "snippets": [[cue, text], ...]}, "choices": {...},
+             "hotkey": {"binding", "label"}}
             {"level": 0.42, "meter": "..."}  {"status": "...", "saved": true}
     stdout  {"action": "save", "values": {...}}
             {"action": "test_mic" | "stop_mic", "device": "..."}
@@ -22,7 +23,8 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GLib, Gtk  # noqa: E402
+gi.require_version("Pango", "1.0")
+from gi.repository import Gdk, GLib, Gtk, Pango  # noqa: E402
 
 CSS = """
 .section { font-weight: bold; margin-top: 18px; }
@@ -106,6 +108,37 @@ class SettingsWindow(Gtk.Window):
         self.vocabulary.set_placeholder_text("Animalink, Kubernetes, pull request…")
         self._field("Vocabulary", self.vocabulary)
         self._hint("Proper nouns, tools and jargon the model tends to mangle, separated by commas.")
+
+        self._section("Snippets")
+        self.snippets = Gtk.ListStore(str, str)
+        self.snippet_view = Gtk.TreeView(model=self.snippets)
+        self.snippet_view.set_headers_visible(True)
+        self.snippet_view.connect("row-activated", lambda *_args: self._on_edit_snippet(None))
+        for index, title in enumerate(("Say", "To type")):
+            renderer = Gtk.CellRendererText()
+            renderer.props.ellipsize = Pango.EllipsizeMode.END
+            column = Gtk.TreeViewColumn(title, renderer)
+            column.set_cell_data_func(renderer, self._render_snippet, index)
+            column.set_resizable(True)
+            column.set_expand(index == 1)
+            if index == 0:
+                column.set_min_width(180)
+            self.snippet_view.append_column(column)
+        frame = Gtk.ScrolledWindow()
+        frame.set_shadow_type(Gtk.ShadowType.IN)
+        frame.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        frame.set_min_content_height(120)
+        frame.add(self.snippet_view)
+        self._field("", frame)
+        buttons = Gtk.Box(spacing=8)
+        for label, handler in (("Add…", self._on_add_snippet), ("Edit…", self._on_edit_snippet),
+                               ("Remove", self._on_remove_snippet)):
+            button = Gtk.Button(label=label)
+            button.connect("clicked", handler)
+            buttons.pack_start(button, False, False, 0)
+        self._field("", buttons)
+        self._hint("Say the cue, alone or inside a sentence, and its text is typed instead. "
+                   "Pick cues you would not say otherwise: “my home address”, not “thanks”.")
 
         self._section("Microphone")
         self.device = self._combo("Device")
@@ -219,6 +252,9 @@ class SettingsWindow(Gtk.Window):
             self._fill(self.mode, choices["mode"], values["mode"])
             self._fill(self.position, choices["position"], values["position"])
             self.vocabulary.set_text(values["vocabulary"])
+            self.snippets.clear()
+            for cue, text in values.get("snippets", []):
+                self.snippets.append([cue, text])
             self.overlay.set_active(bool(values["overlay"]))
             colour = Gdk.RGBA()
             if colour.parse(values["accent"]):
@@ -250,12 +286,84 @@ class SettingsWindow(Gtk.Window):
             "overlay": self.overlay.get_active(),
             "position": self.position.get_active_id(),
             "accent": hex_colour(self.accent.get_rgba()),
+            "snippets": [[row[0], row[1]] for row in self.snippets],
         }
 
     def _on_save(self, _button: Gtk.Button) -> None:
         self._stop_test()
         self.status.set_text("Saving…")
         send({"action": "save", "values": self.values()})
+
+    @staticmethod
+    def _render_snippet(_column, renderer, model, tree_iter, index) -> None:
+        # A multi-line text shows its first line: the whole is in Edit….
+        text = model[tree_iter][index]
+        first, _newline, rest = text.partition("\n")
+        renderer.props.text = first + (" ⏎ …" if rest else "")
+
+    def _on_add_snippet(self, _button: Gtk.Button) -> None:
+        edited = self._snippet_dialog("New snippet", "", "")
+        if edited:
+            tree_iter = self.snippets.append(list(edited))
+            self.snippet_view.get_selection().select_iter(tree_iter)
+
+    def _on_edit_snippet(self, _button: Gtk.Button | None) -> None:
+        model, tree_iter = self.snippet_view.get_selection().get_selected()
+        if tree_iter is None:
+            self.status.set_text("Select a snippet first.")
+            return
+        edited = self._snippet_dialog("Edit the snippet", model[tree_iter][0], model[tree_iter][1])
+        if edited:
+            model[tree_iter][0], model[tree_iter][1] = edited
+
+    def _on_remove_snippet(self, _button: Gtk.Button) -> None:
+        model, tree_iter = self.snippet_view.get_selection().get_selected()
+        if tree_iter is not None:
+            model.remove(tree_iter)
+
+    def _snippet_dialog(self, title: str, cue: str, text: str) -> tuple[str, str] | None:
+        """The cue and its text as the user leaves them, or None if cancelled."""
+        dialog = Gtk.Dialog(title=title, transient_for=self, modal=True)
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dialog.add_button("OK", Gtk.ResponseType.OK).get_style_context().add_class("suggested-action")
+        dialog.set_default_response(Gtk.ResponseType.OK)
+        dialog.set_default_size(460, 300)
+        box = dialog.get_content_area()
+        box.set_spacing(8)
+        box.set_border_width(14)
+        cue_label = Gtk.Label(label="What you say")
+        cue_label.set_xalign(0.0)
+        cue_entry = Gtk.Entry()
+        cue_entry.set_text(cue)
+        cue_entry.set_placeholder_text("my home address")
+        cue_entry.set_activates_default(True)
+        text_label = Gtk.Label(label="What is typed")
+        text_label.set_xalign(0.0)
+        buffer = Gtk.TextBuffer()
+        buffer.set_text(text)
+        text_view = Gtk.TextView(buffer=buffer)
+        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_shadow_type(Gtk.ShadowType.IN)
+        scroller.add(text_view)
+        hint = Gtk.Label(label="Case and punctuation of the cue do not matter. "
+                               "The text may hold several lines.")
+        hint.set_xalign(0.0)
+        hint.set_line_wrap(True)
+        hint.get_style_context().add_class("hint")
+        box.pack_start(cue_label, False, False, 0)
+        box.pack_start(cue_entry, False, False, 0)
+        box.pack_start(text_label, False, False, 0)
+        box.pack_start(scroller, True, True, 0)
+        box.pack_start(hint, False, False, 0)
+        dialog.show_all()
+        answer = dialog.run()
+        cue = cue_entry.get_text().strip()
+        text = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), False).strip()
+        dialog.destroy()
+        if answer != Gtk.ResponseType.OK or not cue:
+            return None
+        return cue, text
 
     def _on_test(self, _button: Gtk.Button) -> None:
         if self.testing:
