@@ -61,6 +61,9 @@ DEFAULTS: dict[str, Any] = {
         "corrections": True,
         # Leaves the hesitations out: "euh", "um", a word said twice.
         "hesitations": True,
+        # Writes the punctuation said aloud: "virgule", "point d'interrogation",
+        # "à la ligne", "comma", "new line".
+        "spoken_punctuation": True,
         # Loaded when the daemon starts: the first dictation is instant.
         "preload": True,
     },

@@ -261,6 +261,33 @@ once, except the doubles the language means: *nous nous voyons*, *vous vous trom
 `hesitations = false` in `[model]` keeps everything Whisper wrote. `bench/hesitations/`
 measures them on recordings (see Development).
 
+### Punctuation said aloud
+
+Say the mark you want, as you would to someone taking notes, and it is written:
+
+| You say | whisper-desk writes |
+|---|---|
+| *Je viens demain virgule puis je repars lundi point* | Je viens demain, puis je repars lundi. |
+| *Tu as reçu mon message point d'interrogation* | Tu as reçu mon message ? |
+| *Bonjour Marie virgule à la ligne merci pour ton retour point* | Bonjour Marie,<br>Merci pour ton retour. |
+| *We need three things colon milk comma bread and eggs period* | We need three things: milk, bread and eggs. |
+
+French: *virgule*, *point*, *point d'interrogation*, *point d'exclamation*,
+*point-virgule*, *deux points*, *à la ligne* (or *retour à la ligne*, *nouvelle ligne*),
+*nouveau paragraphe*. English: *comma*, *period*, *full stop*, *question mark*,
+*exclamation mark* (or *point*), *semicolon*, *colon*, *new line*, *new paragraph*. French
+marks get the space French puts before *?*, *!*, *:* and *;*. Whisper's own punctuation
+around the word gives way to the mark you said, and what follows a full stop or a line
+break takes a capital.
+
+The same words said as words stay words: after an article (*il manque une virgule*, *on
+fait le point*, *a new line of products*, *the trial period*), inside a number (*trois
+virgule cinq*), or followed by what makes them a noun (*deux points d'avance*, *la ligne de
+départ*). *Point* and *period* are only a full stop where one can stand — at the end of a
+sentence or before a capital: *mon point de vue* and *a good point, let me think* stay as
+they are. Rules run on your machine; `spoken_punctuation = false` in `[model]` keeps the
+words. `bench/punctuation/` measures them on recordings (see Development).
+
 ### Snippets: say a cue, get the text you keep retyping
 
 Save the texts you type over and over — an address, a calendar link, a signature — under
@@ -390,6 +417,7 @@ language = "fr"               # ISO code, or "auto" for detection
 initial_prompt = ""           # vocabulary to favour (proper nouns, jargon)
 corrections = true            # "mardi, non, plutôt mercredi" is written "mercredi"
 hesitations = true            # "euh", "um" and stuttered words left out
+spoken_punctuation = true     # "virgule", "point", "à la ligne", "comma", "new line"
 
 [recording]
 backend = "auto"              # auto | arecord | parec | rec | sox | ffmpeg
@@ -610,6 +638,7 @@ to test all three from any of them.
 | `src/whisper_desk/transcriber.py` | faster-whisper, GPU/CPU selection |
 | `src/whisper_desk/backtrack.py` | corrections said aloud ("non, plutôt…") carried out |
 | `src/whisper_desk/hesitations.py` | hesitations ("euh", "um") and stuttered words left out |
+| `src/whisper_desk/punctuation.py` | punctuation said aloud ("virgule", "à la ligne") written as marks |
 | `src/whisper_desk/snippets.py` | spoken cues replaced by the text saved for them |
 | `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, Mutter, SendKeys, System Events |
 | `src/whisper_desk/mutter_keyboard.py` | GNOME remote desktop session (system Python) |
@@ -672,6 +701,17 @@ the word error rate before and after, and how many sentences come out exact:
 ```sh
 python3 bench/hesitations/measure.py -v
 ~/.local/share/whisper-desk/venv/bin/python bench/hesitations/measure.py --audio -v
+```
+
+`bench/punctuation/` measures the punctuation said aloud: 28 sentences that say a mark or
+a line break, French and English, and 14 control sentences where the same words are
+words (*on fait le point*, *trois virgule cinq*, *the trial period*, *a good point*). Marks
+count as much as words in its error rate — *demain virgule* against *demain,* is two
+errors, a missing line break one:
+
+```sh
+python3 bench/punctuation/measure.py -v
+~/.local/share/whisper-desk/venv/bin/python bench/punctuation/measure.py --audio -v
 ```
 
 ## License

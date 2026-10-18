@@ -36,6 +36,7 @@ def settings(**overrides):
         "context": True,
         "corrections": True,
         "hesitations": True,
+        "spoken_punctuation": True,
         "preload": False,
     }
     model.update(overrides)
@@ -146,6 +147,16 @@ class TranscribeTest(unittest.TestCase):
     def test_the_hesitations_can_be_kept(self):
         text, _ = self.transcribe([Segment("Euh, je je pense.")], hesitations=False)
         self.assertEqual(text, "Euh, je je pense.")
+
+    @requires_numpy
+    def test_the_spoken_punctuation_is_written(self):
+        text, _ = self.transcribe([Segment("Bonjour Marie virgule à la ligne, euh, merci point.")])
+        self.assertEqual(text, "Bonjour Marie,\nMerci.")
+
+    @requires_numpy
+    def test_the_spoken_punctuation_can_be_kept_as_words(self):
+        text, _ = self.transcribe([Segment("Bonjour virgule merci.")], spoken_punctuation=False)
+        self.assertEqual(text, "Bonjour virgule merci.")
 
     @requires_numpy
     def test_the_vocabulary_goes_out_as_hotwords(self):

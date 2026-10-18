@@ -474,6 +474,26 @@ class SnippetsTest(DictationCase):
         self.assertEqual(self.delivered, ["Send it to my address."])
 
 
+class SpokenPunctuationTest(DictationCase):
+    """A sentence that opens on a mark or follows a line break gets no space."""
+
+    def dictate(self) -> None:
+        with self.service() as service:
+            self.listening(service)
+            service.toggle()
+            self.assertTrue(wait_until(lambda: service.session is None))
+
+    def test_a_mark_said_after_a_pause_is_glued_to_its_sentence(self):
+        self.recorder.segments[:] = [b"See you tomorrow", b"?", b"Bye."]
+        self.dictate()
+        self.assertEqual(self.delivered, ["See you tomorrow", "?", " Bye."])
+
+    def test_a_line_break_starts_the_next_sentence_at_the_margin(self):
+        self.recorder.segments[:] = [b"Hi John,\n", b"Thanks.", b"\nBye."]
+        self.dictate()
+        self.assertEqual(self.delivered, ["Hi John,\n", "Thanks.", "\nBye."])
+
+
 class HistoryTest(DictationCase):
     """One entry per dictation, whatever the number of sentences it took."""
 
@@ -507,6 +527,11 @@ class HistoryTest(DictationCase):
         self.assertEqual(details["model"], "fake")
         self.assertEqual(details["keep_days"], 30)
         self.assertGreaterEqual(details["duration"], 0.0)
+
+    def test_the_entry_is_the_text_as_it_was_inserted(self):
+        self.recorder.segments[:] = [b"Hi John,\n", b"Thanks", b"!"]
+        self.dictate()
+        self.assertEqual(self.recorded[0][0], "Hi John,\nThanks!")
 
     def test_nothing_said_leaves_no_entry(self):
         self.recorder.segments[:] = []

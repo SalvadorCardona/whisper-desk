@@ -10,7 +10,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from . import backtrack, hesitations
+from . import backtrack, hesitations, punctuation
 
 logger = logging.getLogger("whisper-desk.transcriber")
 
@@ -273,4 +273,7 @@ class Transcriber:
         # very pause that tells a correction from an ordinary "non".
         if self.config.get("hesitations", True):
             text = hesitations.apply(text)
+        # Last: "virgule" must not pass for a word the rules above could drop.
+        if self.config.get("spoken_punctuation", True):
+            text = punctuation.apply(text)
         return text

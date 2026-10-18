@@ -10,7 +10,8 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 [Wispr Flow help center](https://docs.wisprflow.ai/) (read on 2026-10-15),
 [Create and use snippets](https://docs.wisprflow.ai/articles/5784437944-create-and-use-snippets)
 (read on 2026-10-16); filler removal, "Remove fillers" on the features page (read on
-2026-10-16).
+2026-10-16); spoken punctuation, "Auto punctuation" on the features page (read on
+2026-10-18).
 
 **Status**: done · partial · missing · out of scope.
 **Effort**: S (a session) · M (a few sessions) · L (to split into several gaps).
@@ -21,7 +22,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 |---|---|---|---|---|
 | **Backtrack** — a correction said mid-sentence keeps only the corrected version | `backtrack.py`: "non, plutôt", "ou plutôt", "je veux dire", "no wait", "actually", "I mean", "or rather"… carried out by local rules; measured in `bench/backtrack/` | partial | high | S |
 | **Filler removal** — "um", "uh", pauses | Whisper drops most hesitations by itself; `hesitations.py` removes those it writes ("euh", "hum", "um", "uh", "erm") and words or runs of up to three words said twice in a row, keeping intended doubles; measured in `bench/hesitations/`. A hesitation Whisper mishears as a word ("A", "« E »") stays | done | high | S |
-| **Auto punctuation** — inferred from pauses and tone, spoken marks ("comma") | Whisper's own punctuation and capitals; spoken marks ("virgule", "à la ligne") not interpreted | partial | medium | S |
+| **Auto punctuation** — inferred from pauses and tone, spoken marks ("comma") | Whisper's own punctuation and capitals; spoken marks and line breaks ("virgule", "point d'interrogation", "à la ligne", "comma", "new paragraph") written by `punctuation.py`, measured in `bench/punctuation/` (in PR). No quotes or brackets said aloud yet | partial | medium | S |
 | **Numbered lists** — spoken enumerations become a formatted list | — | missing | medium | M |
 | **Name spelling from context** | `vocabulary` (hotwords) and the context of the dictation fed back to the model | partial | high | — |
 | **100+ languages** | every Whisper language; `language = "auto"` detects one language per sentence | done | medium | — |
@@ -35,7 +36,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 |---|---|---|---|---|
 | **Works in any app** | insertion at the cursor through the clipboard and a paste shortcut (uinput, Mutter, SendKeys, System Events) | done | — | — |
 | **Personal dictionary**, fed by the words you correct | `vocabulary` in the settings window, filled by hand; no learning from corrections | partial | high | M |
-| **Snippets** — a spoken cue inserts a longer text | `[snippets]` in `config.toml`, `snippets.py`: alone or inside a sentence, case and punctuation ignored, longest cue wins, multi-line texts; measured in `bench/snippets/`; edited in the settings window too (in PR). No rich text (bold, links) | partial | high | S |
+| **Snippets** — a spoken cue inserts a longer text | `[snippets]` in `config.toml`, `snippets.py`: alone or inside a sentence, case and punctuation ignored, longest cue wins, multi-line texts; measured in `bench/snippets/`; edited in the settings window too (#25). No rich text (bold, links) | partial | high | S |
 | **Styles** — tone adapted to the app (formal in docs, casual in chat) | — | missing | medium | L |
 | **Command Mode** — select text, say how to rewrite it | — (would need a local model, e.g. Ollama) | missing | high | L |
 | **Developer syntax** — camelCase, snake_case, CLI commands, file tagging in Cursor | — | missing | medium | M |
@@ -70,9 +71,19 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   sentences WER 19.7 % → 0.0 % (26/26 exact); `small` (CPU) 15.7 % → 5.6 % (17/26);
   `large-v3-turbo` (GPU) 13.5 % → 3.4 % (20/26); no control sentence changed. What remains
   comes from the synthetic voice, whose "euh" Whisper hears as "A" or "« E »".
-- 2026-10-17 — **Snippets in the settings window** (in PR): a Snippets list in
+- 2026-10-17 — **Snippets in the settings window** (merged, #25): a Snippets list in
   `whisper-desk settings`, with Add…, Edit… (multi-line text) and Remove. Save rewrites
   only the `[snippets]` section — the cues that went are removed from the file, its
   comments kept — and reloads the daemon; two cues heard the same, a text without a cue
   or a cue without a word are refused. A feature, no quality measure: 25 new tests
   (TOML section rewrite, settings controller). Left to do on snippets: rich text.
+- 2026-10-18 — **Spoken punctuation** (in PR): *virgule*, *point*, *point d'interrogation*,
+  *deux points*, *à la ligne*, *nouveau paragraphe*, *comma*, *period*, *question mark*,
+  *new line*… written as marks and line breaks by local rules, `model.spoken_punctuation =
+  true`; the same words said as words stay (after an article, in a number, *point* or
+  *period* where no full stop can stand). Sentences said after a pause join without a
+  stray space. Measure (`bench/punctuation/`, 28 sentences + 14 controls, error rate on
+  words and marks): written sentences 33.6 % → 0.0 % (28/28 exact); `small` (CPU)
+  51.0 % → 19.8 % (11/28); `large-v3-turbo` (GPU) 45.8 % → 9.9 % (15/28); no control
+  sentence changed. What remains is the transcription (Whisper's own commas, "come a"
+  for *comma*). Left to do: quotes and brackets said aloud.
