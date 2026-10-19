@@ -48,22 +48,22 @@ accent colour of the configuration.
 No data leaves the machine: transcription runs on your GPU (or your CPU)
 with [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
 
-📖 **[The documentation, online](https://cardona.digital/whisper-desk/)** — the same
+📖 **[The documentation, online](https://hermez.dev/whisper-desk/)** — the same
 text, but you can watch it work: a demo that dictates itself, the equalizer in motion,
 and every table on a page that is pleasant to read.
 
 <p align="center">
-  <a href="https://cardona.digital/whisper-desk/">
+  <a href="https://hermez.dev/whisper-desk/">
     <img src="docs/site-hero.png" alt="The whisper-desk site: home page and live demo" width="760">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://cardona.digital/whisper-desk/#usage">
+  <a href="https://hermez.dev/whisper-desk/#usage">
     <img src="docs/site-usage.png" alt="The site: the gestures of a dictation" width="376">
   </a>
   &nbsp;&nbsp;
-  <a href="https://cardona.digital/whisper-desk/#how-it-works">
+  <a href="https://hermez.dev/whisper-desk/#how-it-works">
     <img src="docs/site-how-it-works.png" alt="The site: the architecture, explained" width="376">
   </a>
 </p>
