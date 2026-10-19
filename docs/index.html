@@ -812,6 +812,18 @@
       stay as they are. <code>hesitations = false</code> keeps everything.
     </p>
 
+    <h3>Punctuation said aloud</h3>
+    <p>
+      Say the mark: <em>“Bonjour Marie virgule à la ligne merci point”</em> is written
+      <strong>Bonjour Marie,</strong> then <strong>Merci.</strong> on the next line,
+      <em>“Did you get my email question mark”</em> is written <strong>Did you get my
+      email?</strong> <em>Virgule</em>, <em>point</em>, <em>point d’interrogation</em>,
+      <em>deux points</em>, <em>à la ligne</em>, <em>nouveau paragraphe</em>, <em>comma</em>,
+      <em>period</em>, <em>new line</em>… The same words said as words stay words: <em>on
+      fait le point</em>, <em>trois virgule cinq</em>, <em>the trial period</em>.
+      <code>spoken_punctuation = false</code> keeps the words.
+    </p>
+
     <h3>Snippets</h3>
     <p>
       Save the texts you keep retyping under a cue, in the settings window or the
@@ -933,6 +945,7 @@ language = <span class="s">"fr"</span>               <span class="c"># ISO code,
 initial_prompt = <span class="s">""</span>           <span class="c"># vocabulary to favour (proper nouns, jargon)</span>
 corrections = <span class="n">true</span>            <span class="c"># "mardi, non, plutôt mercredi" is written "mercredi"</span>
 hesitations = <span class="n">true</span>            <span class="c"># "euh", "um" and stuttered words left out</span>
+spoken_punctuation = <span class="n">true</span>     <span class="c"># "virgule", "point", "à la ligne", "comma", "new line"</span>
 
 <span class="k">[recording]</span>
 backend = <span class="s">"auto"</span>              <span class="c"># auto | arecord | parec | rec | sox | ffmpeg</span>
@@ -1094,6 +1107,7 @@ margin = <span class="n">96</span>
           <tr><td><code>transcriber.py</code></td><td>faster-whisper, GPU/CPU selection</td></tr>
           <tr><td><code>backtrack.py</code></td><td>corrections said aloud (“non, plutôt…”) carried out</td></tr>
           <tr><td><code>hesitations.py</code></td><td>hesitations (“euh”, “um”) and stuttered words left out</td></tr>
+          <tr><td><code>punctuation.py</code></td><td>punctuation said aloud (“virgule”, “à la ligne”) written as marks</td></tr>
           <tr><td><code>snippets.py</code></td><td>spoken cues replaced by the text saved for them</td></tr>
           <tr><td><code>inject.py</code></td><td>simulated keystroke: <code>uinput</code>, SendKeys, System Events</td></tr>
           <tr><td><code>output.py</code></td><td>insertion at the cursor, clipboard, notifications</td></tr>

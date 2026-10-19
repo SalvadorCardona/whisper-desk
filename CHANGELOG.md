@@ -4,6 +4,31 @@
 
 ### Added
 
+- **Punctuation said aloud** (Wispr Flow's spoken punctuation): *virgule*, *point*,
+  *point d'interrogation*, *point d'exclamation*, *point-virgule*, *deux points*, *à la
+  ligne*, *nouveau paragraphe* — and *comma*, *period*, *full stop*, *question mark*,
+  *exclamation mark*, *semicolon*, *colon*, *new line*, *new paragraph* — are written as
+  the mark or the line break they name: "Bonjour Marie virgule à la ligne merci point" is
+  written "Bonjour Marie," then "Merci." on the next line. Whisper's own punctuation around
+  the word gives way, French marks get their space, and a full stop or a line break
+  capitalises what follows. The words said as words stay: after an article (*une
+  virgule*, *le point*, *a new line of products*), in a number (*trois virgule cinq*),
+  before what makes them a noun (*deux points d'avance*), and *point* or *period* anywhere
+  a full stop cannot stand (*mon point de vue*, *a good point, let me think*). A mark said
+  after a pause, alone in its sentence, is glued to the sentence before, and nothing is
+  put in front of what follows a line break. Local rules (`punctuation.py`), applied last;
+  `spoken_punctuation = false` in `[model]` keeps the words.
+- `bench/punctuation/`: 28 sentences that say a mark or a line break and 14 control
+  sentences, with synthetic recordings. Error rate on words and marks against the expected
+  text, before → after:
+  - written sentences: 33.6 % → 0.0 %, 28/28 exact; controls 0 % → 0 %;
+  - faster-whisper `small` (CPU, int8): 51.0 % → 19.8 %, 11/28 exact; controls
+    unchanged (7.0 %, transcription slips);
+  - faster-whisper `large-v3-turbo` (CUDA, float16): 45.8 % → 9.9 %, 15/28 exact;
+    controls unchanged (5.2 %).
+  What remains is mostly the transcription: the commas Whisper adds on its own ("Hi,
+  John,"), *comma* heard as "come a", *point-virgule* as a comma, *prêt virgule* as
+  "pré-virgule".
 - **Snippets in the settings window** (Wispr Flow edits its snippets in the app): a
   **Snippets** list in `whisper-desk settings` shows each cue with its text, and
   **Add…**, **Edit…** and **Remove** change them without opening `config.toml` — the text

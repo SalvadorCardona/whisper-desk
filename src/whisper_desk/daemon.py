@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from . import config as config_module
-from . import history, host, hotkey, inject, snippets
+from . import history, host, hotkey, inject, punctuation, snippets
 from . import output
 from .capture import CaptureUnavailable
 from .overlay_proc import OverlayProcess
@@ -131,7 +131,7 @@ class Session:
             self.service.state = "working"
             self.overlay.set_state("working")
             worker.join()
-            self.text = " ".join(self.parts)
+            self.text = punctuation.join(self.parts)
             logger.info(
                 "Dictation over: %d sentence(s), %d characters.", len(self.parts), len(self.text)
             )
@@ -162,7 +162,7 @@ class Session:
         if self.capture or not self.parts or not settings["history"]:
             return
         history.append(
-            " ".join(self.parts),
+            punctuation.join(self.parts),
             duration=self.listened,
             model=self.service.transcriber.model_name,
             keep_days=int(settings["history_days"]),
@@ -317,12 +317,14 @@ class Session:
                 continue
             self.heard.append(text)
             text = snippets.apply(text, self.service.config["snippets"])
-            # Later sentences are separated from the previous insertion by a space.
+            # Later sentences are separated from the previous insertion by a
+            # space, unless one opens on a mark or follows a line break.
+            spacing = punctuation.separator(self.parts[-1], text) if self.parts else ""
             self.parts.append(text)
             self.overlay.set_text(text)
             if not self.capture:
                 delivered = output.deliver(
-                    text if len(self.parts) == 1 else f" {text}",
+                    spacing + text,
                     self.service.config,
                     writer=self.writer,
                     overlay=self.overlay,

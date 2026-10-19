@@ -1,0 +1,43 @@
+id	lang	spoken	expected
+fr01	fr	Je viens demain virgule puis je repars lundi point	Je viens demain, puis je repars lundi.
+fr02	fr	Tu as reçu mon message point d'interrogation	Tu as reçu mon message ?
+fr03	fr	C'est une excellente nouvelle point d'exclamation	C'est une excellente nouvelle !
+fr04	fr	Bonjour Marie virgule à la ligne merci pour ton retour point	Bonjour Marie,\nMerci pour ton retour.
+fr05	fr	Il faut acheter deux points du pain virgule du lait et des œufs point	Il faut acheter : du pain, du lait et des œufs.
+fr06	fr	Le serveur est tombé point-virgule on relance demain point	Le serveur est tombé ; on relance demain.
+fr07	fr	Merci pour la réunion point nouveau paragraphe voici le compte rendu point	Merci pour la réunion.\n\nVoici le compte rendu.
+fr08	fr	On se retrouve à midi point Ensuite on ira voir le client point	On se retrouve à midi. Ensuite on ira voir le client.
+fr09	fr	Est-ce que la mise à jour est prête point d'interrogation	Est-ce que la mise à jour est prête ?
+fr10	fr	Au fait virgule tu as pensé au rapport point d'interrogation	Au fait, tu as pensé au rapport ?
+fr11	fr	Cordialement virgule à la ligne Salva	Cordialement,\nSalva
+fr12	fr	Le rapport est prêt virgule je te l'envoie ce soir point	Le rapport est prêt, je te l'envoie ce soir.
+fr13	fr	Quelle bonne idée point d'exclamation On commence quand point d'interrogation	Quelle bonne idée ! On commence quand ?
+fr14	fr	Retour à la ligne deuxième étape virgule tester l'installation	\nDeuxième étape, tester l'installation
+fr15	fr	J'ai trois questions deux points le prix virgule le délai et la garantie point	J'ai trois questions : le prix, le délai et la garantie.
+fr16	fr	Nouvelle ligne la réunion est déplacée à jeudi point	\nLa réunion est déplacée à jeudi.
+en01	en	I will be there tomorrow comma but I have to leave early period	I will be there tomorrow, but I have to leave early.
+en02	en	Did you get my email question mark	Did you get my email?
+en03	en	That is great news exclamation mark	That is great news!
+en04	en	Hi John comma new line thanks for your help period	Hi John,\nThanks for your help.
+en05	en	We need three things colon milk comma bread and eggs period	We need three things: milk, bread and eggs.
+en06	en	The build failed semicolon we will fix it tomorrow period	The build failed; we will fix it tomorrow.
+en07	en	Thanks for the meeting period new paragraph here are the notes period	Thanks for the meeting.\n\nHere are the notes.
+en08	en	Can we meet on Monday question mark	Can we meet on Monday?
+en09	en	Best regards comma new line Sam	Best regards,\nSam
+en10	en	The release is ready comma I will send it tonight full stop	The release is ready, I will send it tonight.
+en11	en	What a good idea exclamation point When do we start question mark	What a good idea! When do we start?
+en12	en	First comma open the settings period Then comma click save period	First, open the settings. Then, click save.
+ctl01	fr	C'est un bon point de départ pour la discussion.	C'est un bon point de départ pour la discussion.
+ctl02	fr	On fait le point demain matin.	On fait le point demain matin.
+ctl03	fr	Il manque une virgule dans cette phrase.	Il manque une virgule dans cette phrase.
+ctl04	fr	Le taux est de trois virgule cinq pour cent.	Le taux est de trois virgule cinq pour cent.
+ctl05	fr	La nouvelle ligne de métro ouvre en mars.	La nouvelle ligne de métro ouvre en mars.
+ctl06	fr	Nous avons deux points d'avance sur eux.	Nous avons deux points d'avance sur eux.
+ctl07	fr	À mon point de vue, c'est trop tôt.	À mon point de vue, c'est trop tôt.
+ctl08	fr	La viande est cuite à point.	La viande est cuite à point.
+ctl09	fr	Elle ne viendra point.	Elle ne viendra point.
+ctl10	en	The trial period ends next week.	The trial period ends next week.
+ctl11	en	You missed a comma in that sentence.	You missed a comma in that sentence.
+ctl12	en	We launched a new line of products.	We launched a new line of products.
+ctl13	en	That is a good point, let me think.	That is a good point, let me think.
+ctl14	en	Put a question mark at the end.	Put a question mark at the end.
