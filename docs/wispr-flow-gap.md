@@ -11,7 +11,8 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 [Create and use snippets](https://docs.wisprflow.ai/articles/5784437944-create-and-use-snippets)
 (read on 2026-10-16); filler removal, "Remove fillers" on the features page (read on
 2026-10-16); spoken punctuation, "Auto punctuation" on the features page (read on
-2026-10-18).
+2026-10-18); developer syntax, "Syntax awareness" and "File tagging" on the features page (read on
+2026-10-20).
 
 **Status**: done · partial · missing · out of scope.
 **Effort**: S (a session) · M (a few sessions) · L (to split into several gaps).
@@ -22,7 +23,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 |---|---|---|---|---|
 | **Backtrack** — a correction said mid-sentence keeps only the corrected version | `backtrack.py`: "non, plutôt", "ou plutôt", "je veux dire", "no wait", "actually", "I mean", "or rather"… carried out by local rules; measured in `bench/backtrack/` | partial | high | S |
 | **Filler removal** — "um", "uh", pauses | Whisper drops most hesitations by itself; `hesitations.py` removes those it writes ("euh", "hum", "um", "uh", "erm") and words or runs of up to three words said twice in a row, keeping intended doubles; measured in `bench/hesitations/`. A hesitation Whisper mishears as a word ("A", "« E »") stays | done | high | S |
-| **Auto punctuation** — inferred from pauses and tone, spoken marks ("comma") | Whisper's own punctuation and capitals; spoken marks and line breaks ("virgule", "point d'interrogation", "à la ligne", "comma", "new paragraph") written by `punctuation.py`, measured in `bench/punctuation/` (in PR). No quotes or brackets said aloud yet | partial | medium | S |
+| **Auto punctuation** — inferred from pauses and tone, spoken marks ("comma") | Whisper's own punctuation and capitals; spoken marks and line breaks ("virgule", "point d'interrogation", "à la ligne", "comma", "new paragraph") written by `punctuation.py`, measured in `bench/punctuation/` (#26). No quotes or brackets said aloud yet | partial | medium | S |
 | **Numbered lists** — spoken enumerations become a formatted list | — | missing | medium | M |
 | **Name spelling from context** | `vocabulary` (hotwords) and the context of the dictation fed back to the model | partial | high | — |
 | **100+ languages** | every Whisper language; `language = "auto"` detects one language per sentence | done | medium | — |
@@ -39,7 +40,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 | **Snippets** — a spoken cue inserts a longer text | `[snippets]` in `config.toml`, `snippets.py`: alone or inside a sentence, case and punctuation ignored, longest cue wins, multi-line texts; measured in `bench/snippets/`; edited in the settings window too (#25). No rich text (bold, links) | partial | high | S |
 | **Styles** — tone adapted to the app (formal in docs, casual in chat) | — | missing | medium | L |
 | **Command Mode** — select text, say how to rewrite it | — (would need a local model, e.g. Ollama) | missing | high | L |
-| **Developer syntax** — camelCase, snake_case, CLI commands, file tagging in Cursor | — | missing | medium | M |
+| **Developer syntax** — camelCase, snake_case, CLI commands, file tagging in Cursor | `casing.py`: a name said after its style ("camel case user name" → `userName`, snake, pascal, kebab, constant case) written in it, Whisper's glued and hyphenated forms understood; measured in `bench/casing/` (in PR). Not guessed from context without the style said; no CLI commands, no file tagging | partial | medium | M |
 | **History** of dictations | `whisper-desk history` and its window: search, copy, insert again, purge | done | — | — |
 | **Settings** | `whisper-desk settings`: language, model, microphone, shortcut, output, vocabulary, snippets, overlay | done | — | — |
 | **Overlay** | X11 overlay: live level, sentence transcribed, states, cancel | done | — | — |
@@ -77,7 +78,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   comments kept — and reloads the daemon; two cues heard the same, a text without a cue
   or a cue without a word are refused. A feature, no quality measure: 25 new tests
   (TOML section rewrite, settings controller). Left to do on snippets: rich text.
-- 2026-10-18 — **Spoken punctuation** (in PR): *virgule*, *point*, *point d'interrogation*,
+- 2026-10-18 — **Spoken punctuation** (merged, #26): *virgule*, *point*, *point d'interrogation*,
   *deux points*, *à la ligne*, *nouveau paragraphe*, *comma*, *period*, *question mark*,
   *new line*… written as marks and line breaks by local rules, `model.spoken_punctuation =
   true`; the same words said as words stay (after an article, in a number, *point* or
@@ -87,3 +88,17 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   51.0 % → 19.8 % (11/28); `large-v3-turbo` (GPU) 45.8 % → 9.9 % (15/28); no control
   sentence changed. What remains is the transcription (Whisper's own commas, "come a"
   for *comma*). Left to do: quotes and brackets said aloud.
+- 2026-10-20 — **Developer syntax** (in PR, partial): a name said after its style is
+  written in it — *camel case user name* → `userName`, *pascal case* → `PaymentService`,
+  *snake case* → `created_at`, *kebab* / *dash case* → `user-profile`, *constant* /
+  *screaming snake case* → `MAX_RETRIES` — by local rules, `model.developer_syntax = true`.
+  The name ends at a mark, a word that carries the sentence on (*et*, *dans*, *est*, *and*,
+  *from*, *to*, *is*) or another style; the style named alone or after an article stays as
+  words. Measure (`bench/casing/`, 24 sentences + 12 controls), names written exactly:
+  written sentences 0/25 → 25/25; `small` (CPU) English 0/12 → 5/12; `large-v3-turbo`
+  (GPU) English 0/12 → 7/12; no control sentence changed. French recordings are no
+  measure (the French synthetic voice cannot say English words: 0/13 before and after).
+  Tried and left out: pushing the style names as hotwords — `small` English 7/12, French
+  2/13, but `large-v3-turbo` English no better and its error rate up (14.8 % → 18.0 %).
+  Left to do: names without the style said (Wispr Flow guesses them from the app), CLI
+  commands, file tagging.

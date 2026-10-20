@@ -1,0 +1,37 @@
+id	lang	spoken	expected
+fr01	fr	Renomme la variable camel case user name	Renomme la variable userName
+fr02	fr	Crée une fonction camel case get user by id qui renvoie l'utilisateur	Crée une fonction getUserById qui renvoie l'utilisateur
+fr03	fr	La classe s'appelle pascal case payment service	La classe s'appelle PaymentService
+fr04	fr	Ajoute la colonne snake case created at dans la table	Ajoute la colonne created_at dans la table
+fr05	fr	Mets le composant dans le dossier kebab case user profile	Mets le composant dans le dossier user-profile
+fr06	fr	La constante constant case max retries vaut trois	La constante MAX_RETRIES vaut trois
+fr07	fr	Importe camel case use state depuis React	Importe useState depuis React
+fr08	fr	Appelle snake case send email puis snake case log event	Appelle send_email puis log_event
+fr09	fr	Le champ camel case first name est obligatoire	Le champ firstName est obligatoire
+fr10	fr	Passe la clé snake case api key en paramètre	Passe la clé api_key en paramètre
+fr11	fr	On garde pascal case user repository virgule pas l'autre	On garde UserRepository, pas l'autre
+fr12	fr	La branche s'appelle kebab case fix login redirect	La branche s'appelle fix-login-redirect
+en01	en	Rename the variable camel case user name	Rename the variable userName
+en02	en	Call camel case fetch orders and wait for the result	Call fetchOrders and wait for the result
+en03	en	The class is pascal case invoice generator	The class is InvoiceGenerator
+en04	en	Add the column snake case updated at to the table	Add the column updated_at to the table
+en05	en	Set constant case api base url in the env file	Set API_BASE_URL in the env file
+en06	en	Name the folder kebab case user settings	Name the folder user-settings
+en07	en	Import camel case use effect from React	Import useEffect from React
+en08	en	The function snake case parse date returns a string	The function parse_date returns a string
+en09	en	Use snake case user id as the key	Use user_id as the key
+en10	en	Export pascal case auth provider from the module	Export AuthProvider from the module
+en11	en	The variable is constant case database url period	The variable is DATABASE_URL.
+en12	en	Check out the branch kebab case add dark mode	Check out the branch add-dark-mode
+ctl01	fr	J'ai rangé le serpent dans une case du vivarium	J'ai rangé le serpent dans une case du vivarium
+ctl02	fr	On a mangé un kebab case départ pour tout le monde	On a mangé un kebab case départ pour tout le monde
+ctl03	fr	Le dromadaire et le chameau n'ont pas le même nombre de bosses	Le dromadaire et le chameau n'ont pas le même nombre de bosses
+ctl04	fr	Ce cas est constant depuis des années	Ce cas est constant depuis des années
+ctl05	fr	Le langage Pascal a beaucoup influencé les étudiants	Le langage Pascal a beaucoup influencé les étudiants
+ctl06	fr	Toutes nos colonnes sont en snake case	Toutes nos colonnes sont en snake case
+ctl07	en	The snake hid in a case under the bed	The snake hid in a case under the bed
+ctl08	en	That is a constant case of bad luck	That is a constant case of bad luck
+ctl09	en	Blaise Pascal wrote about probability	Blaise Pascal wrote about probability
+ctl10	en	The camel carried the case across the desert	The camel carried the case across the desert
+ctl11	en	We use camel case for variables and snake case for columns	We use camel case for variables and snake case for columns
+ctl12	en	The pascal case convention is common in C sharp	The pascal case convention is common in C sharp

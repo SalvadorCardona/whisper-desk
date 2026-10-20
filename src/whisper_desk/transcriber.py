@@ -10,7 +10,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from . import backtrack, hesitations, punctuation
+from . import backtrack, casing, hesitations, punctuation
 
 logger = logging.getLogger("whisper-desk.transcriber")
 
@@ -276,4 +276,7 @@ class Transcriber:
         # Last: "virgule" must not pass for a word the rules above could drop.
         if self.config.get("spoken_punctuation", True):
             text = punctuation.apply(text)
+        # After the marks: a comma said aloud ends the name it follows.
+        if self.config.get("developer_syntax", True):
+            text = casing.apply(text)
         return text

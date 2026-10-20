@@ -37,6 +37,7 @@ def settings(**overrides):
         "corrections": True,
         "hesitations": True,
         "spoken_punctuation": True,
+        "developer_syntax": True,
         "preload": False,
     }
     model.update(overrides)
@@ -157,6 +158,16 @@ class TranscribeTest(unittest.TestCase):
     def test_the_spoken_punctuation_can_be_kept_as_words(self):
         text, _ = self.transcribe([Segment("Bonjour virgule merci.")], spoken_punctuation=False)
         self.assertEqual(text, "Bonjour virgule merci.")
+
+    @requires_numpy
+    def test_the_names_said_in_a_style_are_written_in_it(self):
+        text, _ = self.transcribe([Segment("Renomme camel case user name virgule puis relance.")])
+        self.assertEqual(text, "Renomme userName, puis relance.")
+
+    @requires_numpy
+    def test_the_names_said_in_a_style_can_be_kept_as_words(self):
+        text, _ = self.transcribe([Segment("Renomme camel case user name.")], developer_syntax=False)
+        self.assertEqual(text, "Renomme camel case user name.")
 
     @requires_numpy
     def test_the_vocabulary_goes_out_as_hotwords(self):

@@ -83,3 +83,28 @@
   for "Mets le titre"), not the corrections.
 - `docs/wispr-flow-gap.md`: the features and qualities of Wispr Flow, and where
   whisper-desk stands on each.
+
+### Changed
+
+- **Developer syntax** (Wispr Flow writes variable names in their style): say the style,
+  then the name — *camel case user name* is written `userName`, *pascal case payment
+  service* `PaymentService`, *snake case created at* `created_at`, *kebab case* (or *dash
+  case*) *user profile* `user-profile`, *constant case* (or *screaming snake case*) *max
+  retries* `MAX_RETRIES`. The name runs until the sentence goes on: a mark, a word such as
+  *et*, *dans*, *est*, *and*, *from*, *to*, *is*, or another style; *by* and *at* belong to
+  it (`getUserById`, `created_at`). The forms Whisper writes are understood — apart
+  (*Camel Case User ID*), glued (*camelCaseUserName*, *SnakeCaseParseDate*) or hyphenated
+  (*constant-case-database-url*). The style named without a name after it (*on écrit en
+  snake case*, *we use camel case for variables*) or after an article (*a constant case of
+  bad luck*, *un kebab, case départ*) stays as words. Local rules (`casing.py`), applied
+  after the spoken punctuation; `developer_syntax = false` in `[model]` keeps the words.
+- `bench/casing/`: 24 sentences that say a name in a style and 12 control sentences, with
+  synthetic recordings. Names written exactly as expected, before → after:
+  - written sentences: 0/25 → 25/25, 24/24 sentences exact; controls unchanged;
+  - faster-whisper `small` (CPU, int8): English 0/12 → 5/12; controls unchanged;
+  - faster-whisper `large-v3-turbo` (CUDA, float16): English 0/12 → 7/12; controls
+    unchanged.
+  What remains is the transcription: Whisper mishears the words of the name (*use of
+  settings* for *user settings*, *orth provider* for *auth provider*). The French
+  recordings are no measure: the French synthetic voice cannot say English words, and
+  Whisper hears none of the 13 names in them, before or after.

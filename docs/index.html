@@ -828,6 +828,18 @@
       <code>spoken_punctuation = false</code> keeps the words.
     </p>
 
+    <h3>Developer syntax</h3>
+    <p>
+      Say the style, then the name: <em>“camel case user name”</em> is written
+      <strong>userName</strong>, <em>“pascal case payment service”</em>
+      <strong>PaymentService</strong>, <em>“snake case created at”</em>
+      <strong>created_at</strong>, <em>“kebab case user profile”</em>
+      <strong>user-profile</strong>, <em>“constant case max retries”</em>
+      <strong>MAX_RETRIES</strong>. The name ends where the sentence goes on:
+      <em>“Le champ camel case first name est obligatoire”</em> is written <strong>Le champ
+      firstName est obligatoire</strong>. <code>developer_syntax = false</code> keeps the words.
+    </p>
+
     <h3>Snippets</h3>
     <p>
       Save the texts you keep retyping under a cue, in the settings window or the
@@ -950,6 +962,7 @@ initial_prompt = <span class="s">""</span>           <span class="c"># vocabular
 corrections = <span class="n">true</span>            <span class="c"># "mardi, non, plutôt mercredi" is written "mercredi"</span>
 hesitations = <span class="n">true</span>            <span class="c"># "euh", "um" and stuttered words left out</span>
 spoken_punctuation = <span class="n">true</span>     <span class="c"># "virgule", "point", "à la ligne", "comma", "new line"</span>
+developer_syntax = <span class="n">true</span>       <span class="c"># "camel case user name" is written userName</span>
 
 <span class="k">[recording]</span>
 backend = <span class="s">"auto"</span>              <span class="c"># auto | arecord | parec | rec | sox | ffmpeg</span>
@@ -1112,6 +1125,7 @@ margin = <span class="n">96</span>
           <tr><td><code>backtrack.py</code></td><td>corrections said aloud (“non, plutôt…”) carried out</td></tr>
           <tr><td><code>hesitations.py</code></td><td>hesitations (“euh”, “um”) and stuttered words left out</td></tr>
           <tr><td><code>punctuation.py</code></td><td>punctuation said aloud (“virgule”, “à la ligne”) written as marks</td></tr>
+          <tr><td><code>casing.py</code></td><td>names said in a style (“camel case user name”) written in it</td></tr>
           <tr><td><code>snippets.py</code></td><td>spoken cues replaced by the text saved for them</td></tr>
           <tr><td><code>inject.py</code></td><td>simulated keystroke: <code>uinput</code>, SendKeys, System Events</td></tr>
           <tr><td><code>output.py</code></td><td>insertion at the cursor, clipboard, notifications</td></tr>

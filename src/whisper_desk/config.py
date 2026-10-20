@@ -64,6 +64,9 @@ DEFAULTS: dict[str, Any] = {
         # Writes the punctuation said aloud: "virgule", "point d'interrogation",
         # "à la ligne", "comma", "new line".
         "spoken_punctuation": True,
+        # Writes the names said in a style: "camel case user name" -> userName,
+        # "snake case created at" -> created_at.
+        "developer_syntax": True,
         # Loaded when the daemon starts: the first dictation is instant.
         "preload": True,
     },
