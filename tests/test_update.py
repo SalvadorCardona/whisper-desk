@@ -5,7 +5,9 @@ from __future__ import annotations
 import io
 import contextlib
 import json
+import os
 import re
+import subprocess
 import tempfile
 import unittest
 import urllib.error
@@ -25,7 +27,7 @@ FINGERPRINT = {
     "commit": OLDER,
     "ref": "main",
     "date": "2026-08-01T10:00:00Z",
-    "repo": "SalvadorCardona/whisper-desk",
+    "repo": "hermez-agency/whisper-desk",
     "origin": "github",
 }
 
@@ -97,6 +99,14 @@ class FingerprintTest(unittest.TestCase):
         self.assertEqual(update.ref({}), update.DEFAULT_REF)
         self.assertEqual(update.commit({}), "")
 
+    def test_the_repository_before_the_move_reads_as_the_new_one(self):
+        """Installations made before the move name SalvadorCardona/whisper-desk."""
+        moved = dict(FINGERPRINT, repo="SalvadorCardona/whisper-desk")
+        self.assertEqual(update.repo(moved), "hermez-agency/whisper-desk")
+
+    def test_another_repository_is_left_as_recorded(self):
+        self.assertEqual(update.repo(dict(FINGERPRINT, repo="me/fork")), "me/fork")
+
     def test_describe(self):
         self.assertEqual(update.describe(FINGERPRINT), "main @ 51cca32 (2026-08-01)")
         self.assertEqual(update.describe({}), "unknown version")
@@ -105,7 +115,7 @@ class FingerprintTest(unittest.TestCase):
 class LatestCommitTest(HttpErrorMixin, unittest.TestCase):
     def latest(self, answer):
         with mock.patch("urllib.request.urlopen", side_effect=answer):
-            return update.latest_commit("SalvadorCardona/whisper-desk", "main")
+            return update.latest_commit("hermez-agency/whisper-desk", "main")
 
     def test_the_commit_and_its_date(self):
         result = self.latest(lambda *a, **k: FakeResponse(commit_payload()))
@@ -172,10 +182,16 @@ class LocalSourceTest(unittest.TestCase):
 class InstallEnvTest(unittest.TestCase):
     def test_the_repository_and_the_ref_are_replayed(self):
         env = update.install_env(FINGERPRINT, keep_hotkey=False)
-        self.assertEqual(env["WD_REPO"], "SalvadorCardona/whisper-desk")
+        self.assertEqual(env["WD_REPO"], "hermez-agency/whisper-desk")
         self.assertEqual(env["WD_REF"], "main")
         self.assertNotIn("WD_SRC", env)
         self.assertNotIn("WD_NO_HOTKEY", env)
+
+    def test_an_installation_from_before_the_move_is_replayed_from_the_new_home(self):
+        """install.sh writes WD_REPO in the fingerprint: the next one names the new home."""
+        moved = dict(FINGERPRINT, repo="SalvadorCardona/whisper-desk")
+        env = update.install_env(moved, keep_hotkey=False)
+        self.assertEqual(env["WD_REPO"], "hermez-agency/whisper-desk")
 
     def test_an_existing_shortcut_is_left_alone(self):
         """A binding the user has made their own must survive the update."""
@@ -347,6 +363,30 @@ class InstallScriptTest(unittest.TestCase):
         for key in ("commit=", "ref=", "date=", "repo=", "origin="):
             with self.subTest(key=key):
                 self.assertIn(f"printf '{key}", self.script)
+
+    def test_the_repository_replayed_by_the_update_lands_in_the_fingerprint(self):
+        """An installation from before the move is rewritten with the new home."""
+        self.assertIn(f'WD_REPO="${{WD_REPO:-{update.DEFAULT_REPO}}}"', self.script)
+        self.assertIn("printf 'repo=%s\\n' \"$WD_REPO\"", self.script)
+
+    def test_the_repository_before_the_move_is_replaced_by_the_new_one(self):
+        """The update of an old installation runs the old update.py, which passes the old name."""
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        script = Path(directory.name) / "repo.sh"
+        header = self.script.split("APP_DIR=")[0]
+        script.write_text(header + 'printf %s "$WD_REPO"\n', encoding="utf-8")
+        for given, expected in (
+            ("SalvadorCardona/whisper-desk", "hermez-agency/whisper-desk"),
+            ("", "hermez-agency/whisper-desk"),
+            ("me/fork", "me/fork"),
+        ):
+            with self.subTest(given=given):
+                result = subprocess.run(
+                    ["sh", str(script)], capture_output=True, text=True,
+                    env={"PATH": os.environ.get("PATH", ""), "WD_REPO": given},
+                )
+                self.assertEqual(result.stdout, expected)
 
 
 if __name__ == "__main__":

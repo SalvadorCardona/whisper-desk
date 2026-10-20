@@ -73,7 +73,7 @@ and every table on a page that is pleasant to read.
 ## Installation
 
 ```sh
-curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh | sh
+curl -LsSf https://raw.githubusercontent.com/hermez-agency/whisper-desk/main/install.sh | sh
 ```
 
 That's all. The script recognises the host — Linux, WSL or macOS — and adapts every step:
@@ -620,7 +620,7 @@ fallback (often missing CUDA libraries or not enough VRAM).
 ## Uninstalling
 
 ```sh
-curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/uninstall.sh | sh
+curl -LsSf https://raw.githubusercontent.com/hermez-agency/whisper-desk/main/uninstall.sh | sh
 ```
 
 The menu entries and the tray icon go with it. Add `WD_PURGE=1` to remove the
@@ -631,7 +631,7 @@ configuration and the history as well. Downloaded models stay in `~/.cache/huggi
 ## Development
 
 ```sh
-git clone https://github.com/SalvadorCardona/whisper-desk
+git clone https://github.com/hermez-agency/whisper-desk
 cd whisper-desk
 WD_SRC="$PWD" sh install.sh     # installs from the local clone, without network access
 ```

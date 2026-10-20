@@ -1,6 +1,6 @@
 #!/bin/sh
 # Complete uninstallation of whisper-desk (Linux, WSL and macOS).
-#   curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/uninstall.sh | sh
+#   curl -LsSf https://raw.githubusercontent.com/hermez-agency/whisper-desk/main/uninstall.sh | sh
 # Add WD_PURGE=1 to remove the configuration and the history as well.
 set -eu
 
