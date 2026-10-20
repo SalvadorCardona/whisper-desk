@@ -36,6 +36,10 @@ hesitations = true
 # "deux points", "à la ligne", "nouveau paragraphe" ("comma", "period", "question
 # mark", "colon", "new line", "new paragraph" in English).
 spoken_punctuation = true
+# Writes the names you say in a style: "camel case user name" -> userName, "pascal case
+# payment service" -> PaymentService, "snake case created at" -> created_at, "kebab case
+# user profile" -> user-profile, "constant case max retries" -> MAX_RETRIES.
+developer_syntax = true
 # Loads the model when the service starts: the first dictation is instant.
 preload = true
 

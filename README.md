@@ -288,6 +288,30 @@ sentence or before a capital: *mon point de vue* and *a good point, let me think
 they are. Rules run on your machine; `spoken_punctuation = false` in `[model]` keeps the
 words. `bench/punctuation/` measures them on recordings (see Development).
 
+### Developer syntax: say a name in its style
+
+Say the style, then the name, and the name is written in that style:
+
+| You say | Written |
+|---|---|
+| *camel case user name* | `userName` |
+| *pascal case payment service* | `PaymentService` |
+| *snake case created at* | `created_at` |
+| *kebab case user profile* (or *dash case*) | `user-profile` |
+| *constant case max retries* (or *screaming snake case*) | `MAX_RETRIES` |
+
+*"Le champ camel case first name est obligatoire"* is written **Le champ firstName est
+obligatoire**, *"Import camel case use effect from React"* **Import useEffect from
+React**. The name runs until the sentence goes on: a mark (said or written by Whisper), a
+word such as *et*, *dans*, *est*, *and*, *from*, *to*, *is*, or another style. *By* and *at*
+belong to the name (*get user by id* → `getUserById`, *created at* → `created_at`), *to*
+and *for* end it: *camel case convert to string* is written `convert to string`. The style named without a name
+after it (*on écrit en snake case*, *we use camel case for variables*) or after an
+article (*a constant case of bad luck*, *un kebab, case départ*) stays as words. Whisper
+often hears the words in English best: if it mangles them, put *camel case, snake case*
+in `vocabulary`. Rules run on your machine; `developer_syntax = false` in `[model]` keeps
+the words. `bench/casing/` measures them on recordings (see Development).
+
 ### Snippets: say a cue, get the text you keep retyping
 
 Save the texts you type over and over — an address, a calendar link, a signature — under
@@ -418,6 +442,7 @@ initial_prompt = ""           # vocabulary to favour (proper nouns, jargon)
 corrections = true            # "mardi, non, plutôt mercredi" is written "mercredi"
 hesitations = true            # "euh", "um" and stuttered words left out
 spoken_punctuation = true     # "virgule", "point", "à la ligne", "comma", "new line"
+developer_syntax = true       # "camel case user name" is written userName
 
 [recording]
 backend = "auto"              # auto | arecord | parec | rec | sox | ffmpeg
@@ -639,6 +664,7 @@ to test all three from any of them.
 | `src/whisper_desk/backtrack.py` | corrections said aloud ("non, plutôt…") carried out |
 | `src/whisper_desk/hesitations.py` | hesitations ("euh", "um") and stuttered words left out |
 | `src/whisper_desk/punctuation.py` | punctuation said aloud ("virgule", "à la ligne") written as marks |
+| `src/whisper_desk/casing.py` | names said in a style ("camel case user name") written in it |
 | `src/whisper_desk/snippets.py` | spoken cues replaced by the text saved for them |
 | `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, Mutter, SendKeys, System Events |
 | `src/whisper_desk/mutter_keyboard.py` | GNOME remote desktop session (system Python) |
@@ -712,6 +738,17 @@ errors, a missing line break one:
 ```sh
 python3 bench/punctuation/measure.py -v
 ~/.local/share/whisper-desk/venv/bin/python bench/punctuation/measure.py --audio -v
+```
+
+`bench/casing/` measures the developer syntax: 24 sentences that say a name in a style,
+French and English, and 12 control sentences where the same words are words (*un kebab,
+case départ*, *a constant case of bad luck*, *we use camel case for variables*). It counts
+the names written exactly as expected (`userName`, `created_at`) and an error rate on
+words where a name only counts with its case and separators right:
+
+```sh
+python3 bench/casing/measure.py -v
+~/.local/share/whisper-desk/venv/bin/python bench/casing/measure.py --audio -v
 ```
 
 ## License
