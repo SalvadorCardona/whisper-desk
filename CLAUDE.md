@@ -27,7 +27,7 @@ tourne sur GPU si une carte NVIDIA est détectée, sinon sur CPU.
 Installer (crée le venv, installe faster-whisper, active le service et le raccourci) :
 
 ```sh
-curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh | sh
+curl -LsSf https://raw.githubusercontent.com/hermez-agency/whisper-desk/main/install.sh | sh
 ```
 
 Lancer la suite de tests (stdlib seule, aucun venv ni modèle requis) :

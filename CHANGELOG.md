@@ -86,6 +86,10 @@
 
 ### Changed
 
+- The repository moved to `hermez-agency/whisper-desk`: the installation command, the
+  README and the site point there. `whisper-desk update` on an installation made before
+  the move reads the new home instead of `SalvadorCardona/whisper-desk`, and `install.sh`
+  writes the new name in the fingerprint, even when called with the old one.
 - **Developer syntax** (Wispr Flow writes variable names in their style): say the style,
   then the name — *camel case user name* is written `userName`, *pascal case payment
   service* `PaymentService`, *snake case created at* `created_at`, *kebab case* (or *dash

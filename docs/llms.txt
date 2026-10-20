@@ -5,6 +5,6 @@
 > cursor, sentence after sentence. No data leaves the machine; transcription
 > runs on an NVIDIA GPU when available, otherwise on the CPU.
 
-- Source and issues: https://github.com/SalvadorCardona/whisper-desk
-- Install script: https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh
+- Source and issues: https://github.com/hermez-agency/whisper-desk
+- Install script: https://raw.githubusercontent.com/hermez-agency/whisper-desk/main/install.sh
 - License: MIT

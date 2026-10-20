@@ -1,10 +1,10 @@
 #!/bin/sh
 # whisper-desk installation (Linux, WSL and macOS).
 #
-#   curl -LsSf https://raw.githubusercontent.com/SalvadorCardona/whisper-desk/main/install.sh | sh
+#   curl -LsSf https://raw.githubusercontent.com/hermez-agency/whisper-desk/main/install.sh | sh
 #
 # Environment variables accepted:
-#   WD_REPO   source repository       (default: SalvadorCardona/whisper-desk)
+#   WD_REPO   source repository       (default: hermez-agency/whisper-desk)
 #   WD_REF    branch or tag           (default: main)
 #   WD_SRC    local directory to copy (install from a clone, without network)
 #   WD_NO_SERVICE=1   do not install the service (systemd or launchd)
@@ -12,7 +12,11 @@
 #   WD_NO_WELCOME=1   do not open the welcome window after a first installation
 set -eu
 
-WD_REPO="${WD_REPO:-SalvadorCardona/whisper-desk}"
+WD_REPO="${WD_REPO:-hermez-agency/whisper-desk}"
+# The repository moved from SalvadorCardona to hermez-agency. The update of an
+# installation made before the move still passes the old name: the new one is
+# what gets downloaded and written in the fingerprint.
+[ "$WD_REPO" = "SalvadorCardona/whisper-desk" ] && WD_REPO="hermez-agency/whisper-desk"
 WD_REF="${WD_REF:-main}"
 
 APP_DIR="$HOME/.local/share/whisper-desk/app"

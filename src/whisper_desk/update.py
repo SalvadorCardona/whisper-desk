@@ -25,7 +25,11 @@ from . import config as config_module
 APP_DIR = config_module.DATA_DIR / "app"
 VERSION_PATH = APP_DIR / ".whisper-desk-version"
 
-DEFAULT_REPO = "SalvadorCardona/whisper-desk"
+DEFAULT_REPO = "hermez-agency/whisper-desk"
+# Where the repository lived before it moved to hermez-agency. Installations
+# made back then still name it in their fingerprint: the update reads the new
+# home instead, and install.sh writes it in the fingerprint it leaves behind.
+MOVED_REPOS = {"SalvadorCardona/whisper-desk": DEFAULT_REPO}
 DEFAULT_REF = "main"
 COMMIT_API = "https://api.github.com/repos/{repo}/commits/{ref}"
 INSTALL_URL = "https://raw.githubusercontent.com/{repo}/{ref}/install.sh"
@@ -62,7 +66,8 @@ def read_fingerprint(path: Path | None = None) -> dict[str, str]:
 
 
 def repo(fingerprint: dict[str, str]) -> str:
-    return fingerprint.get("repo", DEFAULT_REPO)
+    recorded = fingerprint.get("repo", DEFAULT_REPO)
+    return MOVED_REPOS.get(recorded, recorded)
 
 
 def ref(fingerprint: dict[str, str]) -> str:
