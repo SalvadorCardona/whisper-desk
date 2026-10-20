@@ -1,4 +1,4 @@
-![whisper-desk](https://raw.githubusercontent.com/SalvadorCardona/brand-assets/main/projects/whisper-desk/banner.png)
+![whisper-desk](https://raw.githubusercontent.com/hermez-agency/brand-assets/main/projects/whisper-desk/banner.png)
 
 # whisper-desk
 
