@@ -23,7 +23,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 |---|---|---|---|---|
 | **Backtrack** — a correction said mid-sentence keeps only the corrected version | `backtrack.py`: "non, plutôt", "ou plutôt", "je veux dire", "no wait", "actually", "I mean", "or rather"… carried out by local rules; measured in `bench/backtrack/` | partial | high | S |
 | **Filler removal** — "um", "uh", pauses | Whisper drops most hesitations by itself; `hesitations.py` removes those it writes ("euh", "hum", "um", "uh", "erm") and words or runs of up to three words said twice in a row, keeping intended doubles; measured in `bench/hesitations/`. A hesitation Whisper mishears as a word ("A", "« E »") stays | done | high | S |
-| **Auto punctuation** — inferred from pauses and tone, spoken marks ("comma") | Whisper's own punctuation and capitals; spoken marks and line breaks ("virgule", "point d'interrogation", "à la ligne", "comma", "new paragraph") written by `punctuation.py`, measured in `bench/punctuation/` (#26). No quotes or brackets said aloud yet | partial | medium | S |
+| **Auto punctuation** — inferred from pauses and tone, spoken marks ("comma") | Whisper's own punctuation and capitals; spoken marks and line breaks ("virgule", "point d'interrogation", "à la ligne", "comma", "new paragraph") written by `punctuation.py`, measured in `bench/punctuation/` (#26); quotes and brackets said aloud ("ouvrez les guillemets", "fermez la parenthèse", "open quote", "close paren") written « », " " and ( ) (in PR). No square brackets or braces, no punctuation inferred from tone beyond Whisper's | partial | medium | S |
 | **Numbered lists** — spoken enumerations become a formatted list | — | missing | medium | M |
 | **Name spelling from context** | `vocabulary` (hotwords) and the context of the dictation fed back to the model | partial | high | — |
 | **100+ languages** | every Whisper language; `language = "auto"` detects one language per sentence | done | medium | — |
@@ -40,7 +40,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 | **Snippets** — a spoken cue inserts a longer text | `[snippets]` in `config.toml`, `snippets.py`: alone or inside a sentence, case and punctuation ignored, longest cue wins, multi-line texts; measured in `bench/snippets/`; edited in the settings window too (#25). No rich text (bold, links) | partial | high | S |
 | **Styles** — tone adapted to the app (formal in docs, casual in chat) | — | missing | medium | L |
 | **Command Mode** — select text, say how to rewrite it | — (would need a local model, e.g. Ollama) | missing | high | L |
-| **Developer syntax** — camelCase, snake_case, CLI commands, file tagging in Cursor | `casing.py`: a name said after its style ("camel case user name" → `userName`, snake, pascal, kebab, constant case) written in it, Whisper's glued and hyphenated forms understood; measured in `bench/casing/` (in PR). Not guessed from context without the style said; no CLI commands, no file tagging | partial | medium | M |
+| **Developer syntax** — camelCase, snake_case, CLI commands, file tagging in Cursor | `casing.py`: a name said after its style ("camel case user name" → `userName`, snake, pascal, kebab, constant case) written in it, Whisper's glued and hyphenated forms understood; measured in `bench/casing/` (#28). Not guessed from context without the style said; no CLI commands, no file tagging | partial | medium | M |
 | **History** of dictations | `whisper-desk history` and its window: search, copy, insert again, purge | done | — | — |
 | **Settings** | `whisper-desk settings`: language, model, microphone, shortcut, output, vocabulary, snippets, overlay | done | — | — |
 | **Overlay** | X11 overlay: live level, sentence transcribed, states, cancel | done | — | — |
@@ -88,7 +88,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   51.0 % → 19.8 % (11/28); `large-v3-turbo` (GPU) 45.8 % → 9.9 % (15/28); no control
   sentence changed. What remains is the transcription (Whisper's own commas, "come a"
   for *comma*). Left to do: quotes and brackets said aloud.
-- 2026-10-20 — **Developer syntax** (in PR, partial): a name said after its style is
+- 2026-10-20 — **Developer syntax** (merged, #28, partial): a name said after its style is
   written in it — *camel case user name* → `userName`, *pascal case* → `PaymentService`,
   *snake case* → `created_at`, *kebab* / *dash case* → `user-profile`, *constant* /
   *screaming snake case* → `MAX_RETRIES` — by local rules, `model.developer_syntax = true`.
@@ -102,3 +102,16 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   2/13, but `large-v3-turbo` English no better and its error rate up (14.8 % → 18.0 %).
   Left to do: names without the style said (Wispr Flow guesses them from the app), CLI
   commands, file tagging.
+- 2026-10-21 — **Quotes and brackets said aloud** (in PR, partial): *ouvrez les
+  guillemets* … *fermez les guillemets* → « … », *ouvrez la parenthèse* … *fermez la
+  parenthèse* → ( … ), *open quote* … *close quote* / *quote* … *unquote* → "…", *open
+  paren* … *close paren* → ( … ), by local rules in `punctuation.py`, under
+  `model.spoken_punctuation`. Whisper's pause commas and its own « » around the commands
+  go; the words said in a sentence stay (*on ferme la parenthèse*, *can I quote you*,
+  *quote unquote*) unless the other half is said too. Measure (`bench/punctuation/`, 16
+  new sentences + 8 new controls), error rate on words and marks: written sentences
+  53.1 % → 0.0 % (16/16 exact); `small` (CPU) 70.1 % → 35.4 % (3/16); `large-v3-turbo`
+  (GPU) 86.4 % → 18.4 % (4/16); no control and none of the 28 earlier sentences changed.
+  What remains is the transcription of the synthetic voices (*parenthèse* heard as
+  "l'apparentaise", *paren* as "Perenn") and Whisper's own final full stop. Left to do:
+  square brackets and braces.
