@@ -271,6 +271,8 @@ Say the mark you want, as you would to someone taking notes, and it is written:
 | *Tu as reçu mon message point d'interrogation* | Tu as reçu mon message ? |
 | *Bonjour Marie virgule à la ligne merci pour ton retour point* | Bonjour Marie,<br>Merci pour ton retour. |
 | *We need three things colon milk comma bread and eggs period* | We need three things: milk, bread and eggs. |
+| *Il m'a répondu ouvrez les guillemets pas question fermez les guillemets point* | Il m'a répondu « pas question ». |
+| *The price open paren tax included close paren is final period* | The price (tax included) is final. |
 
 French: *virgule*, *point*, *point d'interrogation*, *point d'exclamation*,
 *point-virgule*, *deux points*, *à la ligne* (or *retour à la ligne*, *nouvelle ligne*),
@@ -279,6 +281,17 @@ French: *virgule*, *point*, *point d'interrogation*, *point d'exclamation*,
 marks get the space French puts before *?*, *!*, *:* and *;*. Whisper's own punctuation
 around the word gives way to the mark you said, and what follows a full stop or a line
 break takes a capital.
+
+Quotes and brackets too. French: *ouvrez les guillemets* / *fermez les guillemets* (or
+*ouvre*, *ouvrir*, *j'ouvre*, *on ouvre*… and *ferme*, *fermer*, *je ferme*…, *guillemets
+ouvrants* / *fermants*), *ouvrez la parenthèse* / *fermez la parenthèse* (or *parenthèse
+ouvrante* / *fermante*), written « » with their spaces and ( ). English: *open quote* /
+*close quote* (or *end quote*), *open paren* / *close paren* (or *parenthesis*, *left* /
+*right paren*), written as straight quotes and ( ). The quotes said replace those Whisper
+guessed; a question heard before the closing mark stays inside it, a full stop goes after.
+Bare *quote*, *unquote*, *bracket*, *entre guillemets* and *entre parenthèses* are ordinary
+words and stay so (*send me a quote*, *a quote unquote expert*), and so does a command
+after an article (*les guillemets ouvrants sont mal placés*).
 
 The same words said as words stay words: after an article (*il manque une virgule*, *on
 fait le point*, *a new line of products*, *the trial period*), inside a number (*trois
@@ -441,7 +454,7 @@ language = "fr"               # ISO code, or "auto" for detection
 initial_prompt = ""           # vocabulary to favour (proper nouns, jargon)
 corrections = true            # "mardi, non, plutôt mercredi" is written "mercredi"
 hesitations = true            # "euh", "um" and stuttered words left out
-spoken_punctuation = true     # "virgule", "point", "à la ligne", "comma", "new line"
+spoken_punctuation = true     # "virgule", "à la ligne", "ouvrez les guillemets", "comma", "open paren"
 developer_syntax = true       # "camel case user name" is written userName
 
 [recording]
@@ -663,7 +676,7 @@ to test all three from any of them.
 | `src/whisper_desk/transcriber.py` | faster-whisper, GPU/CPU selection |
 | `src/whisper_desk/backtrack.py` | corrections said aloud ("non, plutôt…") carried out |
 | `src/whisper_desk/hesitations.py` | hesitations ("euh", "um") and stuttered words left out |
-| `src/whisper_desk/punctuation.py` | punctuation said aloud ("virgule", "à la ligne") written as marks |
+| `src/whisper_desk/punctuation.py` | punctuation said aloud ("virgule", "à la ligne", "ouvrez les guillemets") written as marks |
 | `src/whisper_desk/casing.py` | names said in a style ("camel case user name") written in it |
 | `src/whisper_desk/snippets.py` | spoken cues replaced by the text saved for them |
 | `src/whisper_desk/inject.py` | simulated keystroke: `uinput`, Mutter, SendKeys, System Events |
@@ -730,10 +743,11 @@ python3 bench/hesitations/measure.py -v
 ```
 
 `bench/punctuation/` measures the punctuation said aloud: 28 sentences that say a mark or
-a line break, French and English, and 14 control sentences where the same words are
-words (*on fait le point*, *trois virgule cinq*, *the trial period*, *a good point*). Marks
-count as much as words in its error rate — *demain virgule* against *demain,* is two
-errors, a missing line break one:
+a line break and 14 that say quotes or brackets (measured apart), French and English, and
+22 control sentences where the same words are words (*on fait le point*, *trois virgule
+cinq*, *the trial period*, *a good point*, *entre guillemets*, *a quote unquote expert*).
+Marks count as much as words in its error rate — *demain virgule* against *demain,* is two
+errors, a missing line break or quote one:
 
 ```sh
 python3 bench/punctuation/measure.py -v

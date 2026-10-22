@@ -1,4 +1,4 @@
-"""Spoken punctuation: "virgule", "question mark", "à la ligne" become the mark they name."""
+"""Spoken punctuation: "virgule", "à la ligne", "ouvrez les guillemets" become their mark."""
 
 from __future__ import annotations
 
@@ -31,6 +31,31 @@ _COMMANDS: dict[str, tuple[str, str]] = {
     "newline": ("\n", "en"),
     "new paragraph": ("\n\n", "en"),
 }
+# Quotes and brackets said aloud -> (mark, opens, language). French quotes are
+# « », with the space French puts inside them; English ones are straight, as a
+# keyboard types them. Bare "quote", "bracket", "unquote" and "entre
+# guillemets" are left out: they are ordinary words ("send me a quote", "a quote
+# unquote expert", "soit dit entre parenthèses").
+_ENCLOSING: dict[str, tuple[str, bool, str]] = {}
+# Whisper hears "parenthèse ouvrante" as "parenthèse ouvrant" as often as not.
+for _side, _opens in (("ouvrant", True), ("fermant", False)):
+    for _ending in ("", "e", "s", "es"):
+        _ENCLOSING[f"guillemet {_side}{_ending}"] = ("«»"[not _opens], _opens, "fr")
+        _ENCLOSING[f"guillemets {_side}{_ending}"] = ("«»"[not _opens], _opens, "fr")
+        _ENCLOSING[f"parenthèse {_side}{_ending}"] = ("()"[not _opens], _opens, "fr")
+for _verb, _opens in (("ouvrez", True), ("ouvre", True), ("ouvrir", True), ("j'ouvre", True),
+                      ("on ouvre", True), ("fermez", False), ("ferme", False), ("fermer", False),
+                      ("je ferme", False), ("on ferme", False)):
+    for _what, _marks in (("les guillemets", "«»"), ("le guillemet", "«»"),
+                          ("la parenthèse", "()"), ("les parenthèses", "()")):
+        _ENCLOSING[f"{_verb} {_what}"] = (_marks[not _opens], _opens, "fr")
+for _noun in ("quote", "quotes"):
+    _ENCLOSING[f"open {_noun}"] = ('"', True, "en")
+    _ENCLOSING[f"close {_noun}"] = _ENCLOSING[f"end {_noun}"] = ('"', False, "en")
+for _noun in ("paren", "parens", "parenthesis", "parentheses"):
+    _ENCLOSING[f"open {_noun}"] = _ENCLOSING[f"left {_noun}"] = ("(", True, "en")
+    _ENCLOSING[f"close {_noun}"] = _ENCLOSING[f"right {_noun}"] = (")", False, "en")
+_COMMANDS.update({phrase: (mark, language) for phrase, (mark, _, language) in _ENCLOSING.items()})
 # Words that are also ordinary words: "mon point de vue", "the trial period".
 # They are a mark only where a full stop can stand — at the end of what was
 # said, before Whisper's own full stop, a capital or another mark. A comma
@@ -54,6 +79,9 @@ _NOUN_BEFORE = {
     "trial", "grace", "waiting", "notice", "cooling", "billing", "time", "whole",
     "short", "long", "good", "bad", "oxford", "serial",
 }
+# Before a quote or a bracket said aloud, only an article makes it a noun:
+# "the close quote", "les guillemets ouvrants"; "the short one close paren" is a mark.
+_ARTICLES = {"le", "la", "les", "l", "un", "une", "des", "the", "a", "an"}
 _NUMBERS = {
     "zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf",
     "zero", "one", "two", "three", "four", "five", "seven", "eight", "nine",
@@ -67,14 +95,16 @@ def _spoken(phrase: str) -> str:
     """The phrase as Whisper may write it: "point-virgule" or "point virgule"."""
     words = re.split(r"[\s'-]+", phrase)
     joints = re.findall(r"[\s'-]+", phrase)
+    # "open, quote": Whisper hears a pause between the words of a quote or a bracket.
+    space = r",?[\s-]+" if phrase in _ENCLOSING else r"[\s-]+"
     out = re.escape(words[0])
     for joint, word in zip(joints, words[1:]):
-        out += r"['’]\s*" if "'" in joint else r"[\s-]+"
+        out += r"['’]\s*" if "'" in joint else space
         out += re.escape(word)
     return out
 
 
-_KEYS = {re.sub(r"[\s'’-]+", " ", phrase): phrase for phrase in _COMMANDS}
+_KEYS = {re.sub(r"[\s,'’-]+", " ", phrase): phrase for phrase in _COMMANDS}
 _COMMAND = re.compile(
     rf"(?P<before>[\s{_MARKS}]*)(?<![\w'’])"
     rf"(?P<command>{'|'.join(_spoken(p) for p in sorted(_COMMANDS, key=len, reverse=True))})"
@@ -85,7 +115,7 @@ _WORD = re.compile(r"\w+")
 
 
 def _phrase(match: re.Match[str]) -> str:
-    return _KEYS[re.sub(r"[\s'’-]+", " ", match["command"].lower())]
+    return _KEYS[re.sub(r"[\s,'’-]+", " ", match["command"].lower())]
 
 
 def _word_before(text: str, index: int) -> str:
@@ -109,7 +139,8 @@ def _meant(text: str, match: re.Match[str]) -> bool:
         return False
     # Whisper's own punctuation between the word before and the command is a
     # pause: what comes before cannot make it a noun.
-    if not match["before"].strip() and _word_before(text, match.start()) in _NOUN_BEFORE:
+    nouns = _ARTICLES if phrase in _ENCLOSING else _NOUN_BEFORE
+    if not match["before"].strip() and _word_before(text, match.start()) in nouns:
         return False
     # "trois virgule cinq" is a number.
     if _COMMANDS[phrase][0] == "," and (
@@ -153,8 +184,51 @@ def _cased(chunk: str, case: str) -> str:
     return chunk[:found.start()] + word + chunk[found.end():]
 
 
+def _enclose(out: str, text: str, match: re.Match[str], case: str) -> tuple[str, str]:
+    """The text so far with the quote or bracket said aloud, and the case of what follows."""
+    mark, opens, language = _ENCLOSING[_phrase(match)]
+    out = out.rstrip(" ")
+    if opens:
+        # Whisper's punctuation before an opening mark is the pause taken to say it.
+        if out and out[-1] not in "\n(«" and not _opened_quote(out):
+            out += " "
+        out += mark + (" " if mark == "«" else "")
+        if not out.rstrip(' «("') or out.rstrip(' «("').endswith("\n"):
+            case = "upper"
+        return out, case
+    # A question or an exclamation Whisper heard before the closing mark is
+    # quoted; any other sentence end it heard goes after the mark, unless a
+    # mark said right after takes its place.
+    before, after = match["before"].strip(), match["after"].strip()
+    spaced = " " if language == "fr" else ""
+    # Said after a pause, alone in its sentence, or after a mark that ends the
+    # quote: Whisper's full stop is no end.
+    ended = not out or out[-1] in ".?!…"
+    inside = before[-1:] if before[-1:] in ("?", "!") else ""
+    if inside:
+        out += (spaced if out[-1:] not in "«(\"" else "") + inside
+    out += (" " if mark == "»" else "") + mark
+    ending = "" if inside or ended else next((c for c in before + after if c in ".?!…"), "")
+    follower = _COMMAND.match(text, match.end() - len(match["after"]))
+    if ending and not (follower and _meant(text, follower)):
+        out += (spaced if ending in "?!" else "") + ending
+    if match.end() < len(text):
+        out += " "
+    return out, ""
+
+
+def _opened_quote(text: str) -> bool:
+    """Whether the text ends on a straight quote that opens a quotation."""
+    return text.endswith('"') and text.count('"') % 2 == 1
+
+
 def apply(text: str) -> str:
     """The text with each punctuation said aloud turned into its mark."""
+    # Whisper often puts quotes of its own around "ouvrez les guillemets" and
+    # what follows; the quotes said aloud take their place.
+    if any(_phrase(m) in _ENCLOSING and _ENCLOSING[_phrase(m)][0] in '«»"' and _meant(text, m)
+           for m in _COMMAND.finditer(text)):
+        text = re.sub(r" {2,}", " ", re.sub(r'[«»“”"]', "", text)).strip()
     out = ""
     case = ""
     position = 0
@@ -163,13 +237,19 @@ def apply(text: str) -> str:
         if not _meant(text, match):
             search = match.start("command") + 1
             continue
-        out += _cased(text[position:match.start()], case)
-        case = ""
-        mark, language = _COMMANDS[_phrase(match)]
+        chunk = text[position:match.start()]
+        out += _cased(chunk, case)
+        phrase = _phrase(match)
+        # The capital owed after a full stop said goes to the first word quoted.
+        if phrase not in _ENCLOSING or not _ENCLOSING[phrase][1] or _WORD.search(chunk):
+            case = ""
+        mark, language = _COMMANDS[phrase]
         before = match["before"].strip()
         after = match["after"].strip()
         spaced = " " if language == "fr" else ""
-        if mark.startswith("\n"):
+        if phrase in _ENCLOSING:
+            out, case = _enclose(out, text, match, case)
+        elif mark.startswith("\n"):
             # The sentence before keeps its end; when Whisper put it after the
             # command ("demain à la ligne."), it goes back to its sentence.
             ending = match["before"].rstrip() if before else ""
@@ -194,9 +274,14 @@ def separator(before: str, after: str) -> str:
     """What goes between a sentence already inserted and the next one.
 
     A sentence that opens on a mark ("Virgule." said after a pause) or follows a
-    line break is glued to what came before.
+    line break is glued to what came before, and so is one that closes a quote
+    or a bracket, or follows the opening one.
     """
-    if not before or not after or before.endswith("\n") or after[0].isspace() or after[0] in _MARKS:
+    if not before or not after or before[-1].isspace() or after[0].isspace():
+        return ""
+    if after[0] in _MARKS + ")" or before[-1] == "(" or _opened_quote(before):
+        return ""
+    if after[0] == '"' and before.count('"') % 2:
         return ""
     return " "
 

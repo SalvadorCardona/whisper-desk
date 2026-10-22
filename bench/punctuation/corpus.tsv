@@ -41,3 +41,25 @@ ctl11	en	You missed a comma in that sentence.	You missed a comma in that sentenc
 ctl12	en	We launched a new line of products.	We launched a new line of products.
 ctl13	en	That is a good point, let me think.	That is a good point, let me think.
 ctl14	en	Put a question mark at the end.	Put a question mark at the end.
+q01	fr	Il m'a répondu ouvrez les guillemets pas question fermez les guillemets point	Il m'a répondu « pas question ».
+q02	fr	Le devis ouvrez la parenthèse hors taxes fermez la parenthèse est validé point	Le devis (hors taxes) est validé.
+q03	fr	Le client a écrit ouvrez les guillemets merci pour tout fermez les guillemets point	Le client a écrit « merci pour tout ».
+q04	fr	On se voit jeudi ouvrez la parenthèse ou vendredi fermez la parenthèse virgule je te confirme point	On se voit jeudi (ou vendredi), je te confirme.
+q05	fr	Le mot ouvrez les guillemets urgent fermez les guillemets doit être en tête point	Le mot « urgent » doit être en tête.
+q06	fr	Elle a demandé ouvrez les guillemets tu viens ce soir point d'interrogation fermez les guillemets	Elle a demandé « tu viens ce soir ? »
+q07	fr	J'ai réservé deux chambres ouvrez la parenthèse avec petit déjeuner fermez la parenthèse point	J'ai réservé deux chambres (avec petit déjeuner).
+q08	fr	Mets le titre parenthèse ouvrante version deux parenthèse fermante dans le mail point	Mets le titre (version deux) dans le mail.
+q09	en	She wrote open quote see you soon close quote period	She wrote "see you soon".
+q10	en	The price open paren tax included close paren is final period	The price (tax included) is final.
+q11	en	He called it open quote a quick fix end quote comma but it took a week period	He called it "a quick fix", but it took a week.
+q12	en	We meet on Monday open parenthesis or Tuesday close parenthesis at noon period	We meet on Monday (or Tuesday) at noon.
+q13	en	The button says open quotes save close quotes period	The button says "save".
+q14	en	Send the report open paren the short one close paren to the team period	Send the report (the short one) to the team.
+ctl15	fr	Il faut ouvrir la porte avant midi.	Il faut ouvrir la porte avant midi.
+ctl16	fr	Mettez ce mot entre guillemets.	Mettez ce mot entre guillemets.
+ctl17	fr	Soit dit entre parenthèses, c'est trop cher.	Soit dit entre parenthèses, c'est trop cher.
+ctl18	fr	La ferme est fermée le dimanche.	La ferme est fermée le dimanche.
+ctl19	en	Can you send me a quote for the job?	Can you send me a quote for the job?
+ctl20	en	He is a quote unquote expert.	He is a quote unquote expert.
+ctl21	en	It is still an open question.	It is still an open question.
+ctl22	en	Put the number in brackets.	Put the number in brackets.

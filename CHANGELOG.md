@@ -4,6 +4,25 @@
 
 ### Added
 
+- **Quotes and brackets said aloud**: *ouvrez les guillemets* / *fermez les guillemets*
+  (or *ouvre*, *ouvrir*, *j'ouvre*, *ferme*, *fermer*, *je ferme*…, *guillemets ouvrants* /
+  *fermants*), *ouvrez la parenthèse* / *fermez la parenthèse* (or *parenthèse ouvrante* /
+  *fermante*), *open quote* / *close quote* (or *end quote*) and *open paren* / *close paren*
+  (or *parenthesis*, *left* / *right paren*) are written « » with their spaces, straight
+  quotes and ( ): "Il m'a répondu ouvrez les guillemets pas question fermez les guillemets
+  point" is written "Il m'a répondu « pas question »." The quotes said replace those Whisper
+  guessed, a question heard before the closing mark stays inside it and a full stop goes
+  after, and a quote or a bracket said after a pause joins the sentence it belongs to. Bare
+  *quote*, *unquote*, *bracket*, *entre guillemets* and *entre parenthèses* stay words, and
+  so does a command after an article. Part of `spoken_punctuation` (`punctuation.py`).
+- `bench/punctuation/`: 14 sentences that say quotes or brackets and 8 more control
+  sentences, measured apart; quotes and brackets now count in the error rate. Against what
+  whisper-desk wrote until now, before → after:
+  - written sentences: 49.0 % → 0.0 %, 0/14 → 14/14 exact;
+  - faster-whisper `small` (CPU, int8): 65.7 % → 28.0 %, 0/14 → 4/14 exact;
+  - faster-whisper `large-v3-turbo` (CUDA, float16): 70.6 % → 9.1 %, 0/14 → 10/14 exact;
+  the 28 punctuation sentences and the 22 controls unchanged. What remains is the
+  transcription (*parenthèse* heard "l'apparenteur" by `small`, *end quote* "and quote").
 - **Punctuation said aloud** (Wispr Flow's spoken punctuation): *virgule*, *point*,
   *point d'interrogation*, *point d'exclamation*, *point-virgule*, *deux points*, *à la
   ligne*, *nouveau paragraphe* — and *comma*, *period*, *full stop*, *question mark*,

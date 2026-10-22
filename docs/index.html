@@ -823,8 +823,11 @@
       <em>“Did you get my email question mark”</em> is written <strong>Did you get my
       email?</strong> <em>Virgule</em>, <em>point</em>, <em>point d’interrogation</em>,
       <em>deux points</em>, <em>à la ligne</em>, <em>nouveau paragraphe</em>, <em>comma</em>,
-      <em>period</em>, <em>new line</em>… The same words said as words stay words: <em>on
-      fait le point</em>, <em>trois virgule cinq</em>, <em>the trial period</em>.
+      <em>period</em>, <em>new line</em>… Quotes and brackets too: <em>“ouvrez les guillemets
+      pas question fermez les guillemets”</em> is written <strong>« pas question »</strong>,
+      <em>“open paren tax included close paren”</em> <strong>(tax included)</strong>. The same
+      words said as words stay words: <em>on fait le point</em>, <em>trois virgule cinq</em>,
+      <em>the trial period</em>, <em>send me a quote</em>.
       <code>spoken_punctuation = false</code> keeps the words.
     </p>
 
@@ -961,7 +964,7 @@ language = <span class="s">"fr"</span>               <span class="c"># ISO code,
 initial_prompt = <span class="s">""</span>           <span class="c"># vocabulary to favour (proper nouns, jargon)</span>
 corrections = <span class="n">true</span>            <span class="c"># "mardi, non, plutôt mercredi" is written "mercredi"</span>
 hesitations = <span class="n">true</span>            <span class="c"># "euh", "um" and stuttered words left out</span>
-spoken_punctuation = <span class="n">true</span>     <span class="c"># "virgule", "point", "à la ligne", "comma", "new line"</span>
+spoken_punctuation = <span class="n">true</span>     <span class="c"># "virgule", "à la ligne", "ouvrez les guillemets", "comma", "open paren"</span>
 developer_syntax = <span class="n">true</span>       <span class="c"># "camel case user name" is written userName</span>
 
 <span class="k">[recording]</span>
@@ -1124,7 +1127,7 @@ margin = <span class="n">96</span>
           <tr><td><code>transcriber.py</code></td><td>faster-whisper, GPU/CPU selection</td></tr>
           <tr><td><code>backtrack.py</code></td><td>corrections said aloud (“non, plutôt…”) carried out</td></tr>
           <tr><td><code>hesitations.py</code></td><td>hesitations (“euh”, “um”) and stuttered words left out</td></tr>
-          <tr><td><code>punctuation.py</code></td><td>punctuation said aloud (“virgule”, “à la ligne”) written as marks</td></tr>
+          <tr><td><code>punctuation.py</code></td><td>punctuation said aloud (“virgule”, “à la ligne”, “ouvrez les guillemets”) written as marks</td></tr>
           <tr><td><code>casing.py</code></td><td>names said in a style (“camel case user name”) written in it</td></tr>
           <tr><td><code>snippets.py</code></td><td>spoken cues replaced by the text saved for them</td></tr>
           <tr><td><code>inject.py</code></td><td>simulated keystroke: <code>uinput</code>, SendKeys, System Events</td></tr>

@@ -4,7 +4,8 @@
     python3 bench/punctuation/measure.py --audio      # through faster-whisper
 
 Words and marks both count: "demain virgule" against "demain," is two errors,
-a missing line break one. --audio needs the whisper-desk venv (whisper-desk's own
+a missing line break or quote one. The sentences that say a quote or a bracket
+(ids q…) are measured apart. --audio needs the whisper-desk venv (whisper-desk's own
 Python) and the recordings next to this file; the models are those already
 downloaded. "Before" is the text whisper-desk wrote until now, corrections and
 hesitations included; "after" adds the spoken punctuation.
@@ -33,7 +34,8 @@ def corpus() -> list[dict[str, str]]:
 
 
 def tokens(text: str) -> list[str]:
-    return re.findall(r"[\w'’-]+|[,.;:!?]|\n", text.lower())
+    text = re.sub(r"[“”]", '"', text.lower())
+    return re.findall(r"[\w'’-]+|[,.;:!?«»()\"]|\n", text)
 
 
 def distance(reference: list[str], hypothesis: list[str]) -> int:
@@ -71,7 +73,8 @@ def transcripts(model: str, device: str) -> dict[str, str]:
 
 def report(label: str, raw: dict[str, str], verbose: bool) -> None:
     rows = corpus()
-    for group, keep in (("punctuation", lambda r: not r["id"].startswith("ctl")),
+    for group, keep in (("punctuation", lambda r: r["id"][:2] in ("fr", "en")),
+                        ("quotes", lambda r: r["id"].startswith("q")),
                         ("controls", lambda r: r["id"].startswith("ctl"))):
         chosen = [r for r in rows if keep(r)]
         before = [(r["expected"], today(raw[r["id"]])) for r in chosen]

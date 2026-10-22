@@ -111,6 +111,79 @@ class WordsTest(unittest.TestCase):
                          "Je ne viens pas demain.")
 
 
+class EnclosingTest(unittest.TestCase):
+    """Quotes and brackets said aloud become the marks they name."""
+
+    def check(self, said: str, written: str) -> None:
+        self.assertEqual(punctuation.apply(said), written)
+
+    def test_french_quotes(self):
+        self.check("Il m'a dit ouvrez les guillemets pas question fermez les guillemets point",
+                   "Il m'a dit « pas question ».")
+        self.check("Il a écrit j'ouvre les guillemets à demain je ferme les guillemets",
+                   "Il a écrit « à demain »")
+        self.check("Le mot guillemets ouvrants urgent guillemets fermants revient souvent",
+                   "Le mot « urgent » revient souvent")
+
+    def test_french_brackets(self):
+        self.check("Tu viens ouvrez la parenthèse ou pas fermez la parenthèse point d'interrogation",
+                   "Tu viens (ou pas) ?")
+        self.check("Le budget parenthèse ouvrante hors taxes parenthèse fermante est validé",
+                   "Le budget (hors taxes) est validé")
+
+    def test_english_quotes_and_brackets(self):
+        self.check("He said open quote I'll be back close quote period",
+                   'He said "I\'ll be back".')
+        self.check("The word open quotes urgent end quote comes back", 'The word "urgent" comes back')
+        self.check("Call me open paren after six close paren tomorrow",
+                   "Call me (after six) tomorrow")
+        self.check("The fee left parenthesis tax included right parenthesis is paid",
+                   "The fee (tax included) is paid")
+
+    def test_whisper_own_punctuation_around_the_words_gives_way(self):
+        self.check("Il m'a dit, ouvrez les guillemets, pas question, fermez les guillemets.",
+                   "Il m'a dit « pas question ».")
+        self.check("He said, open quote, I'll be back. Close quote.", 'He said "I\'ll be back".')
+
+    def test_whisper_own_quotes_give_way_to_those_said(self):
+        self.check("Le client écrit « Ouvrez les guillemets merci » pour tout fermer les guillemets.",
+                   "Le client écrit « merci pour tout ».")
+
+    def test_a_pause_heard_between_the_words(self):
+        self.check("She wrote open, quote, see you soon, close, quote, period.",
+                   'She wrote "see you soon".')
+
+    def test_parenthese_ouvrant_as_whisper_hears_it(self):
+        self.check("Le titre parenthèse ouvrant version 2 parenthèse fermant est bon.",
+                   "Le titre (version 2) est bon.")
+
+    def test_a_question_heard_before_the_closing_mark_is_quoted(self):
+        self.check("Il a demandé ouvrez les guillemets tu viens ? Fermez les guillemets.",
+                   "Il a demandé « tu viens ? »")
+
+    def test_a_mark_said_after_the_closing_one_wins(self):
+        self.check("Il a dit ouvrez les guillemets oui fermez les guillemets. Virgule, puis il est parti.",
+                   "Il a dit « oui », puis il est parti.")
+
+    def test_what_is_quoted_first_takes_a_capital(self):
+        self.check("Ouvrez les guillemets bonjour fermez les guillemets", "« Bonjour »")
+        self.check("Fin point ouvrez les guillemets bonjour fermez les guillemets",
+                   "Fin. « Bonjour »")
+
+    def test_a_closing_mark_alone_in_its_sentence(self):
+        self.check("Close quote.", '"')
+        self.check("Fermez la parenthèse.", ")")
+        self.check("Ouvrez les guillemets.", "« ")
+
+    def test_the_words_said_as_words_stay(self):
+        for said in ("Send me a quote.", "He is a quote unquote expert.", "Put it in brackets.",
+                     "La parenthèse est fermée.", "Il faut ouvrir la porte.",
+                     "Soit dit entre parenthèses, c'est faux.", "Mettez-le entre guillemets.",
+                     "It is an open question.", "We are close to the end."):
+            with self.subTest(said):
+                self.assertEqual(punctuation.apply(said), said)
+
+
 class JoinTest(unittest.TestCase):
     """The sentences of a dictation, as they reach the cursor one after another."""
 
@@ -125,6 +198,14 @@ class JoinTest(unittest.TestCase):
     def test_no_space_around_a_line_break(self):
         self.assertEqual(punctuation.join(["Bonjour,\n", "Merci."]), "Bonjour,\nMerci.")
         self.assertEqual(punctuation.join(["Bonjour.", "\nMerci."]), "Bonjour.\nMerci.")
+
+    def test_a_quote_or_a_bracket_said_after_a_pause(self):
+        self.assertEqual(punctuation.join(["Il a dit « ", "Pas question.", " »"]),
+                         "Il a dit « Pas question. »")
+        self.assertEqual(punctuation.join(['He said "', "No way.", '"', "Then he left."]),
+                         'He said "No way." Then he left.')
+        self.assertEqual(punctuation.join(["Rappelle-moi (", "demain", ")", "merci."]),
+                         "Rappelle-moi (demain) merci.")
 
 
 if __name__ == "__main__":

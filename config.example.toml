@@ -33,8 +33,9 @@ corrections = true
 # stumble over ("je je pense" -> "je pense", "we could, we could meet" -> "we could meet").
 hesitations = true
 # Writes the punctuation you say aloud: "virgule", "point", "point d'interrogation",
-# "deux points", "à la ligne", "nouveau paragraphe" ("comma", "period", "question
-# mark", "colon", "new line", "new paragraph" in English).
+# "deux points", "à la ligne", "nouveau paragraphe", "ouvrez les guillemets", "fermez la
+# parenthèse" ("comma", "period", "question mark", "colon", "new line", "new paragraph",
+# "open quote", "close paren" in English).
 spoken_punctuation = true
 # Writes the names you say in a style: "camel case user name" -> userName, "pascal case
 # payment service" -> PaymentService, "snake case created at" -> created_at, "kebab case

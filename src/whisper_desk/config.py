@@ -62,7 +62,7 @@ DEFAULTS: dict[str, Any] = {
         # Leaves the hesitations out: "euh", "um", a word said twice.
         "hesitations": True,
         # Writes the punctuation said aloud: "virgule", "point d'interrogation",
-        # "à la ligne", "comma", "new line".
+        # "à la ligne", "ouvrez les guillemets", "comma", "new line", "open paren".
         "spoken_punctuation": True,
         # Writes the names said in a style: "camel case user name" -> userName,
         # "snake case created at" -> created_at.
