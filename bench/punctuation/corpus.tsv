@@ -27,6 +27,22 @@ en09	en	Best regards comma new line Sam	Best regards,\nSam
 en10	en	The release is ready comma I will send it tonight full stop	The release is ready, I will send it tonight.
 en11	en	What a good idea exclamation point When do we start question mark	What a good idea! When do we start?
 en12	en	First comma open the settings period Then comma click save period	First, open the settings. Then, click save.
+fr17	fr	Il m'a dit ouvrez les guillemets je reviens demain fermez les guillemets	Il m'a dit « je reviens demain »
+fr18	fr	Le titre est ouvrez les guillemets Rapport annuel fermez les guillemets point	Le titre est « Rapport annuel ».
+fr19	fr	La réunion ouvrez la parenthèse celle de lundi fermez la parenthèse est annulée point	La réunion (celle de lundi) est annulée.
+fr20	fr	On part vers dix heures ouvre la parenthèse si tout va bien ferme la parenthèse point	On part vers dix heures (si tout va bien).
+fr21	fr	Elle a répondu deux points ouvrez les guillemets pas question fermez les guillemets point	Elle a répondu : « pas question ».
+fr22	fr	Ouvrez la parenthèse à confirmer fermez la parenthèse	(À confirmer)
+fr23	fr	Il appelle ça ouvre les guillemets un détail ferme les guillemets virgule mais c'est important point	Il appelle ça « un détail », mais c'est important.
+fr24	fr	Le budget ouvrez la parenthèse hors taxes fermez la parenthèse est validé point	Le budget (hors taxes) est validé.
+en13	en	She said open quote I will be late close quote period	She said "I will be late".
+en14	en	The file is called open quote notes dot text end quote	The file is called "notes dot text"
+en15	en	The meeting open parenthesis the one on Monday close parenthesis is cancelled period	The meeting (the one on Monday) is cancelled.
+en16	en	We leave at ten open paren if all goes well close paren period	We leave at ten (if all goes well).
+en17	en	He calls it quote a detail unquote comma but it matters period	He calls it "a detail", but it matters.
+en18	en	Open parenthesis to be confirmed close parenthesis	(To be confirmed)
+en19	en	The answer was colon open quote no way close quote period	The answer was: "no way".
+en20	en	The budget open paren before tax close paren is approved period	The budget (before tax) is approved.
 ctl01	fr	C'est un bon point de départ pour la discussion.	C'est un bon point de départ pour la discussion.
 ctl02	fr	On fait le point demain matin.	On fait le point demain matin.
 ctl03	fr	Il manque une virgule dans cette phrase.	Il manque une virgule dans cette phrase.
@@ -41,3 +57,11 @@ ctl11	en	You missed a comma in that sentence.	You missed a comma in that sentenc
 ctl12	en	We launched a new line of products.	We launched a new line of products.
 ctl13	en	That is a good point, let me think.	That is a good point, let me think.
 ctl14	en	Put a question mark at the end.	Put a question mark at the end.
+ctl15	fr	Il est temps de fermer la parenthèse.	Il est temps de fermer la parenthèse.
+ctl16	fr	Elle a refermé la parenthèse de sa jeunesse.	Elle a refermé la parenthèse de sa jeunesse.
+ctl17	fr	On ferme la parenthèse et on avance.	On ferme la parenthèse et on avance.
+ctl18	fr	Il manque une parenthèse fermante.	Il manque une parenthèse fermante.
+ctl19	en	We have an open quote request from the client.	We have an open quote request from the client.
+ctl20	en	Can I quote you on that?	Can I quote you on that?
+ctl21	en	The store is open, quote me if you want.	The store is open, quote me if you want.
+ctl22	en	He was, quote unquote, busy.	He was, quote unquote, busy.

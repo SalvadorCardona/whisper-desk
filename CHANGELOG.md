@@ -4,6 +4,28 @@
 
 ### Added
 
+- **Quotes and brackets said aloud** (Wispr Flow's spoken punctuation, continued):
+  *ouvrez les guillemets* … *fermez les guillemets* are written « … », *ouvrez la
+  parenthèse* … *fermez la parenthèse* ( … ), *open quote* … *close quote* (or *end
+  quote*, *quote* … *unquote*) "…" and *open paren* … *close paren* (or *parenthesis*)
+  ( … ): "Il m'a dit ouvrez les guillemets je reviens demain fermez les guillemets" is
+  written "Il m'a dit « je reviens demain »". The commas Whisper puts around the commands
+  for the pause go, as do the « » it sometimes writes around them; a question or an
+  exclamation said before the closing stays inside. The forms Whisper hears for the
+  imperative (*ouvré*, *fermé*, *ouvrait*) count; the words said in a sentence stay words
+  (*il est temps de fermer la parenthèse*, *on ferme la parenthèse*, *can I quote you*,
+  *an open quote request*, *quote unquote*), unless their other half is said too. A quote
+  opened before a pause closes in the next sentence without a stray space. Same switch
+  as the rest of the spoken punctuation, `spoken_punctuation` in `[model]`.
+- `bench/punctuation/`: 16 sentences with quotes or brackets and 8 control sentences
+  added (44 + 22 in all). Error rate on words and marks on the 16 new sentences, before →
+  after:
+  - written sentences: 53.1 % → 0.0 %, 16/16 exact;
+  - faster-whisper `small` (CPU, int8): 70.1 % → 35.4 %, 3/16 exact;
+  - faster-whisper `large-v3-turbo` (CUDA, float16): 86.4 % → 18.4 %, 4/16 exact.
+  The 28 earlier sentences and the 22 controls do not change. What remains is the
+  transcription of the synthetic voices — *parenthèse* heard as "l'apparentaise",
+  *paren* as "Perenn" — and the full stop Whisper ends each sentence with.
 - **Punctuation said aloud** (Wispr Flow's spoken punctuation): *virgule*, *point*,
   *point d'interrogation*, *point d'exclamation*, *point-virgule*, *deux points*, *à la
   ligne*, *nouveau paragraphe* — and *comma*, *period*, *full stop*, *question mark*,

@@ -271,6 +271,8 @@ Say the mark you want, as you would to someone taking notes, and it is written:
 | *Tu as reçu mon message point d'interrogation* | Tu as reçu mon message ? |
 | *Bonjour Marie virgule à la ligne merci pour ton retour point* | Bonjour Marie,<br>Merci pour ton retour. |
 | *We need three things colon milk comma bread and eggs period* | We need three things: milk, bread and eggs. |
+| *Il m'a dit ouvrez les guillemets je reviens demain fermez les guillemets* | Il m'a dit « je reviens demain » |
+| *The meeting open paren the one on Monday close paren is cancelled period* | The meeting (the one on Monday) is cancelled. |
 
 French: *virgule*, *point*, *point d'interrogation*, *point d'exclamation*,
 *point-virgule*, *deux points*, *à la ligne* (or *retour à la ligne*, *nouvelle ligne*),
@@ -280,12 +282,22 @@ marks get the space French puts before *?*, *!*, *:* and *;*. Whisper's own punc
 around the word gives way to the mark you said, and what follows a full stop or a line
 break takes a capital.
 
+Quotes and brackets open and close around what you say between them: *ouvrez les
+guillemets* … *fermez les guillemets* (or *ouvre* / *ferme*) write « … », *ouvrez la
+parenthèse* … *fermez la parenthèse* write ( … ); *open quote* … *close quote* (or *end
+quote*, *quote* … *unquote*) write "…", *open paren* … *close paren* (or *parenthesis*)
+write ( … ). The pauses Whisper marks with a comma around these commands go. They work
+across a pause too: a quote opened in one sentence closes in the next. Square brackets
+and braces are not written yet.
+
 The same words said as words stay words: after an article (*il manque une virgule*, *on
 fait le point*, *a new line of products*, *the trial period*), inside a number (*trois
 virgule cinq*), or followed by what makes them a noun (*deux points d'avance*, *la ligne de
 départ*). *Point* and *period* are only a full stop where one can stand — at the end of a
 sentence or before a capital: *mon point de vue* and *a good point, let me think* stay as
-they are. Rules run on your machine; `spoken_punctuation = false` in `[model]` keeps the
+they are. A quote or a bracket said inside a sentence is only written when said as a
+command: *il est temps de fermer la parenthèse*, *on ferme la parenthèse*, *can I quote
+you*, *an open quote request* and *quote unquote* stay words. Rules run on your machine; `spoken_punctuation = false` in `[model]` keeps the
 words. `bench/punctuation/` measures them on recordings (see Development).
 
 ### Developer syntax: say a name in its style
@@ -729,9 +741,10 @@ python3 bench/hesitations/measure.py -v
 ~/.local/share/whisper-desk/venv/bin/python bench/hesitations/measure.py --audio -v
 ```
 
-`bench/punctuation/` measures the punctuation said aloud: 28 sentences that say a mark or
-a line break, French and English, and 14 control sentences where the same words are
-words (*on fait le point*, *trois virgule cinq*, *the trial period*, *a good point*). Marks
+`bench/punctuation/` measures the punctuation said aloud: 44 sentences that say a mark, a
+line break, a quote or a bracket, French and English, and 22 control sentences where the
+same words are words (*on fait le point*, *trois virgule cinq*, *the trial period*, *a
+good point*, *on ferme la parenthèse*, *quote unquote*). Marks
 count as much as words in its error rate — *demain virgule* against *demain,* is two
 errors, a missing line break one:
 

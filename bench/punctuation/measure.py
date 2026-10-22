@@ -33,7 +33,7 @@ def corpus() -> list[dict[str, str]]:
 
 
 def tokens(text: str) -> list[str]:
-    return re.findall(r"[\w'’-]+|[,.;:!?]|\n", text.lower())
+    return re.findall(r"[\w'’-]+|[,.;:!?«»()\"]|\n", text.lower())
 
 
 def distance(reference: list[str], hypothesis: list[str]) -> int:
