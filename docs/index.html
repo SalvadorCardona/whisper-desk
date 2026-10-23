@@ -859,6 +859,7 @@
 <span class="p">$ </span>whisper-desk doctor     <span class="c"># full diagnostic</span>
 <span class="p">$ </span>whisper-desk update     <span class="c"># update the installation (--check to compare only)</span>
 <span class="p">$ </span>whisper-desk history    <span class="c"># past dictations — see below</span>
+<span class="p">$ </span>whisper-desk stats      <span class="c"># words dictated, pace, streak, time saved</span>
 <span class="p">$ </span>whisper-desk settings   <span class="c"># the settings window</span>
 <span class="p">$ </span>whisper-desk welcome    <span class="c"># the first-launch window, again</span>
 <span class="p">$ </span>whisper-desk tray       <span class="c"># the tray icon</span>
@@ -898,6 +899,14 @@
         <span>Search, <b>Copy</b>, <b>Insert</b> again where the cursor was, delete — and the automatic purge</span>
       </div>
     </div>
+
+    <h3>Usage statistics</h3>
+    <p>
+      <code>whisper-desk stats</code> reads the history and tells, worked out on your machine, the words
+      dictated today, over the last 7 days and in all, your pace in words per minute, your streak of days
+      in a row and the time saved against typing at 40 words a minute. <code>--days 7</code> keeps the last
+      week, <code>--json</code> hands the figures to a script or a status bar.
+    </p>
   </div>
 </section>
 

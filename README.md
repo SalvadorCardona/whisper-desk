@@ -365,6 +365,7 @@ whisper-desk status     # daemon state, loaded model, GPU or CPU
 whisper-desk doctor     # full diagnostic
 whisper-desk update     # update the installation (--check to compare only)
 whisper-desk history    # past dictations — see below
+whisper-desk stats      # words dictated, pace, streak, time saved — see below
 whisper-desk settings   # the settings window — see Configuration
 whisper-desk welcome    # the first-launch window, again
 whisper-desk tray       # the tray icon — see below
@@ -417,6 +418,38 @@ each one **Copy**, **Insert** — the window closes and the daemon types the tex
 your cursor was — and a bin that asks for a second click. At the bottom, *Keep
 dictations* sets the automatic purge. It needs GTK3 for the system Python, like the
 overlay; without it, the command line does the same.
+
+### Usage statistics
+
+`whisper-desk stats` reads the history and tells what dictating has given you — worked out
+on your machine, nothing is sent anywhere:
+
+```text
+Words dictated      12 213
+Dictations          377
+Today               542 words
+Last 7 days         12 213 words
+Current streak      7 days (longest: 7 days)
+Days with dictation 7
+Listening time      1 h 33 min
+Pace                131 words per minute (last 100 dictations, silences included)
+Time saved          3 h 31 min (against typing at 40 words per minute)
+```
+
+```sh
+whisper-desk stats             # since the first dictation kept
+whisper-desk stats --days 7    # the last 7 days, today included
+whisper-desk stats --json      # the same figures for a script or a status bar
+```
+
+A word is what holds a letter or a digit (*l'adresse* is one, « none), counted in the
+text inserted — a snippet counts its own words. The pace is the words of your last 100
+dictations over the time the microphone stayed open, the silence that ends a dictation
+included: lower than your speech rate, closer to what you get. A day in the streak is a
+day with at least one dictation; yesterday's streak still counts until the day is over.
+The time saved compares the listening time with typing the same words at 40 words a
+minute, a common typing speed — an estimate, not a measure. Statistics only see the
+history: with `history = false`, or after a purge, they see that much less.
 
 ---
 
@@ -684,6 +717,7 @@ to test all three from any of them.
 | `src/whisper_desk/overlay.py` | X11 overlay (separate process) |
 | `src/whisper_desk/overlay_protocol.py` | the line protocol between the daemon and the overlay |
 | `src/whisper_desk/history.py` | dictation history (JSON Lines), search, purge |
+| `src/whisper_desk/stats.py` | usage statistics read from the history |
 | `src/whisper_desk/history_window.py` | history window (GTK3, separate process) |
 | `src/whisper_desk/tomlwrite.py` | writing `config.toml` while keeping its comments |
 | `src/whisper_desk/settings_window.py` | settings window (GTK3, separate process) |

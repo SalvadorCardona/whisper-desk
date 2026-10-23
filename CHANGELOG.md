@@ -4,6 +4,14 @@
 
 ### Added
 
+- **Usage statistics** (Wispr Flow's dashboard, worked out locally): `whisper-desk stats`
+  reads the history and shows the words dictated today, over the last 7 days and in all,
+  the dictations and the days with one, the current and longest streak of days in a row,
+  the listening time, the pace in words per minute over the last 100 dictations — silence
+  that ends a dictation included — and the time saved against typing the same words at 40
+  words a minute. `--days N` keeps the last N days, `--json` hands the figures to a script
+  or a status bar. Nothing new is recorded and nothing leaves the machine; dictations of
+  the old `history.log`, which kept no listening time, count words but not the pace.
 - **Quotes and brackets said aloud** (Wispr Flow's spoken punctuation, continued):
   *ouvrez les guillemets* … *fermez les guillemets* are written « … », *ouvrez la
   parenthèse* … *fermez la parenthèse* ( … ), *open quote* … *close quote* (or *end

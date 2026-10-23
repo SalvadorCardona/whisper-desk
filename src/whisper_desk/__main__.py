@@ -204,6 +204,26 @@ def cmd_history(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_stats(args: argparse.Namespace) -> int:
+    """Usage figures from the history: words, pace, streak, time saved."""
+    from datetime import date, timedelta
+
+    from . import history, stats
+
+    today = date.today()
+    since = today - timedelta(days=args.days - 1) if args.days and args.days > 0 else None
+    usage = stats.compute(history.load(), today, since=since)
+    if args.json:
+        print(json.dumps(usage.as_dict()))
+        return 0
+    if not usage.dictations:
+        print("No dictation yet." if since is None else f"No dictation in the last {args.days} days.")
+        return 0
+    for line in stats.report(usage):
+        print(line)
+    return 0
+
+
 def cmd_settings(_args: argparse.Namespace) -> int:
     """The settings window: the essentials of config.toml without opening it."""
     from . import settings_proc, window_proc
@@ -712,6 +732,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--window", action="store_true", help="opens the history window (GTK)"
     )
     history_parser.set_defaults(func=cmd_history)
+
+    stats_parser = sub.add_parser(
+        "stats",
+        help="usage figures: words dictated, pace, streak, time saved",
+        description="Usage figures, worked out on this machine from the history.",
+    )
+    stats_parser.add_argument(
+        "--days", type=int, metavar="DAYS", help="only the last DAYS days, today included"
+    )
+    stats_parser.add_argument("--json", action="store_true", help="the figures as JSON")
+    stats_parser.set_defaults(func=cmd_stats)
 
     hotkey_parser = sub.add_parser("hotkey", help="manages the global shortcut")
     hotkey_parser.add_argument(
