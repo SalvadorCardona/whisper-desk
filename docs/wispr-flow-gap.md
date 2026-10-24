@@ -12,7 +12,8 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 (read on 2026-10-16); filler removal, "Remove fillers" on the features page (read on
 2026-10-16); spoken punctuation, "Auto punctuation" on the features page (read on
 2026-10-18); developer syntax, "Syntax awareness" and "File tagging" on the features page (read on
-2026-10-20).
+2026-10-20); usage statistics, "Insights" in the app as shown by its users' reviews (read on
+2026-10-24).
 
 **Status**: done · partial · missing · out of scope.
 **Effort**: S (a session) · M (a few sessions) · L (to split into several gaps).
@@ -23,7 +24,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 |---|---|---|---|---|
 | **Backtrack** — a correction said mid-sentence keeps only the corrected version | `backtrack.py`: "non, plutôt", "ou plutôt", "je veux dire", "no wait", "actually", "I mean", "or rather"… carried out by local rules; measured in `bench/backtrack/` | partial | high | S |
 | **Filler removal** — "um", "uh", pauses | Whisper drops most hesitations by itself; `hesitations.py` removes those it writes ("euh", "hum", "um", "uh", "erm") and words or runs of up to three words said twice in a row, keeping intended doubles; measured in `bench/hesitations/`. A hesitation Whisper mishears as a word ("A", "« E »") stays | done | high | S |
-| **Auto punctuation** — inferred from pauses and tone, spoken marks ("comma") | Whisper's own punctuation and capitals; spoken marks and line breaks ("virgule", "point d'interrogation", "à la ligne", "comma", "new paragraph") written by `punctuation.py`, measured in `bench/punctuation/` (#26); quotes and brackets said aloud ("ouvrez les guillemets", "fermez la parenthèse", "open quote", "close paren") written « », " " and ( ) (in PR). No square brackets or braces, no punctuation inferred from tone beyond Whisper's | partial | medium | S |
+| **Auto punctuation** — inferred from pauses and tone, spoken marks ("comma") | Whisper's own punctuation and capitals; spoken marks and line breaks ("virgule", "point d'interrogation", "à la ligne", "comma", "new paragraph") written by `punctuation.py`, measured in `bench/punctuation/` (#26); quotes and brackets said aloud ("ouvrez les guillemets", "fermez la parenthèse", "open quote", "close paren") written « », " " and ( ) (#31). No square brackets or braces, no punctuation inferred from tone beyond Whisper's | partial | medium | S |
 | **Numbered lists** — spoken enumerations become a formatted list | — | missing | medium | M |
 | **Name spelling from context** | `vocabulary` (hotwords) and the context of the dictation fed back to the model | partial | high | — |
 | **100+ languages** | every Whisper language; `language = "auto"` detects one language per sentence | done | medium | — |
@@ -44,7 +45,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
 | **History** of dictations | `whisper-desk history` and its window: search, copy, insert again, purge | done | — | — |
 | **Settings** | `whisper-desk settings`: language, model, microphone, shortcut, output, vocabulary, snippets, overlay | done | — | — |
 | **Overlay** | X11 overlay: live level, sentence transcribed, states, cancel | done | — | — |
-| **Usage dashboard** — words dictated, top apps | the history holds the data; no local statistics shown | missing | low | S |
+| **Usage dashboard** — words dictated, speed, streak, top apps | `whisper-desk stats` (`stats.py`): dictations, words in all, today and over 7 days, words per minute, days in a row, worked out from the history (in PR). No top apps (the history does not record the app), no rank among users | partial | low | S |
 | **Mobile apps, cross-device sync** | — | out of scope (account, cloud) | — | — |
 | **Shared team dictionary and snippets** | — | out of scope (account, cloud) | — | — |
 | **Notetaker** — meeting notes | — | out of scope for now (another product) | — | — |
@@ -102,7 +103,7 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   2/13, but `large-v3-turbo` English no better and its error rate up (14.8 % → 18.0 %).
   Left to do: names without the style said (Wispr Flow guesses them from the app), CLI
   commands, file tagging.
-- 2026-10-21 — **Quotes and brackets said aloud** (in PR, partial): *ouvrez les
+- 2026-10-21 — **Quotes and brackets said aloud** (merged, #31, partial): *ouvrez les
   guillemets* … *fermez les guillemets* → « … », *ouvrez la parenthèse* … *fermez la
   parenthèse* → ( … ), *open quote* … *close quote* / *quote* … *unquote* → "…", *open
   paren* … *close paren* → ( … ), by local rules in `punctuation.py`, under
@@ -115,3 +116,13 @@ Sources: [wisprflow.ai/features](https://wisprflow.ai/features),
   What remains is the transcription of the synthetic voices (*parenthèse* heard as
   "l'apparentaise", *paren* as "Perenn") and Whisper's own final full stop. Left to do:
   square brackets and braces.
+- 2026-10-24 — **Usage statistics** (in PR, partial): `whisper-desk stats` prints the
+  dictations and their days, the words dictated (in all, today, the last 7 days), the
+  speed in words per minute and the streak of days with a dictation (current and best),
+  worked out from the history on the spot, nothing stored besides; `--json` for a script
+  or a status bar. Marks said aloud are no words; the speed only counts the dictations
+  whose listening time was recorded; a streak that reached yesterday holds until today is
+  over. A feature, no quality measure: 16 new tests; 50,000 dictations counted in 0.19 s.
+  Left to do: the apps dictated into (the history would have to record the focused
+  window), the figures in the history window. Out of scope: Wispr Flow's rank among its
+  users (it needs everyone's figures).

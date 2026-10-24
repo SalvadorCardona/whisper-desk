@@ -365,6 +365,7 @@ whisper-desk status     # daemon state, loaded model, GPU or CPU
 whisper-desk doctor     # full diagnostic
 whisper-desk update     # update the installation (--check to compare only)
 whisper-desk history    # past dictations — see below
+whisper-desk stats      # words dictated, speed, days in a row — see below
 whisper-desk settings   # the settings window — see Configuration
 whisper-desk welcome    # the first-launch window, again
 whisper-desk tray       # the tray icon — see below
@@ -417,6 +418,25 @@ each one **Copy**, **Insert** — the window closes and the daemon types the tex
 your cursor was — and a bin that asks for a second click. At the bottom, *Keep
 dictations* sets the automatic purge. It needs GTK3 for the system Python, like the
 overlay; without it, the command line does the same.
+
+### Statistics
+
+`whisper-desk stats` counts what you dictated, from the history and on this machine only
+— nothing is sent, nothing is stored besides:
+
+```sh
+$ whisper-desk stats
+Dictations  340 over 25 days, since 2026-08-19
+Words       4,948 — 112 today, 1,038 these 7 days
+Speed       148 words per minute, over 33 min of dictation
+Streak      3 days in a row (best: 9 days)
+```
+
+The speed counts only the dictations whose listening time was recorded (not those of
+the old `history.log`), pauses included; a day without dictation breaks the streak once
+it is over. `--json` gives the same figures as one JSON object, for a script or a status
+bar. A dictation deleted, purged by `--keep-days` or never kept (`history = false`) is
+not counted.
 
 ---
 
@@ -684,6 +704,7 @@ to test all three from any of them.
 | `src/whisper_desk/overlay.py` | X11 overlay (separate process) |
 | `src/whisper_desk/overlay_protocol.py` | the line protocol between the daemon and the overlay |
 | `src/whisper_desk/history.py` | dictation history (JSON Lines), search, purge |
+| `src/whisper_desk/stats.py` | usage statistics worked out from the history |
 | `src/whisper_desk/history_window.py` | history window (GTK3, separate process) |
 | `src/whisper_desk/tomlwrite.py` | writing `config.toml` while keeping its comments |
 | `src/whisper_desk/settings_window.py` | settings window (GTK3, separate process) |
