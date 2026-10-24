@@ -204,6 +204,25 @@ def cmd_history(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_stats(args: argparse.Namespace) -> int:
+    """Words dictated, speed and days in a row, worked out from the history."""
+    from . import history, stats
+
+    usage = stats.compute(history.load())
+    if args.json:
+        print(json.dumps(stats.as_dict(usage)))
+        return 0
+    if not usage.dictations:
+        if not config_module.load()["output"]["history"]:
+            print("The history is off (history = false in [output]): nothing to count.")
+        else:
+            print("No dictation yet.")
+        return 0
+    for line in stats.report(usage):
+        print(line)
+    return 0
+
+
 def cmd_settings(_args: argparse.Namespace) -> int:
     """The settings window: the essentials of config.toml without opening it."""
     from . import settings_proc, window_proc
@@ -712,6 +731,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--window", action="store_true", help="opens the history window (GTK)"
     )
     history_parser.set_defaults(func=cmd_history)
+
+    stats_parser = sub.add_parser(
+        "stats",
+        help="words dictated, speed, days in a row",
+        description="Usage statistics, worked out from the history on this machine.",
+    )
+    stats_parser.add_argument("--json", action="store_true", help="the figures as one JSON object")
+    stats_parser.set_defaults(func=cmd_stats)
 
     hotkey_parser = sub.add_parser("hotkey", help="manages the global shortcut")
     hotkey_parser.add_argument(

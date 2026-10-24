@@ -4,6 +4,16 @@
 
 ### Added
 
+- **Usage statistics** (Wispr Flow's Insights): `whisper-desk stats` prints the
+  dictations and the days they were made on, the words dictated — in all, today and over
+  the last 7 days —, the speed in words per minute and the days in a row with a dictation,
+  the current streak and the best one. Everything is worked out from the history on the
+  spot, on this machine; nothing is sent or stored besides. The marks said aloud are not
+  counted as words, the speed only counts the dictations whose listening time was
+  recorded, and a streak that reached yesterday still holds until today is over.
+  `--json` gives the same figures as one JSON object, for a script or a status bar. The
+  apps dictated into and Wispr Flow's rank among its users are not shown: the history
+  does not record the app, and there are no other users to compare with offline.
 - **Quotes and brackets said aloud** (Wispr Flow's spoken punctuation, continued):
   *ouvrez les guillemets* … *fermez les guillemets* are written « … », *ouvrez la
   parenthèse* … *fermez la parenthèse* ( … ), *open quote* … *close quote* (or *end
